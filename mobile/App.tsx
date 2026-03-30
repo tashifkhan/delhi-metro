@@ -14,9 +14,11 @@ import {
 import { queryClient } from './src/api/queryClient';
 import {
   useJourneyPlanQuery,
+  useJourneyPlanCachedQuery,
   useMapFamilyPrimaryQuery,
   useMetroLinesQuery,
   useNotificationsQuery,
+  usePopularRoutesQuery,
   useStationSearchQuery,
 } from './src/hooks';
 
@@ -29,6 +31,8 @@ function HomeScreen() {
   const notificationsQuery = useNotificationsQuery();
   const searchQuery = useStationSearchQuery(searchText);
   const journeyPlanQuery = useJourneyPlanQuery(fromCode, toCode);
+  const cachedJourneyPlanQuery = useJourneyPlanCachedQuery(fromCode, toCode);
+  const popularRoutesQuery = usePopularRoutesQuery(5);
   const networkMapQuery = useMapFamilyPrimaryQuery('network');
 
   const isLoading =
@@ -36,6 +40,7 @@ function HomeScreen() {
     notificationsQuery.isLoading ||
     searchQuery.isLoading ||
     journeyPlanQuery.isLoading ||
+    cachedJourneyPlanQuery.isLoading ||
     networkMapQuery.isLoading;
 
   const lineCount = linesQuery.data?.length ?? 0;
@@ -48,6 +53,13 @@ function HomeScreen() {
     }
     return String(journeyPlanQuery.data.least_distance_fare.weekday_fare);
   }, [journeyPlanQuery.data]);
+
+  const cachedEstimatedFare = useMemo(() => {
+    if (!cachedJourneyPlanQuery.data) {
+      return '-';
+    }
+    return String(cachedJourneyPlanQuery.data.least_distance_fare.weekday_fare);
+  }, [cachedJourneyPlanQuery.data]);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -79,6 +91,24 @@ function HomeScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>RG → VASI weekday fare</Text>
         <Text style={styles.cardValue}>{estimatedFare}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>RG → VASI cached fare (SQLite)</Text>
+        <Text style={styles.cardValue}>{cachedEstimatedFare}</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Popular cached routes</Text>
+        {(popularRoutesQuery.data ?? []).length === 0 ? (
+          <Text style={styles.linkText}>No route cached yet.</Text>
+        ) : (
+          (popularRoutesQuery.data ?? []).map((route) => (
+            <Text key={route.routeKey} style={styles.linkText}>
+              {route.fromStationCode} → {route.toStationCode} ({route.hitCount} hits)
+            </Text>
+          ))
+        )}
       </View>
 
       <View style={styles.card}>
