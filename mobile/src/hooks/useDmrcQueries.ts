@@ -67,3 +67,19 @@ export function useJourneyPlanQuery(fromStationCode: string, toStationCode: stri
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
   });
 }
+
+export function useJourneyPlanCachedQuery(fromStationCode: string, toStationCode: string) {
+  return useQuery({
+    queryKey: queryKeys.journeyPlanCached(fromStationCode, toStationCode),
+    queryFn: () => dmrcService.getJourneyPlanWithLocalCache(fromStationCode, toStationCode),
+    enabled: fromStationCode.length > 1 && toStationCode.length > 1,
+    staleTime: 2 * 60_000,
+  });
+}
+
+export function usePopularRoutesQuery(limit = 5) {
+  return useQuery({
+    queryKey: queryKeys.popularRoutes(limit),
+    queryFn: () => dmrcService.getPopularRoutes(limit),
+  });
+}

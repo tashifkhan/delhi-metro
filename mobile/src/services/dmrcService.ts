@@ -1,4 +1,5 @@
 import { apiClient } from '../api/client';
+import { popularRoutesRepository } from '../storage/popularRoutesRepository';
 import type {
   FirstLastTrainResponse,
   JourneyFareWithRoute,
@@ -60,5 +61,26 @@ export const dmrcService = {
         to_station_code: toStationCode,
       },
     });
+  },
+
+  async getJourneyPlanWithLocalCache(
+    fromStationCode: string,
+    toStationCode: string,
+  ): Promise<JourneyPlan> {
+    try {
+      const plan = await this.getJourneyPlan(fromStationCode, toStationCode);
+      await popularRoutesRepository.saveJourneyPlan(fromStationCode, toStationCode, plan);
+      return plan;
+    } catch (error) {
+      const cached = await popularRoutesRepository.getJourneyPlan(fromStationCode, toStationCode);
+      if (cached) {
+        return cached;
+      }
+      throw error;
+    }
+  },
+
+  async getPopularRoutes(limit = 5) {
+    return popularRoutesRepository.getPopularRoutes(limit);
   },
 };
