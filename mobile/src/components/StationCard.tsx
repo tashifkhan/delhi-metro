@@ -1,11 +1,15 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LineBadge } from './LineBadge';
+import { StationLineIcon } from './StationLineIcon';
 import { colors, spacing, typography } from '../theme';
+import type { StationLineBadge } from '../types';
 
 interface StationLike {
   station_name: string;
   station_code: string;
   interchange?: boolean;
+  metro_lines?: StationLineBadge[];
 }
 
 interface Props {
@@ -22,17 +26,29 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
       disabled={!onPress}
     >
       <View style={styles.iconContainer}>
-        <Ionicons
-          name={station.interchange ? 'git-compare' : 'ellipse'}
-          size={station.interchange ? 20 : 10}
-          color={station.interchange ? colors.interchange : colors.primary}
-        />
+        {station.interchange ? (
+          <Ionicons name="git-compare" size={20} color={colors.interchange} />
+        ) : (
+          <StationLineIcon lines={station.metro_lines} size={12} fallbackColor={colors.primary} />
+        )}
       </View>
       <View style={styles.content}>
         <Text style={styles.name} numberOfLines={1}>
           {station.station_name}
         </Text>
         <Text style={styles.code}>{station.station_code}</Text>
+        {!!station.metro_lines?.length && (
+          <View style={styles.badgesRow}>
+            {station.metro_lines?.map((line) => (
+              <LineBadge
+                key={`${station.station_code}-${line.line_code}`}
+                name={line.line_color}
+                color={line.primary_color_code}
+                compact
+              />
+            ))}
+          </View>
+        )}
       </View>
       {showChevron && onPress ? (
         <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -69,5 +85,11 @@ const styles = StyleSheet.create({
   code: {
     fontSize: typography.sizes.sm,
     color: colors.textTertiary,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: 4,
   },
 });

@@ -2,6 +2,8 @@ import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'r
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useDebounce, useStationSearchQuery } from '../hooks';
+import { LineBadge } from './LineBadge';
+import { StationLineIcon } from './StationLineIcon';
 import { colors, spacing, typography } from '../theme';
 import type { StationSearchResult } from '../types';
 
@@ -72,11 +74,23 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
                 onPress={() => handleSelect(item)}
               >
                 <View style={styles.resultIcon}>
-                  <Ionicons name="location-outline" size={18} color={colors.primary} />
+                  <StationLineIcon lines={item.metro_lines} size={16} fallbackColor={colors.primary} />
                 </View>
                 <View style={styles.resultContent}>
                   <Text style={styles.resultName}>{item.station_name}</Text>
                   <Text style={styles.resultCode}>{item.station_code}</Text>
+                  {!!item.metro_lines?.length && (
+                    <View style={styles.badgesRow}>
+                      {item.metro_lines?.map((line) => (
+                        <LineBadge
+                          key={`${item.station_code}-${line.line_code}`}
+                          name={line.line_color}
+                          color={line.primary_color_code}
+                          compact
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
               </Pressable>
             )}
@@ -162,6 +176,12 @@ const styles = StyleSheet.create({
   resultCode: {
     fontSize: typography.sizes.sm,
     color: colors.textTertiary,
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    marginTop: 4,
   },
   placeholder: {
     flex: 1,
