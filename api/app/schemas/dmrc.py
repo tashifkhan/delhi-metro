@@ -84,6 +84,17 @@ class StationSearchResult(BaseModel):
     station_name: str
     station_code: str
     station_facility: list[StationFacility] = Field(default_factory=list)
+    metro_lines: list["StationLineBadge"] = Field(default_factory=list)
+
+
+class StationLineBadge(BaseModel):
+    """Minimal metro line metadata for station-list disambiguation badges."""
+
+    line_id: int
+    line_code: str
+    line_name: str
+    line_color: str
+    primary_color_code: str
 
 
 class StationByLineItem(StationSearchResult):
