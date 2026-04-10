@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 
-import { dmrcService } from '../services/dmrcService';
+import { useDI } from '../di/DIContext';
 import type { RouteStrategy } from '../types';
 import { queryKeys } from './queryKeys';
 
 export function useMetroLinesQuery() {
+  const { dmrcService } = useDI();
   return useQuery({
     queryKey: queryKeys.lines,
     queryFn: () => dmrcService.getLines(),
@@ -12,6 +13,7 @@ export function useMetroLinesQuery() {
 }
 
 export function useNotificationsQuery() {
+  const { dmrcService } = useDI();
   return useQuery({
     queryKey: queryKeys.notifications,
     queryFn: () => dmrcService.getNotifications(),
@@ -19,10 +21,12 @@ export function useNotificationsQuery() {
 }
 
 export function useStationSearchQuery(query: string) {
+  const { dmrcService } = useDI();
+  const normalizedQuery = query.trim();
+
   return useQuery({
-    queryKey: queryKeys.stationsSearch(query),
-    queryFn: () => dmrcService.searchStations(query),
-    enabled: query.trim().length > 1,
+    queryKey: queryKeys.stationsSearch(normalizedQuery),
+    queryFn: () => dmrcService.searchStations(normalizedQuery),
   });
 }
 
@@ -31,6 +35,7 @@ export function useFareRouteQuery(
   toStationCode: string,
   strategy: RouteStrategy,
 ) {
+  const { dmrcService } = useDI();
   return useQuery({
     queryKey: queryKeys.fareRoute(fromStationCode, toStationCode, strategy),
     queryFn: () =>
@@ -48,6 +53,7 @@ export function useFirstLastTrainQuery(
   toStationCode: string,
   strategy: RouteStrategy,
 ) {
+  const { dmrcService } = useDI();
   return useQuery({
     queryKey: queryKeys.firstLastTrain(fromStationCode, toStationCode, strategy),
     queryFn: () =>
@@ -60,10 +66,56 @@ export function useFirstLastTrainQuery(
   });
 }
 
-export function useJourneyPlanQuery(fromStationCode: string, toStationCode: string) {
+export function useJourneyPlanQuery(
+  fromStationCode: string,
+  toStationCode: string,
+  journeyTime?: string,
+) {
+  const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode),
-    queryFn: () => dmrcService.getJourneyPlan(fromStationCode, toStationCode),
+    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode, journeyTime),
+    queryFn: () => dmrcService.getJourneyPlan(fromStationCode, toStationCode, journeyTime),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
+  });
+}
+
+export function useJourneyPlanCachedQuery(
+  fromStationCode: string,
+  toStationCode: string,
+  journeyTime?: string,
+) {
+  const { dmrcService } = useDI();
+  return useQuery({
+    queryKey: queryKeys.journeyPlanCached(fromStationCode, toStationCode, journeyTime),
+    queryFn: () =>
+      dmrcService.getJourneyPlanWithLocalCache(fromStationCode, toStationCode, journeyTime),
+    enabled: fromStationCode.length > 1 && toStationCode.length > 1,
+    staleTime: 2 * 60_000,
+  });
+}
+
+export function usePopularRoutesQuery(limit = 5) {
+  const { dmrcService } = useDI();
+  return useQuery({
+    queryKey: queryKeys.popularRoutes(limit),
+    queryFn: () => dmrcService.getPopularRoutes(limit),
+  });
+}
+
+export function useStationsByLineQuery(lineCode: string) {
+  const { dmrcService } = useDI();
+  return useQuery({
+    queryKey: queryKeys.stationsByLine(lineCode),
+    queryFn: () => dmrcService.getStationsByLine(lineCode),
+    enabled: lineCode.trim().length > 0,
+  });
+}
+
+export function useStationDetailQuery(stationCode: string) {
+  const { dmrcService } = useDI();
+  return useQuery({
+    queryKey: queryKeys.stationDetail(stationCode),
+    queryFn: () => dmrcService.getStationDetail(stationCode),
+    enabled: stationCode.trim().length > 0,
   });
 }

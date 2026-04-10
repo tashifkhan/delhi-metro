@@ -31,12 +31,14 @@ class StationSearchFilter(str, Enum):
 class MetroLine(BaseModel):
     """Line metadata returned by `/line_list`."""
 
+    model_config = ConfigDict(extra="allow")
+
     id: int
     name: str
     line_color: str
     line_code: str
     primary_color_code: str
-    secondary_color_code: str
+    secondary_color_code: str | None = None
     class_primary: str
     class_secondary: str | None = None
     start_station: str
@@ -103,7 +105,9 @@ class Platform(BaseModel):
 class Gate(BaseModel):
     """Gate metadata for station wayfinding."""
 
-    gate_name: str
+    model_config = ConfigDict(extra="allow")
+
+    gate_name: str | None = None
     gate_code: str | None = None
     location: str | None = None
     gate_latitude: float | None = None
@@ -121,6 +125,8 @@ class Gate(BaseModel):
 
 class Lift(BaseModel):
     """Lift/escalator detail for accessibility UI."""
+
+    model_config = ConfigDict(extra="allow")
 
     lift_type: str | None = None
     name: str | None = None
@@ -211,34 +217,42 @@ class JourneyFareWithRoute(BaseModel):
 class TrainRouteDetail(BaseModel):
     """Train timing detail for a single hop/segment."""
 
-    start_st: str
-    start_time: str
-    end_st: str
-    end_time: str
+    model_config = ConfigDict(extra="allow")
+
+    start_st: str | None = None
+    start_time: str | None = None
+    end_st: str | None = None
+    end_time: str | None = None
     interchange_time: str | int | float | None = None
-    start_station_name: str
-    end_station_name: str
+    start_station_name: str | None = None
+    end_station_name: str | None = None
 
 
 class FirstTrainInfo(BaseModel):
     """First train result structure."""
 
-    endstation_from_first_train_estimated_time: str
+    model_config = ConfigDict(extra="allow")
+
+    endstation_from_first_train_estimated_time: str | None = None
     first_train_route_detail: list[TrainRouteDetail] = Field(default_factory=list)
 
 
 class LastTrainInfo(BaseModel):
     """Last train result structure."""
 
-    endstation_from_last_train_estimated_time: str
+    model_config = ConfigDict(extra="allow")
+
+    endstation_from_last_train_estimated_time: str | None = None
     last_train_route_detail: list[TrainRouteDetail] = Field(default_factory=list)
 
 
 class FirstLastTrainResponse(BaseModel):
     """First and last train timings for a route strategy."""
 
-    first_train: FirstTrainInfo
-    last_train: LastTrainInfo
+    model_config = ConfigDict(extra="allow")
+
+    first_train: FirstTrainInfo | None = None
+    last_train: LastTrainInfo | None = None
 
 
 class JourneyPlan(BaseModel):

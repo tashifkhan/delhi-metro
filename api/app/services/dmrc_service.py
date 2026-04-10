@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from urllib.parse import quote
 from typing import TypeVar
 
@@ -52,6 +53,16 @@ class DmrcService:
         return code.strip().upper()
 
     @staticmethod
+    def _format_journey_time(journey_time: datetime) -> str:
+        """Format datetime for DMRC `/station_route/.../{timestamp}` path."""
+
+        local_time = journey_time
+        if journey_time.tzinfo is not None:
+            local_time = journey_time.astimezone().replace(tzinfo=None)
+
+        return local_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+
+    @staticmethod
     def _validate_with_adapter[T](adapter: TypeAdapter[T], payload: object) -> T:
         """Validate payload and normalize pydantic failures as upstream errors."""
 
@@ -83,11 +94,42 @@ class DmrcService:
         query: str,
         search_filter: StationSearchFilter,
     ) -> list[StationSearchResult]:
-        encoded_query = quote(query.strip())
+        normalized_query = query.strip()
+        if not normalized_query:
+            return await self.all_stations()
+
+        encoded_query = quote(normalized_query)
         payload = await self._client.get_json_list(
             f"station_by_keyword/{search_filter.value}/{encoded_query}"
         )
         return self._validate_with_adapter(self._station_search_adapter, payload)
+
+    async def all_stations(self) -> list[StationSearchResult]:
+        """Return a de-duplicated station catalog across all DMRC lines."""
+
+        lines = await self.get_lines()
+        stations_per_line = await asyncio.gather(
+            *(self.stations_by_line(line.line_code) for line in lines)
+        )
+
+        station_by_code: dict[str, StationSearchResult] = {}
+        for line_stations in stations_per_line:
+            for station in line_stations:
+                normalized_code = self._normalize_station_code(station.station_code)
+                if normalized_code in station_by_code:
+                    continue
+
+                station_by_code[normalized_code] = StationSearchResult(
+                    id=station.id,
+                    station_name=station.station_name,
+                    station_code=normalized_code,
+                    station_facility=station.station_facility,
+                )
+
+        return sorted(
+            station_by_code.values(),
+            key=lambda item: (item.station_name.upper(), item.station_code),
+        )
 
     async def stations_by_line(self, line_code: str) -> list[StationByLineItem]:
         payload = await self._client.get_json_list(
@@ -106,12 +148,26 @@ class DmrcService:
         from_station_code: str,
         to_station_code: str,
         strategy: RouteStrategy,
+        journey_time: datetime | None = None,
     ) -> JourneyFareWithRoute:
         from_code = self._normalize_station_code(from_station_code)
         to_code = self._normalize_station_code(to_station_code)
-        payload = await self._client.get_json_dict(
-            f"new_fare_with_route/{from_code}/{to_code}/{strategy.value}/"
-        )
+
+        if journey_time is None:
+            payload = await self._client.get_json_dict(
+                f"new_fare_with_route/{from_code}/{to_code}/{strategy.value}/"
+            )
+        else:
+            formatted_time = self._format_journey_time(journey_time)
+            payload = await self._client.get_json_dict(
+                f"station_route/{from_code}/{to_code}/{strategy.value}/{formatted_time}"
+            )
+
+            if "fare" in payload:
+                timed_fare = payload.get("fare")
+                payload["weekday_fare"] = timed_fare
+                payload["weekend_fare"] = timed_fare
+
         return self._validate_model(JourneyFareWithRoute, payload)
 
     async def first_last_train(
@@ -133,6 +189,7 @@ class DmrcService:
         *,
         from_station_code: str,
         to_station_code: str,
+        journey_time: datetime | None = None,
     ) -> JourneyPlan:
         """Build combined payload for both route strategy tabs."""
 
@@ -146,11 +203,13 @@ class DmrcService:
                 from_station_code=from_station_code,
                 to_station_code=to_station_code,
                 strategy=RouteStrategy.LEAST_DISTANCE,
+                journey_time=journey_time,
             ),
             self.journey_fare_with_route(
                 from_station_code=from_station_code,
                 to_station_code=to_station_code,
                 strategy=RouteStrategy.MINIMUM_INTERCHANGE,
+                journey_time=journey_time,
             ),
             self.first_last_train(
                 from_station_code=from_station_code,

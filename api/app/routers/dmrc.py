@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, Query
@@ -81,8 +82,13 @@ async def search_stations(
     service: Annotated[DmrcService, Depends(get_dmrc_service)],
     query: Annotated[
         str,
-        Query(min_length=2, description="Station name keyword to search."),
-    ],
+        Query(
+            min_length=0,
+            description=(
+                "Station name keyword to search. Empty query returns full station list."
+            ),
+        ),
+    ] = "",
     search_filter: Annotated[
         StationSearchFilter,
         Query(
@@ -161,6 +167,15 @@ async def get_fare_with_route(
         RouteStrategy,
         Query(description="Journey optimization strategy."),
     ] = RouteStrategy.LEAST_DISTANCE,
+    journey_time: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Optional departure datetime (ISO-8601). When provided, uses DMRC "
+                "`station_route` timed planning endpoint."
+            )
+        ),
+    ] = None,
 ) -> JourneyFareWithRoute:
     """Fetch fare and route for one strategy."""
 
@@ -168,6 +183,7 @@ async def get_fare_with_route(
         from_station_code=from_station_code,
         to_station_code=to_station_code,
         strategy=strategy,
+        journey_time=journey_time,
     )
 
 
@@ -223,12 +239,22 @@ async def get_complete_journey_plan(
         str,
         Query(min_length=2, description="Destination station code, e.g. VASI."),
     ],
+    journey_time: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Optional departure datetime (ISO-8601). When provided, fare/route "
+                "uses timed planning endpoint for both strategies."
+            )
+        ),
+    ] = None,
 ) -> JourneyPlan:
     """Fetch combined journey payload for both strategy tabs."""
 
     return await service.complete_journey_plan(
         from_station_code=from_station_code,
         to_station_code=to_station_code,
+        journey_time=journey_time,
     )
 
 
@@ -251,6 +277,15 @@ async def get_fare_with_route_least_distance(
         str,
         Query(min_length=2, description="Destination station code, e.g. VASI."),
     ],
+    journey_time: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Optional departure datetime (ISO-8601). When provided, uses DMRC "
+                "timed planning endpoint."
+            )
+        ),
+    ] = None,
 ) -> JourneyFareWithRoute:
     """Return least-distance route and fare."""
 
@@ -258,6 +293,7 @@ async def get_fare_with_route_least_distance(
         from_station_code=from_station_code,
         to_station_code=to_station_code,
         strategy=RouteStrategy.LEAST_DISTANCE,
+        journey_time=journey_time,
     )
 
 
@@ -280,6 +316,15 @@ async def get_fare_with_route_minimum_interchange(
         str,
         Query(min_length=2, description="Destination station code, e.g. VASI."),
     ],
+    journey_time: Annotated[
+        datetime | None,
+        Query(
+            description=(
+                "Optional departure datetime (ISO-8601). When provided, uses DMRC "
+                "timed planning endpoint."
+            )
+        ),
+    ] = None,
 ) -> JourneyFareWithRoute:
     """Return minimum-interchange route and fare."""
 
@@ -287,6 +332,7 @@ async def get_fare_with_route_minimum_interchange(
         from_station_code=from_station_code,
         to_station_code=to_station_code,
         strategy=RouteStrategy.MINIMUM_INTERCHANGE,
+        journey_time=journey_time,
     )
 
 
