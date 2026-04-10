@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.common import AssetImage, StationFacility
 
@@ -43,8 +43,16 @@ class MetroLine(BaseModel):
     class_secondary: str | None = None
     start_station: str
     end_station: str
-    show_in_frontend: bool
+    show_in_frontend: bool | None = None
     status: str
+
+
+class StationRef(BaseModel):
+    """Station reference object sometimes returned in platform direction fields."""
+
+    id: int
+    station_name: str
+    station_code: str
 
 
 class NotificationType(BaseModel):
@@ -88,12 +96,10 @@ class StationByLineItem(StationSearchResult):
 class Platform(BaseModel):
     """Platform information for a station."""
 
-    model_config = ConfigDict(extra="allow")
-
-    platform_name: str | None = None
-    train_towards: str | None = None
+    platform_name: str
+    train_towards: str | StationRef | None = None
     platform_code: str | None = None
-    train_towards_second: str | None = None
+    train_towards_second: str | StationRef | None = None
 
 
 class Gate(BaseModel):
@@ -109,6 +115,13 @@ class Gate(BaseModel):
     divyang_friendly: bool | None = None
     status: str | None = None
 
+    @field_validator("gate_latitude", "gate_longitude", mode="before")
+    @classmethod
+    def _normalize_blank_geo(cls, value: object) -> object:
+        if value == "":
+            return None
+        return value
+
 
 class Lift(BaseModel):
     """Lift/escalator detail for accessibility UI."""
@@ -119,13 +132,13 @@ class Lift(BaseModel):
     name: str | None = None
     description_location: str | None = None
     code: str | None = None
-    from_gate_code: str | None = None
-    to_gate_code: str | None = None
-    from_platform_code: str | None = None
-    to_platform_code: str | None = None
+    from_gate_code: str | list[str] | None = None
+    to_gate_code: str | list[str] | None = None
+    from_platform_code: str | list[str] | None = None
+    to_platform_code: str | list[str] | None = None
     available_outside_inside: str | None = None
     divyang_friendly: bool | None = None
-    status: str | None = None
+    status: str | bool | None = None
     note: str | None = None
     last_update: str | None = None
 
