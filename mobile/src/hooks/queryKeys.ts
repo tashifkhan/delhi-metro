@@ -18,4 +18,6 @@ export const queryKeys = {
     ['dmrc', 'maps', 'family-assets', family, format] as const,
   mapFamilyPrimary: (family: MapFamily) => ['dmrc', 'maps', 'family-primary', family] as const,
   mapAssetById: (assetId: string) => ['dmrc', 'maps', 'asset-by-id', assetId] as const,
+  stationsByLine: (lineCode: string) => ['dmrc', 'stations-by-line', lineCode] as const,
+  stationDetail: (stationCode: string) => ['dmrc', 'station-detail', stationCode] as const,
 };
