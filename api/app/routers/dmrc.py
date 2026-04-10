@@ -81,7 +81,12 @@ async def search_stations(
     service: Annotated[DmrcService, Depends(get_dmrc_service)],
     query: Annotated[
         str,
-        Query(min_length=2, description="Station name keyword to search."),
+        Query(
+            min_length=0,
+            description=(
+                "Station name keyword to search. Empty query returns full station list."
+            ),
+        ),
     ],
     search_filter: Annotated[
         StationSearchFilter,

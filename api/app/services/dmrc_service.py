@@ -83,11 +83,42 @@ class DmrcService:
         query: str,
         search_filter: StationSearchFilter,
     ) -> list[StationSearchResult]:
-        encoded_query = quote(query.strip())
+        normalized_query = query.strip()
+        if not normalized_query:
+            return await self.all_stations()
+
+        encoded_query = quote(normalized_query)
         payload = await self._client.get_json_list(
             f"station_by_keyword/{search_filter.value}/{encoded_query}"
         )
         return self._validate_with_adapter(self._station_search_adapter, payload)
+
+    async def all_stations(self) -> list[StationSearchResult]:
+        """Return a de-duplicated station catalog across all DMRC lines."""
+
+        lines = await self.get_lines()
+        stations_per_line = await asyncio.gather(
+            *(self.stations_by_line(line.line_code) for line in lines)
+        )
+
+        station_by_code: dict[str, StationSearchResult] = {}
+        for line_stations in stations_per_line:
+            for station in line_stations:
+                normalized_code = self._normalize_station_code(station.station_code)
+                if normalized_code in station_by_code:
+                    continue
+
+                station_by_code[normalized_code] = StationSearchResult(
+                    id=station.id,
+                    station_name=station.station_name,
+                    station_code=normalized_code,
+                    station_facility=station.station_facility,
+                )
+
+        return sorted(
+            station_by_code.values(),
+            key=lambda item: (item.station_name.upper(), item.station_code),
+        )
 
     async def stations_by_line(self, line_code: str) -> list[StationByLineItem]:
         payload = await self._client.get_json_list(
