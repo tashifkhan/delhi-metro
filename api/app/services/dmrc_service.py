@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 from urllib.parse import quote
 from typing import TypeVar
 
@@ -50,6 +51,16 @@ class DmrcService:
         """Normalize station codes to DMRC expected format (uppercase, trimmed)."""
 
         return code.strip().upper()
+
+    @staticmethod
+    def _format_journey_time(journey_time: datetime) -> str:
+        """Format datetime for DMRC `/station_route/.../{timestamp}` path."""
+
+        local_time = journey_time
+        if journey_time.tzinfo is not None:
+            local_time = journey_time.astimezone().replace(tzinfo=None)
+
+        return local_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
 
     @staticmethod
     def _validate_with_adapter[T](adapter: TypeAdapter[T], payload: object) -> T:
@@ -137,12 +148,26 @@ class DmrcService:
         from_station_code: str,
         to_station_code: str,
         strategy: RouteStrategy,
+        journey_time: datetime | None = None,
     ) -> JourneyFareWithRoute:
         from_code = self._normalize_station_code(from_station_code)
         to_code = self._normalize_station_code(to_station_code)
-        payload = await self._client.get_json_dict(
-            f"new_fare_with_route/{from_code}/{to_code}/{strategy.value}/"
-        )
+
+        if journey_time is None:
+            payload = await self._client.get_json_dict(
+                f"new_fare_with_route/{from_code}/{to_code}/{strategy.value}/"
+            )
+        else:
+            formatted_time = self._format_journey_time(journey_time)
+            payload = await self._client.get_json_dict(
+                f"station_route/{from_code}/{to_code}/{strategy.value}/{formatted_time}"
+            )
+
+            if "fare" in payload:
+                timed_fare = payload.get("fare")
+                payload["weekday_fare"] = timed_fare
+                payload["weekend_fare"] = timed_fare
+
         return self._validate_model(JourneyFareWithRoute, payload)
 
     async def first_last_train(
@@ -164,6 +189,7 @@ class DmrcService:
         *,
         from_station_code: str,
         to_station_code: str,
+        journey_time: datetime | None = None,
     ) -> JourneyPlan:
         """Build combined payload for both route strategy tabs."""
 
@@ -177,11 +203,13 @@ class DmrcService:
                 from_station_code=from_station_code,
                 to_station_code=to_station_code,
                 strategy=RouteStrategy.LEAST_DISTANCE,
+                journey_time=journey_time,
             ),
             self.journey_fare_with_route(
                 from_station_code=from_station_code,
                 to_station_code=to_station_code,
                 strategy=RouteStrategy.MINIMUM_INTERCHANGE,
+                journey_time=journey_time,
             ),
             self.first_last_train(
                 from_station_code=from_station_code,
