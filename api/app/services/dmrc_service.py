@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from time import monotonic
 from datetime import datetime
 from urllib.parse import quote
 from typing import TypeVar
@@ -22,6 +23,7 @@ from app.schemas.dmrc import (
     RouteStrategy,
     StationByLineItem,
     StationDetail,
+    StationLineBadge,
     StationSearchFilter,
     StationSearchResult,
 )
@@ -42,9 +44,12 @@ class DmrcService:
     _notification_adapter = TypeAdapter(list[PassengerNotification])
     _station_search_adapter = TypeAdapter(list[StationSearchResult])
     _station_by_line_adapter = TypeAdapter(list[StationByLineItem])
+    _station_line_badges_cache_ttl_seconds = 300.0
 
     def __init__(self, client: DmrcApiClient) -> None:
         self._client = client
+        self._station_line_badges_cache: dict[str, list[StationLineBadge]] | None = None
+        self._station_line_badges_cache_expiry = 0.0
 
     @staticmethod
     def _normalize_station_code(code: str) -> str:
@@ -80,6 +85,76 @@ class DmrcService:
         except ValidationError as exc:
             raise UpstreamApiError("DMRC payload validation failed") from exc
 
+    @staticmethod
+    def _line_badge_from_line(line: MetroLine) -> StationLineBadge:
+        return StationLineBadge(
+            line_id=line.id,
+            line_code=line.line_code,
+            line_name=line.name,
+            line_color=line.line_color,
+            primary_color_code=line.primary_color_code,
+        )
+
+    async def _get_station_line_badges_map(self) -> dict[str, list[StationLineBadge]]:
+        now = monotonic()
+        if (
+            self._station_line_badges_cache is not None
+            and now < self._station_line_badges_cache_expiry
+        ):
+            return self._station_line_badges_cache
+
+        lines = await self.get_lines()
+        stations_per_line = await asyncio.gather(
+            *(self.stations_by_line(line.line_code) for line in lines)
+        )
+
+        badges_by_station_code: dict[str, list[StationLineBadge]] = {}
+        seen_pairs: set[tuple[str, str]] = set()
+
+        for line, line_stations in zip(lines, stations_per_line):
+            line_badge = self._line_badge_from_line(line)
+            for station in line_stations:
+                normalized_code = self._normalize_station_code(station.station_code)
+                pair = (normalized_code, line_badge.line_code)
+                if pair in seen_pairs:
+                    continue
+
+                badges_by_station_code.setdefault(normalized_code, []).append(
+                    line_badge
+                )
+                seen_pairs.add(pair)
+
+        for badges in badges_by_station_code.values():
+            badges.sort(key=lambda item: (item.line_id, item.line_code))
+
+        self._station_line_badges_cache = badges_by_station_code
+        self._station_line_badges_cache_expiry = (
+            now + self._station_line_badges_cache_ttl_seconds
+        )
+        return badges_by_station_code
+
+    async def _with_station_line_badges(
+        self,
+        stations: list[StationSearchResult],
+    ) -> list[StationSearchResult]:
+        if not stations:
+            return stations
+
+        badges_by_station_code = await self._get_station_line_badges_map()
+        return [
+            station.model_copy(
+                update={
+                    "metro_lines": list(
+                        badges_by_station_code.get(
+                            self._normalize_station_code(station.station_code),
+                            [],
+                        )
+                    )
+                }
+            )
+            for station in stations
+        ]
+
     async def get_lines(self) -> list[MetroLine]:
         payload = await self._client.get_json_list("line_list")
         return self._validate_with_adapter(self._line_adapter, payload)
@@ -102,7 +177,8 @@ class DmrcService:
         payload = await self._client.get_json_list(
             f"station_by_keyword/{search_filter.value}/{encoded_query}"
         )
-        return self._validate_with_adapter(self._station_search_adapter, payload)
+        stations = self._validate_with_adapter(self._station_search_adapter, payload)
+        return await self._with_station_line_badges(stations)
 
     async def all_stations(self) -> list[StationSearchResult]:
         """Return a de-duplicated station catalog across all DMRC lines."""
@@ -113,9 +189,21 @@ class DmrcService:
         )
 
         station_by_code: dict[str, StationSearchResult] = {}
-        for line_stations in stations_per_line:
+        station_line_badges_by_code: dict[str, list[StationLineBadge]] = {}
+        seen_station_line_pairs: set[tuple[str, str]] = set()
+
+        for line, line_stations in zip(lines, stations_per_line):
+            line_badge = self._line_badge_from_line(line)
             for station in line_stations:
                 normalized_code = self._normalize_station_code(station.station_code)
+
+                pair = (normalized_code, line_badge.line_code)
+                if pair not in seen_station_line_pairs:
+                    station_line_badges_by_code.setdefault(normalized_code, []).append(
+                        line_badge
+                    )
+                    seen_station_line_pairs.add(pair)
+
                 if normalized_code in station_by_code:
                     continue
 
@@ -124,7 +212,17 @@ class DmrcService:
                     station_name=station.station_name,
                     station_code=normalized_code,
                     station_facility=station.station_facility,
+                    metro_lines=[],
                 )
+
+        for station_code, badges in station_line_badges_by_code.items():
+            badges.sort(key=lambda item: (item.line_id, item.line_code))
+            station = station_by_code.get(station_code)
+            if station is None:
+                continue
+            station_by_code[station_code] = station.model_copy(
+                update={"metro_lines": list(badges)}
+            )
 
         return sorted(
             station_by_code.values(),
