@@ -10,9 +10,14 @@ export const queryKeys = {
     ['dmrc', 'first-last-train', fromStationCode, toStationCode, strategy] as const,
   journeyPlan: (fromStationCode: string, toStationCode: string) =>
     ['dmrc', 'journey-plan', fromStationCode, toStationCode] as const,
+  journeyPlanCached: (fromStationCode: string, toStationCode: string) =>
+    ['dmrc', 'journey-plan-cached', fromStationCode, toStationCode] as const,
+  popularRoutes: (limit: number) => ['dmrc', 'popular-routes', limit] as const,
   mapAssets: ['dmrc', 'maps', 'assets'] as const,
   mapFamilyAssets: (family: MapFamily, format: MapFormat) =>
     ['dmrc', 'maps', 'family-assets', family, format] as const,
   mapFamilyPrimary: (family: MapFamily) => ['dmrc', 'maps', 'family-primary', family] as const,
   mapAssetById: (assetId: string) => ['dmrc', 'maps', 'asset-by-id', assetId] as const,
+  stationsByLine: (lineCode: string) => ['dmrc', 'stations-by-line', lineCode] as const,
+  stationDetail: (stationCode: string) => ['dmrc', 'station-detail', stationCode] as const,
 };
