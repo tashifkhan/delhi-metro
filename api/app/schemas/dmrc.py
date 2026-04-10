@@ -223,7 +223,7 @@ class TrainRouteDetail(BaseModel):
     start_time: str | None = None
     end_st: str | None = None
     end_time: str | None = None
-    interchange_time: str | None = None
+    interchange_time: str | int | float | None = None
     start_station_name: str | None = None
     end_station_name: str | None = None
 

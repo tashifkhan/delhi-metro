@@ -11,8 +11,14 @@ export interface MetroLine {
   class_secondary: string | null;
   start_station: string;
   end_station: string;
-  show_in_frontend: boolean;
+  show_in_frontend: boolean | null;
   status: string;
+}
+
+export interface StationRef {
+  id: number;
+  station_name: string;
+  station_code: string;
 }
 
 export interface NotificationImage {
@@ -87,7 +93,7 @@ export interface FirstLastTrainSegment {
   start_time: string;
   end_st: string;
   end_time: string;
-  interchange_time: string;
+  interchange_time: string | number | null;
   start_station_name: string;
   end_station_name: string;
 }
@@ -125,7 +131,8 @@ export interface StationByLineItem {
 
 export interface Platform {
   platform_name: string;
-  train_towards: string | null;
+  train_towards: string | StationRef | null;
+  train_towards_second: string | StationRef | null;
   platform_code: string | null;
 }
 
@@ -144,7 +151,7 @@ export interface Lift {
   name: string | null;
   description_location: string | null;
   code: string | null;
-  status: string | null;
+  status: string | boolean | number | null;
 }
 
 export interface StationDetail {

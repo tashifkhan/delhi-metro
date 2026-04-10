@@ -56,6 +56,41 @@ function InfoRow({ label, value }: { label: string; value: string | null | undef
   );
 }
 
+function getPlatformDirection(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'station_name' in value &&
+    typeof (value as { station_name?: unknown }).station_name === 'string'
+  ) {
+    return (value as { station_name: string }).station_name;
+  }
+
+  return null;
+}
+
+function getLiftStatusMeta(status: unknown): { label: string; isWorking: boolean } | null {
+  if (status === null || status === undefined || status === '') return null;
+
+  if (typeof status === 'boolean') {
+    return {
+      label: status ? 'Working' : 'Not working',
+      isWorking: status,
+    };
+  }
+
+  const label = String(status).trim();
+  if (!label) return null;
+
+  return {
+    label,
+    isWorking: ['working', 'operational', 'active', 'true', '1'].includes(label.toLowerCase()),
+  };
+}
+
 export function StationDetailScreen() {
   const route = useRoute<Route>();
   const { stationCode } = route.params;
@@ -121,8 +156,10 @@ export function StationDetailScreen() {
           {station.platforms.map((platform, i) => (
             <View key={i} style={styles.itemCard}>
               <Text style={styles.itemTitle}>{platform.platform_name}</Text>
-              {platform.train_towards && (
-                <Text style={styles.itemSub}>Towards: {platform.train_towards}</Text>
+              {getPlatformDirection(platform.train_towards) && (
+                <Text style={styles.itemSub}>
+                  Towards: {getPlatformDirection(platform.train_towards)}
+                </Text>
               )}
             </View>
           ))}
@@ -149,24 +186,28 @@ export function StationDetailScreen() {
       {/* Lifts */}
       {station.lifts.length > 0 && (
         <Section title="Lifts" icon="arrow-up-outline" count={station.lifts.length}>
-          {station.lifts.map((lift, i) => (
-            <View key={i} style={styles.itemCard}>
-              <Text style={styles.itemTitle}>{lift.name || lift.lift_type || 'Lift'}</Text>
-              {lift.description_location && (
-                <Text style={styles.itemSub}>{lift.description_location}</Text>
-              )}
-              {lift.status && (
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: lift.status.toLowerCase() === 'working' ? colors.success : colors.error },
-                  ]}
-                >
-                  {lift.status}
-                </Text>
-              )}
-            </View>
-          ))}
+          {station.lifts.map((lift, i) => {
+            const liftStatus = getLiftStatusMeta(lift.status);
+
+            return (
+              <View key={i} style={styles.itemCard}>
+                <Text style={styles.itemTitle}>{lift.name || lift.lift_type || 'Lift'}</Text>
+                {lift.description_location && (
+                  <Text style={styles.itemSub}>{lift.description_location}</Text>
+                )}
+                {liftStatus && (
+                  <Text
+                    style={[
+                      styles.statusText,
+                      { color: liftStatus.isWorking ? colors.success : colors.error },
+                    ]}
+                  >
+                    {liftStatus.label}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
         </Section>
       )}
 
