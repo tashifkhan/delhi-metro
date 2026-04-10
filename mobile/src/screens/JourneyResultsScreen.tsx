@@ -16,6 +16,10 @@ import { colors, spacing, typography } from '../theme';
 
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
 
+function normalizeLineKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
 export function JourneyResultsScreen() {
   const route = useRoute<Route>();
   const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
@@ -39,7 +43,9 @@ export function JourneyResultsScreen() {
     const map = new Map<string, string>();
     if (lines) {
       for (const line of lines) {
-        map.set(line.name, line.primary_color_code);
+        map.set(normalizeLineKey(line.name), line.primary_color_code);
+        map.set(normalizeLineKey(line.line_color), line.primary_color_code);
+        map.set(normalizeLineKey(line.line_code), line.primary_color_code);
       }
     }
     return map;
@@ -89,7 +95,7 @@ export function JourneyResultsScreen() {
             <RouteSegmentView
               key={`${segment.line}-${index}`}
               segment={segment}
-              lineColor={lineColorMap.get(segment.line) ?? colors.primary}
+              lineColor={lineColorMap.get(normalizeLineKey(segment.line)) ?? colors.primary}
               isLast={index === fare.route.length - 1}
             />
           ))}
