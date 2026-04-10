@@ -56,10 +56,9 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
           ) : null}
         </View>
 
-        {!debouncedQuery || debouncedQuery.length < 2 ? (
+        {isLoading ? (
           <View style={styles.placeholder}>
-            <Ionicons name="train-outline" size={48} color={colors.textTertiary} />
-            <Text style={styles.placeholderText}>Type at least 2 characters to search</Text>
+            <Text style={styles.placeholderText}>Loading stations...</Text>
           </View>
         ) : (
           <FlatList

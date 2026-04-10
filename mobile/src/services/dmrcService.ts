@@ -16,6 +16,7 @@ export interface JourneyRequest {
   fromStationCode: string;
   toStationCode: string;
   strategy: RouteStrategy;
+  journeyTime?: string;
 }
 
 export class DmrcService {
@@ -44,6 +45,7 @@ export class DmrcService {
         from_station_code: request.fromStationCode,
         to_station_code: request.toStationCode,
         strategy: request.strategy,
+        journey_time: request.journeyTime,
       },
     });
   }
@@ -58,11 +60,16 @@ export class DmrcService {
     });
   }
 
-  getJourneyPlan(fromStationCode: string, toStationCode: string): Promise<JourneyPlan> {
+  getJourneyPlan(
+    fromStationCode: string,
+    toStationCode: string,
+    journeyTime?: string,
+  ): Promise<JourneyPlan> {
     return this.apiClient.get<JourneyPlan>('/dmrc/journeys/complete', {
       query: {
         from_station_code: fromStationCode,
         to_station_code: toStationCode,
+        journey_time: journeyTime,
       },
     });
   }
@@ -70,7 +77,12 @@ export class DmrcService {
   async getJourneyPlanWithLocalCache(
     fromStationCode: string,
     toStationCode: string,
+    journeyTime?: string,
   ): Promise<JourneyPlan> {
+    if (journeyTime) {
+      return this.getJourneyPlan(fromStationCode, toStationCode, journeyTime);
+    }
+
     try {
       const plan = await this.getJourneyPlan(fromStationCode, toStationCode);
       await popularRoutesRepository.saveJourneyPlan(fromStationCode, toStationCode, plan);

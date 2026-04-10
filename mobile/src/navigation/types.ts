@@ -7,6 +7,7 @@ export type HomeStackParamList = {
     toCode: string;
     fromName: string;
     toName: string;
+    journeyTime?: string;
   };
   StationDetail: { stationCode: string; stationName: string };
 };

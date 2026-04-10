@@ -22,10 +22,11 @@ export function useNotificationsQuery() {
 
 export function useStationSearchQuery(query: string) {
   const { dmrcService } = useDI();
+  const normalizedQuery = query.trim();
+
   return useQuery({
-    queryKey: queryKeys.stationsSearch(query),
-    queryFn: () => dmrcService.searchStations(query),
-    enabled: query.trim().length > 1,
+    queryKey: queryKeys.stationsSearch(normalizedQuery),
+    queryFn: () => dmrcService.searchStations(normalizedQuery),
   });
 }
 
@@ -65,20 +66,29 @@ export function useFirstLastTrainQuery(
   });
 }
 
-export function useJourneyPlanQuery(fromStationCode: string, toStationCode: string) {
+export function useJourneyPlanQuery(
+  fromStationCode: string,
+  toStationCode: string,
+  journeyTime?: string,
+) {
   const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode),
-    queryFn: () => dmrcService.getJourneyPlan(fromStationCode, toStationCode),
+    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode, journeyTime),
+    queryFn: () => dmrcService.getJourneyPlan(fromStationCode, toStationCode, journeyTime),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
   });
 }
 
-export function useJourneyPlanCachedQuery(fromStationCode: string, toStationCode: string) {
+export function useJourneyPlanCachedQuery(
+  fromStationCode: string,
+  toStationCode: string,
+  journeyTime?: string,
+) {
   const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.journeyPlanCached(fromStationCode, toStationCode),
-    queryFn: () => dmrcService.getJourneyPlanWithLocalCache(fromStationCode, toStationCode),
+    queryKey: queryKeys.journeyPlanCached(fromStationCode, toStationCode, journeyTime),
+    queryFn: () =>
+      dmrcService.getJourneyPlanWithLocalCache(fromStationCode, toStationCode, journeyTime),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
     staleTime: 2 * 60_000,
   });

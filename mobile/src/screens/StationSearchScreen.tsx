@@ -20,8 +20,6 @@ export function StationSearchScreen() {
   const debouncedQuery = useDebounce(searchText, 300);
   const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
 
-  const showResults = debouncedQuery.length > 1;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -46,13 +44,7 @@ export function StationSearchScreen() {
         ) : null}
       </View>
 
-      {!showResults ? (
-        <EmptyState
-          title="Find a Station"
-          subtitle="Type at least 2 characters to search"
-          icon="train-outline"
-        />
-      ) : isLoading ? (
+      {isLoading ? (
         <LoadingState />
       ) : (
         <FlatList
@@ -73,7 +65,14 @@ export function StationSearchScreen() {
             />
           )}
           ListEmptyComponent={
-            <EmptyState title="No Results" subtitle={`No stations match "${debouncedQuery}"`} />
+            <EmptyState
+              title="No Results"
+              subtitle={
+                debouncedQuery.trim()
+                  ? `No stations match "${debouncedQuery.trim()}"`
+                  : 'No stations available'
+              }
+            />
           }
         />
       )}

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -22,8 +22,18 @@ export function HomeScreen() {
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
   const notifications = useNotificationsQuery();
+  const [departureOffsetMinutes, setDepartureOffsetMinutes] = useState(0);
 
   const canSearch = fromPicker.station && toPicker.station;
+
+  const departureTime = useMemo(() => {
+    if (departureOffsetMinutes === 0) return undefined;
+
+    const future = new Date(Date.now() + departureOffsetMinutes * 60_000);
+    const pad = (value: number) => String(value).padStart(2, '0');
+    const ms = String(future.getMilliseconds()).padStart(3, '0');
+    return `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}:${pad(future.getSeconds())}.${ms}`;
+  }, [departureOffsetMinutes]);
 
   const handleFindRoute = () => {
     if (!fromPicker.station || !toPicker.station) return;
@@ -32,6 +42,7 @@ export function HomeScreen() {
       toCode: toPicker.station.code,
       fromName: fromPicker.station.name,
       toName: toPicker.station.name,
+      journeyTime: departureTime,
     });
   };
 
@@ -103,6 +114,36 @@ export function HomeScreen() {
           <Ionicons name="navigate" size={18} color={colors.white} />
           <Text style={styles.findButtonText}>Find Route</Text>
         </Pressable>
+
+        <View style={styles.timeOptions}>
+          <Text style={styles.timeOptionsLabel}>Departure time</Text>
+          <View style={styles.timeOptionsRow}>
+            {[
+              { label: 'Now', value: 0 },
+              { label: '+15m', value: 15 },
+              { label: '+30m', value: 30 },
+              { label: '+1h', value: 60 },
+            ].map((option) => (
+              <Pressable
+                key={option.label}
+                style={[
+                  styles.timeChip,
+                  departureOffsetMinutes === option.value && styles.timeChipActive,
+                ]}
+                onPress={() => setDepartureOffsetMinutes(option.value)}
+              >
+                <Text
+                  style={[
+                    styles.timeChipText,
+                    departureOffsetMinutes === option.value && styles.timeChipTextActive,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
       </View>
 
       {/* Popular Routes */}
@@ -250,6 +291,40 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: typography.sizes.base,
     fontWeight: typography.weights.bold,
+  },
+  timeOptions: {
+    marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  timeOptionsLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
+  },
+  timeOptionsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  timeChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  timeChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  timeChipText: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+    fontWeight: typography.weights.medium,
+  },
+  timeChipTextActive: {
+    color: colors.primary,
+    fontWeight: typography.weights.semibold,
   },
   popularList: {
     gap: spacing.sm,

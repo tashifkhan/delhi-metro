@@ -18,11 +18,22 @@ type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
 
 export function JourneyResultsScreen() {
   const route = useRoute<Route>();
-  const { fromCode, toCode, fromName, toName } = route.params;
+  const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
   const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
 
-  const { data: plan, isLoading, isError, refetch } = useJourneyPlanCachedQuery(fromCode, toCode);
+  const { data: plan, isLoading, isError, refetch } = useJourneyPlanCachedQuery(
+    fromCode,
+    toCode,
+    journeyTime,
+  );
   const { data: lines } = useMetroLinesQuery();
+
+  const selectedTimeLabel = useMemo(() => {
+    if (!journeyTime) return 'Now';
+    const parsed = new Date(journeyTime);
+    if (Number.isNaN(parsed.getTime())) return 'Custom time';
+    return parsed.toLocaleString();
+  }, [journeyTime]);
 
   const lineColorMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -60,6 +71,12 @@ export function JourneyResultsScreen() {
 
       {/* Strategy toggle */}
       <StrategyToggle active={strategy} onChange={setStrategy} />
+
+      <View style={styles.timePill}>
+        <Ionicons name="time-outline" size={16} color={colors.primary} />
+        <Text style={styles.timePillLabel}>Departure</Text>
+        <Text style={styles.timePillValue}>{selectedTimeLabel}</Text>
+      </View>
 
       {/* Fare summary */}
       <JourneyFareSummary fare={fare} />
@@ -132,5 +149,26 @@ const styles = StyleSheet.create({
   },
   routeSegments: {
     gap: spacing.sm,
+  },
+  timePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.sm,
+  },
+  timePillLabel: {
+    fontSize: typography.sizes.sm,
+    color: colors.textSecondary,
+  },
+  timePillValue: {
+    fontSize: typography.sizes.sm,
+    fontWeight: typography.weights.semibold,
+    color: colors.text,
+    marginLeft: 'auto',
   },
 });
