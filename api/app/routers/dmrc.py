@@ -88,7 +88,7 @@ async def search_stations(
                 "Station name keyword to search. Empty query returns full station list."
             ),
         ),
-    ],
+    ] = "",
     search_filter: Annotated[
         StationSearchFilter,
         Query(
