@@ -1,5 +1,9 @@
-import { createContext, useContext, useMemo } from 'react';
-import { useColorScheme } from 'react-native';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { Platform, useColorScheme } from 'react-native';
+import {
+  isDynamicThemeSupported,
+  useMaterial3Theme,
+} from '@pchmn/expo-material3-theme';
 import {
   MD3DarkTheme,
   MD3LightTheme,
@@ -9,8 +13,30 @@ import {
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
+  type Theme as NavigationTheme,
 } from '@react-navigation/native';
 import { lightScheme, darkScheme } from './colors';
+
+const IS_ANDROID_12_PLUS =
+  Platform.OS === 'android' &&
+  typeof Platform.Version === 'number' &&
+  Platform.Version >= 31;
+const SHOULD_USE_DYNAMIC_THEME = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
+const FALLBACK_SOURCE_COLOR = '#005FAF';
+
+function createPaperTheme(
+  isDark: boolean,
+  scheme: Partial<MD3Theme['colors']>,
+): MD3Theme {
+  const baseTheme = isDark ? MD3DarkTheme : MD3LightTheme;
+  return {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      ...scheme,
+    },
+  };
+}
 
 // Build Paper themes
 export const paperLightTheme: MD3Theme = {
@@ -72,29 +98,72 @@ export interface SemanticColors {
 
 interface AppTheme {
   paperTheme: MD3Theme;
-  navTheme: typeof navigationLightTheme;
+  navTheme: NavigationTheme;
   isDark: boolean;
   semantic: SemanticColors;
 }
 
 const ThemeContext = createContext<AppTheme>({
   paperTheme: paperLightTheme,
-  navTheme: navigationLightTheme,
+  navTheme: NavigationDefaultTheme,
   isDark: false,
   semantic: lightScheme,
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const scheme = useColorScheme();
+  const { theme: materialTheme } = useMaterial3Theme({
+    fallbackSourceColor: FALLBACK_SOURCE_COLOR,
+  });
+
   const value = useMemo<AppTheme>(() => {
     const isDark = scheme === 'dark';
+    const lightMaterialScheme: Partial<MD3Theme['colors']> =
+      SHOULD_USE_DYNAMIC_THEME ? materialTheme.light : lightScheme;
+    const darkMaterialScheme: Partial<MD3Theme['colors']> =
+      SHOULD_USE_DYNAMIC_THEME ? materialTheme.dark : darkScheme;
+
+    const materialLightTheme = createPaperTheme(false, lightMaterialScheme);
+    const materialDarkTheme = createPaperTheme(true, darkMaterialScheme);
+
+    const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
+      reactNavigationLight: NavigationDefaultTheme,
+      reactNavigationDark: NavigationDarkTheme,
+      materialLight: materialLightTheme,
+      materialDark: materialDarkTheme,
+    });
+
+    const navigationLightTheme: NavigationTheme = {
+      ...navLight,
+      colors: {
+        ...navLight.colors,
+        background: materialLightTheme.colors.background,
+        card: materialLightTheme.colors.surface,
+        text: materialLightTheme.colors.onSurface,
+        border: materialLightTheme.colors.outlineVariant,
+        primary: materialLightTheme.colors.primary,
+      },
+    };
+
+    const navigationDarkTheme: NavigationTheme = {
+      ...navDark,
+      colors: {
+        ...navDark.colors,
+        background: materialDarkTheme.colors.background,
+        card: materialDarkTheme.colors.elevation.level2,
+        text: materialDarkTheme.colors.onSurface,
+        border: materialDarkTheme.colors.outlineVariant,
+        primary: materialDarkTheme.colors.primary,
+      },
+    };
+
     return {
-      paperTheme: isDark ? paperDarkTheme : paperLightTheme,
+      paperTheme: isDark ? materialDarkTheme : materialLightTheme,
       navTheme: isDark ? navigationDarkTheme : navigationLightTheme,
       isDark,
       semantic: isDark ? darkScheme : lightScheme,
     };
-  }, [scheme]);
+  }, [materialTheme.dark, materialTheme.light, scheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -102,3 +171,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useAppTheme() {
   return useContext(ThemeContext);
 }
+
+export const themeRuntimeConfig = {
+  isAndroid12Plus: IS_ANDROID_12_PLUS,
+  shouldUseDynamicTheme: SHOULD_USE_DYNAMIC_THEME,
+  fallbackSourceColor: FALLBACK_SOURCE_COLOR,
+} as const;
