@@ -1,5 +1,6 @@
 import { FlatList, Modal, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, IconButton, Searchbar, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LineBadge } from './LineBadge';
@@ -18,6 +19,7 @@ interface Props {
 export function StationPicker({ visible, onSelect, onClose, title = 'Select Station' }: Props) {
   const theme = useTheme();
   const { isDark } = useAppTheme();
+  const insets = useSafeAreaInsets();
   const [searchText, setSearchText] = useState('');
   const debouncedQuery = useDebounce(searchText, 300);
   const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
@@ -33,8 +35,8 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
           <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
             {title}
