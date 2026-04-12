@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import {
   isDynamicThemeSupported,
@@ -110,7 +110,7 @@ const ThemeContext = createContext<AppTheme>({
   semantic: lightScheme,
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({ children }: { children: ReactNode }) {
   const scheme = useColorScheme();
   const { theme: materialTheme } = useMaterial3Theme({
     fallbackSourceColor: FALLBACK_SOURCE_COLOR,
