@@ -1,6 +1,9 @@
 import { createContext, useContext, useMemo } from 'react';
 import { Platform, useColorScheme } from 'react-native';
-import { useMaterial3Theme } from '@pchmn/expo-material3-theme';
+import {
+  isDynamicThemeSupported,
+  useMaterial3Theme,
+} from '@pchmn/expo-material3-theme';
 import {
   MD3DarkTheme,
   MD3LightTheme,
@@ -18,6 +21,7 @@ const IS_ANDROID_12_PLUS =
   Platform.OS === 'android' &&
   typeof Platform.Version === 'number' &&
   Platform.Version >= 31;
+const SHOULD_USE_DYNAMIC_THEME = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
 
 function createPaperTheme(
   isDark: boolean,
@@ -114,9 +118,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AppTheme>(() => {
     const isDark = scheme === 'dark';
     const lightMaterialScheme: Partial<MD3Theme['colors']> =
-      IS_ANDROID_12_PLUS ? materialTheme.light : lightScheme;
+      SHOULD_USE_DYNAMIC_THEME ? materialTheme.light : lightScheme;
     const darkMaterialScheme: Partial<MD3Theme['colors']> =
-      IS_ANDROID_12_PLUS ? materialTheme.dark : darkScheme;
+      SHOULD_USE_DYNAMIC_THEME ? materialTheme.dark : darkScheme;
 
     const materialLightTheme = createPaperTheme(false, lightMaterialScheme);
     const materialDarkTheme = createPaperTheme(true, darkMaterialScheme);
