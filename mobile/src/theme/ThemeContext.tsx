@@ -171,3 +171,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useAppTheme() {
   return useContext(ThemeContext);
 }
+
+export const themeRuntimeConfig = {
+  isAndroid12Plus: IS_ANDROID_12_PLUS,
+  shouldUseDynamicTheme: SHOULD_USE_DYNAMIC_THEME,
+  fallbackSourceColor: FALLBACK_SOURCE_COLOR,
+} as const;
