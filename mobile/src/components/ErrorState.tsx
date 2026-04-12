@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Button, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 interface Props {
   message: string;
@@ -8,14 +9,18 @@ interface Props {
 }
 
 export function ErrorState({ message, onRetry }: Props) {
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
-      <Ionicons name="alert-circle-outline" size={48} color={colors.error} />
-      <Text style={styles.message}>{message}</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Ionicons name="alert-circle-outline" size={48} color={theme.colors.error} />
+      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+        {message}
+      </Text>
       {onRetry ? (
-        <Pressable style={styles.button} onPress={onRetry}>
-          <Text style={styles.buttonText}>Try Again</Text>
-        </Pressable>
+        <Button mode="contained-tonal" onPress={onRetry} buttonColor={theme.colors.errorContainer} textColor={theme.colors.onErrorContainer}>
+          Try Again
+        </Button>
       ) : null}
     </View>
   );
@@ -28,23 +33,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     gap: spacing.md,
-  },
-  message: {
-    fontSize: typography.sizes.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  button: {
-    marginTop: spacing.sm,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: 10,
-  },
-  buttonText: {
-    color: colors.white,
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
   },
 });

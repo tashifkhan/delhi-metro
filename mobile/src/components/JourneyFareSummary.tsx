@@ -1,20 +1,43 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { JourneyFareWithRoute } from '../types';
-import { colors, spacing, typography } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
+import { spacing } from '../theme';
 
 interface Props {
   fare: JourneyFareWithRoute;
 }
 
-function InfoPill({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
+function FareCard({ icon, label, value, accent }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  const theme = useTheme();
+  const { isDark } = useAppTheme();
+
+  const bg = accent
+    ? theme.colors.primaryContainer
+    : isDark ? theme.colors.elevation.level3 : theme.colors.secondaryContainer;
+  const fg = accent ? theme.colors.onPrimaryContainer : isDark ? theme.colors.onSurface : theme.colors.onSecondaryContainer;
+
   return (
-    <View style={styles.pill}>
-      <Ionicons name={icon} size={16} color={colors.primary} />
-      <View>
-        <Text style={styles.pillLabel}>{label}</Text>
-        <Text style={styles.pillValue}>{value}</Text>
-      </View>
+    <View style={[styles.fareCard, { backgroundColor: bg }]}>
+      <View style={[styles.fareIconCircle, { backgroundColor: accent ? (isDark ? theme.colors.primary : theme.colors.onPrimaryContainer) : theme.colors.outline, opacity: accent ? 1 : 0.2 }]} />
+      <Ionicons
+        name={icon}
+        size={20}
+        color={fg}
+        style={styles.fareIcon}
+      />
+      <Text variant="labelSmall" style={{ color: fg, opacity: 0.7, marginTop: spacing.sm }}>
+        {label}
+      </Text>
+      <Text variant="headlineSmall" style={{ color: fg, fontWeight: '800' }}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -23,13 +46,8 @@ export function JourneyFareSummary({ fare }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.row}>
-        <InfoPill icon="navigate-outline" label="Stations" value={String(fare.stations)} />
-        <InfoPill icon="time-outline" label="Duration" value={fare.total_time} />
-      </View>
-      <View style={styles.divider} />
-      <View style={styles.row}>
-        <InfoPill icon="card-outline" label="Weekday" value={`₹${fare.weekday_fare}`} />
-        <InfoPill icon="card-outline" label="Weekend" value={`₹${fare.weekend_fare}`} />
+        <FareCard icon="card-outline" label="Weekday" value={`₹${fare.weekday_fare}`} accent />
+        <FareCard icon="card-outline" label="Weekend" value={`₹${fare.weekend_fare}`} accent />
       </View>
     </View>
   );
@@ -37,37 +55,28 @@ export function JourneyFareSummary({ fare }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.base,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   row: {
     flexDirection: 'row',
-    gap: spacing.md,
-  },
-  pill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: 12,
-    padding: spacing.md,
   },
-  pillLabel: {
-    fontSize: typography.sizes.xs,
-    color: colors.textSecondary,
+  fareCard: {
+    flex: 1,
+    borderRadius: 20,
+    padding: spacing.base,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  pillValue: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
+  fareIconCircle: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.borderLight,
+  fareIcon: {
+    marginBottom: spacing.xs,
   },
 });

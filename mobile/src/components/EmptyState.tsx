@@ -1,6 +1,7 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 interface Props {
   title: string;
@@ -9,11 +10,19 @@ interface Props {
 }
 
 export function EmptyState({ title, subtitle, icon = 'folder-open-outline' }: Props) {
+  const theme = useTheme();
+
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={48} color={colors.textTertiary} />
-      <Text style={styles.title}>{title}</Text>
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+      <Ionicons name={icon} size={48} color={theme.colors.onSurfaceVariant} />
+      <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+        {title}
+      </Text>
+      {subtitle ? (
+        <Text variant="bodyMedium" style={{ color: theme.colors.outline, textAlign: 'center' }}>
+          {subtitle}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -25,17 +34,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     gap: spacing.sm,
-  },
-  title: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: typography.sizes.body,
-    color: colors.textTertiary,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });

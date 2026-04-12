@@ -1,4 +1,5 @@
 import { StyleSheet, View } from 'react-native';
+import { useTheme } from 'react-native-paper';
 import type { StationLineBadge } from '../types';
 
 interface Props {
@@ -8,12 +9,14 @@ interface Props {
 }
 
 export function StationLineIcon({ lines, size = 14, fallbackColor }: Props) {
+  const theme = useTheme();
+
   const lineColors = Array.from(
     new Set((lines ?? []).map((line) => line.primary_color_code).filter(Boolean)),
   ).slice(0, 4);
 
-  const colors = lineColors.length > 0 ? lineColors : [fallbackColor];
-  const isMultiLine = colors.length > 1;
+  const dotColors = lineColors.length > 0 ? lineColors : [fallbackColor];
+  const isMultiLine = dotColors.length > 1;
 
   if (!isMultiLine) {
     return (
@@ -24,7 +27,8 @@ export function StationLineIcon({ lines, size = 14, fallbackColor }: Props) {
             width: size,
             height: size,
             borderRadius: size / 2,
-            backgroundColor: colors[0],
+            backgroundColor: dotColors[0],
+            borderColor: theme.colors.outlineVariant,
           },
         ]}
       />
@@ -39,10 +43,11 @@ export function StationLineIcon({ lines, size = 14, fallbackColor }: Props) {
           width: size,
           height: size,
           borderRadius: size / 2,
+          borderColor: theme.colors.outlineVariant,
         },
       ]}
     >
-      {colors.map((color) => (
+      {dotColors.map((color) => (
         <View key={color} style={[styles.segment, { backgroundColor: color }]} />
       ))}
     </View>
@@ -52,13 +57,11 @@ export function StationLineIcon({ lines, size = 14, fallbackColor }: Props) {
 const styles = StyleSheet.create({
   dot: {
     borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.12)',
   },
   multi: {
     flexDirection: 'row',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.15)',
   },
   segment: {
     flex: 1,

@@ -1,34 +1,20 @@
-import { Pressable, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme';
+import { IconButton, useTheme } from 'react-native-paper';
 
 interface Props {
   onPress: () => void;
 }
 
 export function SwapButton({ onPress }: Props) {
+  const theme = useTheme();
+
   return (
-    <Pressable
-      style={({ pressed }) => [styles.button, pressed && styles.pressed]}
+    <IconButton
+      icon="swap-vertical"
+      mode="contained-tonal"
+      size={20}
       onPress={onPress}
-      hitSlop={8}
-    >
-      <Ionicons name="swap-vertical" size={20} color={colors.primary} />
-    </Pressable>
+      containerColor={theme.colors.primaryContainer}
+      iconColor={theme.colors.onPrimaryContainer}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  pressed: {
-    backgroundColor: colors.border,
-  },
-});

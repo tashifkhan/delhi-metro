@@ -1,14 +1,16 @@
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Chip, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useStationsByLineQuery } from '../hooks';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { useAppTheme } from '../theme/ThemeContext';
 import type { StationByLineItem } from '../types';
 import type { LinesStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<LinesStackParamList, 'LineStations'>;
 type Route = RouteProp<LinesStackParamList, 'LineStations'>;
@@ -26,46 +28,65 @@ function StationTimelineRow({
   isLast: boolean;
   onPress: () => void;
 }) {
+  const theme = useTheme();
+  const { semantic } = useAppTheme();
+
   return (
-    <Pressable
-      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
-      onPress={onPress}
-    >
-      <View style={styles.timeline}>
-        {!isFirst && <View style={[styles.lineTop, { backgroundColor: lineColor }]} />}
-        <View
-          style={[
-            styles.dot,
-            station.interchange ? styles.dotInterchange : { borderColor: lineColor },
-          ]}
-        >
-          {station.interchange && (
-            <Ionicons name="git-compare" size={12} color={colors.interchange} />
-          )}
+    <TouchableRipple onPress={onPress} rippleColor={theme.colors.surfaceVariant}>
+      <View style={styles.row}>
+        <View style={styles.timeline}>
+          {!isFirst && <View style={[styles.lineTop, { backgroundColor: lineColor }]} />}
+          <View
+            style={[
+              styles.dot,
+              { borderColor: lineColor, backgroundColor: theme.colors.surface },
+              station.interchange && {
+                borderColor: semantic.interchange,
+                width: 26,
+                height: 26,
+                borderRadius: 13,
+                borderWidth: 2,
+              },
+            ]}
+          >
+            {station.interchange && (
+              <Ionicons name="git-compare" size={12} color={semantic.interchange} />
+            )}
+          </View>
+          {!isLast && <View style={[styles.lineBottom, { backgroundColor: lineColor }]} />}
         </View>
-        {!isLast && <View style={[styles.lineBottom, { backgroundColor: lineColor }]} />}
-      </View>
 
-      <View style={styles.stationInfo}>
-        <Text style={styles.stationName}>{station.station_name}</Text>
-        <View style={styles.meta}>
-          <Text style={styles.stationCode}>{station.station_code}</Text>
-          {station.interchange && (
-            <View style={styles.interchangeBadge}>
-              <Text style={styles.interchangeText}>Interchange</Text>
-            </View>
-          )}
+        <View style={styles.stationInfo}>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
+            {station.station_name}
+          </Text>
+          <View style={styles.meta}>
+            <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
+              {station.station_code}
+            </Text>
+            {station.interchange && (
+              <Chip
+                compact
+                mode="flat"
+                style={{ backgroundColor: semantic.warningContainer, height: 22 }}
+                textStyle={{ color: semantic.interchange, fontSize: 10, lineHeight: 12 }}
+              >
+                Interchange
+              </Chip>
+            )}
+          </View>
         </View>
-      </View>
 
-      <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-    </Pressable>
+        <Ionicons name="chevron-forward" size={16} color={theme.colors.outline} />
+      </View>
+    </TouchableRipple>
   );
 }
 
 export function LineStationsScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
+  const theme = useTheme();
   const { lineCode, lineColor } = route.params;
   const { data, isLoading, isError, refetch } = useStationsByLineQuery(lineCode);
 
@@ -76,6 +97,7 @@ export function LineStationsScreen() {
     <FlatList
       data={data}
       keyExtractor={(item) => String(item.id)}
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
       renderItem={({ item, index }) => (
         <StationTimelineRow
@@ -98,16 +120,12 @@ export function LineStationsScreen() {
 const styles = StyleSheet.create({
   list: {
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingRight: spacing.base,
     minHeight: 60,
-  },
-  rowPressed: {
-    backgroundColor: colors.surfacePressed,
   },
   timeline: {
     width: 48,
@@ -127,45 +145,17 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 3,
-    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  dotInterchange: {
-    borderColor: colors.interchange,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    borderWidth: 2,
   },
   stationInfo: {
     flex: 1,
     paddingVertical: spacing.md,
     gap: 3,
   },
-  stationName: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.medium,
-    color: colors.text,
-  },
   meta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  stationCode: {
-    fontSize: typography.sizes.sm,
-    color: colors.textTertiary,
-  },
-  interchangeBadge: {
-    backgroundColor: colors.warningLight,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-  },
-  interchangeText: {
-    fontSize: typography.sizes.xs,
-    fontWeight: typography.weights.semibold,
-    color: colors.warning,
   },
 });

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Surface, Text, useTheme } from 'react-native-paper';
 import { useJourneyPlanCachedQuery, useMetroLinesQuery } from '../hooks';
 import { StrategyToggle } from '../components/StrategyToggle';
 import { JourneyFareSummary } from '../components/JourneyFareSummary';
@@ -10,9 +11,10 @@ import { RouteSegmentView } from '../components/RouteSegmentView';
 import { FirstLastTrainCard } from '../components/FirstLastTrainCard';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { useAppTheme } from '../theme/ThemeContext';
 import type { RouteStrategy } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
 
@@ -23,6 +25,8 @@ function normalizeLineKey(value: string): string {
 export function JourneyResultsScreen() {
   const route = useRoute<Route>();
   const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
+  const theme = useTheme();
+  const { semantic, isDark } = useAppTheme();
   const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
 
   const { data: plan, isLoading, isError, refetch } = useJourneyPlanCachedQuery(
@@ -61,46 +65,108 @@ export function JourneyResultsScreen() {
     strategy === 'least-distance' ? plan.least_distance_train : plan.minimum_interchange_train;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Journey header */}
-      <View style={styles.journeyHeader}>
-        <View style={styles.stationBubble}>
-          <Ionicons name="radio-button-on" size={14} color={colors.success} />
-          <Text style={styles.stationLabel} numberOfLines={1}>{fromName}</Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      contentContainerStyle={styles.content}
+    >
+      {/* Journey header — big hero card */}
+      <Surface
+        style={[
+          styles.heroCard,
+          { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.primaryContainer },
+        ]}
+        elevation={0}
+      >
+        <View style={styles.heroStations}>
+          <View style={styles.heroStationRow}>
+            <View style={[styles.heroDot, { backgroundColor: semantic.success }]} />
+            <Text
+              variant="titleMedium"
+              style={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
+              numberOfLines={1}
+            >
+              {fromName}
+            </Text>
+          </View>
+
+          <View style={styles.heroConnector}>
+            <View style={[styles.heroLine, { backgroundColor: isDark ? theme.colors.outlineVariant : theme.colors.primary, opacity: 0.3 }]} />
+            <View style={[styles.heroArrowCircle, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.surface }]}>
+              <Ionicons name="arrow-down" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={[styles.heroLine, { backgroundColor: isDark ? theme.colors.outlineVariant : theme.colors.primary, opacity: 0.3 }]} />
+          </View>
+
+          <View style={styles.heroStationRow}>
+            <View style={[styles.heroDot, { backgroundColor: theme.colors.error }]} />
+            <Text
+              variant="titleMedium"
+              style={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
+              numberOfLines={1}
+            >
+              {toName}
+            </Text>
+          </View>
         </View>
-        <Ionicons name="arrow-down" size={16} color={colors.textTertiary} />
-        <View style={styles.stationBubble}>
-          <Ionicons name="location" size={14} color={colors.error} />
-          <Text style={styles.stationLabel} numberOfLines={1}>{toName}</Text>
+
+        {/* Inline stats row */}
+        <View style={styles.heroStats}>
+          <View style={[styles.heroStat, { backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.7)' }]}>
+            <Ionicons name="git-commit-outline" size={16} color={theme.colors.primary} />
+            <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+              {fare.stations} stops
+            </Text>
+          </View>
+          <View style={[styles.heroStat, { backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.7)' }]}>
+            <Ionicons name="time-outline" size={16} color={theme.colors.primary} />
+            <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+              {fare.total_time}
+            </Text>
+          </View>
         </View>
-      </View>
+      </Surface>
 
       {/* Strategy toggle */}
       <StrategyToggle active={strategy} onChange={setStrategy} />
 
-      <View style={styles.timePill}>
-        <Ionicons name="time-outline" size={16} color={colors.primary} />
-        <Text style={styles.timePillLabel}>Departure</Text>
-        <Text style={styles.timePillValue}>{selectedTimeLabel}</Text>
-      </View>
+      {/* Departure time */}
+      <Surface style={styles.timePill} elevation={1}>
+        <Ionicons name="time-outline" size={18} color={theme.colors.primary} />
+        <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, flex: 1 }}>
+          Departure
+        </Text>
+        <View style={[styles.timeValue, { backgroundColor: theme.colors.primaryContainer }]}>
+          <Text variant="labelLarge" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '600' }}>
+            {selectedTimeLabel}
+          </Text>
+        </View>
+      </Surface>
 
-      {/* Fare summary */}
+      {/* Fare cards */}
       <JourneyFareSummary fare={fare} />
 
       {/* Route visualization */}
-      <View style={styles.routeCard}>
-        <Text style={styles.routeHeading}>Route</Text>
+      <Surface style={styles.routeCard} elevation={1}>
+        <View style={styles.routeHeader}>
+          <Ionicons name="navigate-outline" size={18} color={theme.colors.primary} />
+          <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+            Route
+          </Text>
+          <Text variant="labelSmall" style={{ color: theme.colors.outline, marginLeft: 'auto' }}>
+            {fare.route.length} {fare.route.length === 1 ? 'line' : 'lines'}
+          </Text>
+        </View>
         <View style={styles.routeSegments}>
           {fare.route.map((segment, index) => (
             <RouteSegmentView
               key={`${segment.line}-${index}`}
               segment={segment}
-              lineColor={lineColorMap.get(normalizeLineKey(segment.line)) ?? colors.primary}
+              lineColor={lineColorMap.get(normalizeLineKey(segment.line)) ?? theme.colors.primary}
               isLast={index === fare.route.length - 1}
             />
           ))}
         </View>
-      </View>
+      </Surface>
 
       {/* First/Last train */}
       <FirstLastTrainCard data={trainTimes} />
@@ -109,72 +175,87 @@ export function JourneyResultsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
     padding: spacing.base,
-    gap: spacing.base,
+    gap: spacing.md,
     paddingBottom: spacing['3xl'],
   },
-  journeyHeader: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
+  heroCard: {
+    borderRadius: 28,
+    padding: spacing.lg,
+    gap: spacing.base,
   },
-  stationBubble: {
+  heroStations: {
+    gap: 0,
+  },
+  heroStationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    maxWidth: '80%',
-  },
-  stationLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  routeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.base,
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  routeHeading: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
+  heroDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  routeSegments: {
+  heroConnector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 4,
+    gap: 0,
+    paddingVertical: 2,
+  },
+  heroLine: {
+    flex: 1,
+    height: 2,
+  },
+  heroArrowCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: spacing.sm,
+  },
+  heroStats: {
+    flexDirection: 'row',
     gap: spacing.sm,
+  },
+  heroStat: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: 10,
+    borderRadius: 14,
   },
   timePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.base,
+    borderRadius: 16,
+    paddingLeft: spacing.base,
+    paddingRight: spacing.xs,
     paddingVertical: spacing.sm,
   },
-  timePillLabel: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
+  timeValue: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  timePillValue: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-    marginLeft: 'auto',
+  routeCard: {
+    borderRadius: 24,
+    padding: spacing.base,
+    gap: spacing.md,
+  },
+  routeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  routeSegments: {
+    gap: spacing.sm,
   },
 });

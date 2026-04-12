@@ -1,7 +1,9 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { JourneyRouteSegment } from '../types';
-import { colors, spacing, typography } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
+import { spacing } from '../theme';
 
 interface Props {
   segment: JourneyRouteSegment;
@@ -11,41 +13,65 @@ interface Props {
 }
 
 export function RouteSegmentView({ segment, lineColor, isLast, onStationPress }: Props) {
+  const theme = useTheme();
+  const { semantic, isDark } = useAppTheme();
+
   return (
     <View style={styles.container}>
+      {/* Line header with colored pill */}
       <View style={styles.header}>
-        <View style={[styles.lineDot, { backgroundColor: lineColor }]} />
-        <Text style={styles.lineName}>{segment.line}</Text>
+        <View style={[styles.linePill, { backgroundColor: lineColor }]}>
+          <View style={styles.linePillDot} />
+          <Text variant="labelMedium" style={{ color: '#fff', fontWeight: '700' }}>
+            {segment.line}
+          </Text>
+        </View>
         {segment.path_time ? (
-          <Text style={styles.pathTime}>{segment.path_time}</Text>
+          <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
+            {segment.path_time}
+          </Text>
         ) : null}
       </View>
 
+      {/* Station list */}
       <View style={styles.stationsContainer}>
-        <View style={[styles.lineBar, { backgroundColor: lineColor }]} />
+        <View style={[styles.lineBar, { backgroundColor: lineColor, opacity: isDark ? 0.6 : 0.4 }]} />
         <View style={styles.stations}>
-          {segment.path.map((point, index) => (
-            <View key={`${point.name}-${index}`} style={styles.stationRow}>
-              <View style={[styles.stationDot, { borderColor: lineColor }]} />
-              <Text
-                style={[
-                  styles.stationName,
-                  index === 0 && styles.stationNameBold,
-                  index === segment.path.length - 1 && styles.stationNameBold,
-                ]}
-                onPress={() => onStationPress?.(point.name)}
-              >
-                {point.name}
-              </Text>
-            </View>
-          ))}
+          {segment.path.map((point, index) => {
+            const isBold = index === 0 || index === segment.path.length - 1;
+            return (
+              <View key={`${point.name}-${index}`} style={styles.stationRow}>
+                <View
+                  style={[
+                    styles.stationDot,
+                    {
+                      borderColor: lineColor,
+                      backgroundColor: isBold ? lineColor : theme.colors.surface,
+                    },
+                    isBold && styles.stationDotBold,
+                  ]}
+                />
+                <Text
+                  variant={isBold ? 'bodyMedium' : 'bodySmall'}
+                  style={{
+                    color: isBold ? theme.colors.onSurface : theme.colors.onSurfaceVariant,
+                    fontWeight: isBold ? '600' : '400',
+                  }}
+                  onPress={() => onStationPress?.(point.name)}
+                >
+                  {point.name}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </View>
 
+      {/* Interchange indicator */}
       {!isLast && segment.station_interchange_time > 0 ? (
-        <View style={styles.interchange}>
-          <Ionicons name="git-compare" size={16} color={colors.interchange} />
-          <Text style={styles.interchangeText}>
+        <View style={[styles.interchange, { backgroundColor: semantic.warningContainer, opacity: isDark ? 1 : 0.5 }]}>
+          <Ionicons name="git-compare" size={16} color={semantic.interchange} />
+          <Text variant="labelMedium" style={{ color: semantic.interchange, fontWeight: '600' }}>
             Change here ({segment.station_interchange_time} min)
           </Text>
         </View>
@@ -56,31 +82,30 @@ export function RouteSegmentView({ segment, lineColor, isLast, onStationPress }:
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
   },
-  lineDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+  linePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 999,
   },
-  lineName: {
-    flex: 1,
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
-  },
-  pathTime: {
-    fontSize: typography.sizes.sm,
-    color: colors.textTertiary,
+  linePillDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   stationsContainer: {
     flexDirection: 'row',
-    marginLeft: 6,
+    marginLeft: 14,
     gap: spacing.md,
   },
   lineBar: {
@@ -102,26 +127,21 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 2,
-    backgroundColor: colors.surface,
   },
-  stationName: {
-    fontSize: typography.sizes.caption,
-    color: colors.textSecondary,
-  },
-  stationNameBold: {
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
+  stationDotBold: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 0,
   },
   interchange: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginLeft: spacing.lg,
+    marginLeft: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-  },
-  interchangeText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.medium,
-    color: colors.interchange,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
 });

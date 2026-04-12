@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, typography } from '../theme';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
+import { spacing } from '../theme';
 
 interface Props {
   title: string;
@@ -8,12 +9,18 @@ interface Props {
 }
 
 export function SectionHeader({ title, action, onAction }: Props) {
+  const theme = useTheme();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
+      <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
+        {title}
+      </Text>
       {action && onAction ? (
         <Pressable onPress={onAction} hitSlop={8}>
-          <Text style={styles.action}>{action}</Text>
+          <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+            {action}
+          </Text>
         </Pressable>
       ) : null}
     </View>
@@ -27,15 +34,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.sm,
-  },
-  title: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.bold,
-    color: colors.text,
-  },
-  action: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.primary,
   },
 });

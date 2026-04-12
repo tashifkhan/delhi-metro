@@ -1,4 +1,5 @@
 import { FlatList, StyleSheet, View } from 'react-native';
+import { useTheme } from 'react-native-paper';
 import { useNotificationsQuery } from '../hooks';
 import { NotificationCard } from '../components/NotificationCard';
 import { LoadingState } from '../components/LoadingState';
@@ -7,6 +8,7 @@ import { EmptyState } from '../components/EmptyState';
 import { spacing } from '../theme';
 
 export function NotificationsScreen() {
+  const theme = useTheme();
   const { data, isLoading, isError, refetch, isRefetching } = useNotificationsQuery();
 
   if (isLoading) return <LoadingState message="Loading notifications..." />;
@@ -16,6 +18,7 @@ export function NotificationsScreen() {
     <FlatList
       data={data}
       keyExtractor={(item) => String(item.id)}
+      style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       renderItem={({ item }) => <NotificationCard notification={item} />}

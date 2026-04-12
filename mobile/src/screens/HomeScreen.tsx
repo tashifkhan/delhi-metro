@@ -1,23 +1,26 @@
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Surface, Text, useTheme } from 'react-native-paper';
 import { usePopularRoutesQuery, useNotificationsQuery, useStationPicker } from '../hooks';
 import type { SelectedStation } from '../hooks/useStationPicker';
 import { StationPicker } from '../components/StationPicker';
-import { SwapButton } from '../components/SwapButton';
 import { SectionHeader } from '../components/SectionHeader';
 import { NotificationCard } from '../components/NotificationCard';
+import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
+  const theme = useTheme();
+  const { semantic, isDark } = useAppTheme();
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
@@ -63,87 +66,141 @@ export function HomeScreen() {
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.base }]}
+      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
       keyboardShouldPersistTaps="handled"
     >
       {/* Hero */}
       <View style={styles.hero}>
-        <View style={styles.heroIcon}>
-          <Ionicons name="train" size={28} color={colors.white} />
+        <View style={[styles.heroIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+          <Ionicons name="train" size={28} color={theme.colors.onPrimaryContainer} />
         </View>
         <View>
-          <Text style={styles.heroTitle}>Delhi Metro</Text>
-          <Text style={styles.heroSubtitle}>Plan your journey</Text>
+          <Text variant="headlineMedium" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+            Delhi Metro
+          </Text>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Plan your journey
+          </Text>
         </View>
       </View>
 
       {/* Journey Planner Card */}
-      <View style={styles.plannerCard}>
-        <Pressable style={styles.stationInput} onPress={fromPicker.open}>
-          <Ionicons name="radio-button-on" size={16} color={colors.success} />
-          <Text
-            style={[styles.stationText, !fromPicker.station && styles.stationPlaceholder]}
-            numberOfLines={1}
-          >
-            {fromPicker.station?.name ?? 'Select departure station'}
-          </Text>
-        </Pressable>
+      <View style={styles.plannerSection}>
+        {/* Station inputs with connecting line */}
+        <View style={styles.stationsBlock}>
+          {/* Vertical connector on the left */}
+          <View style={styles.connectorColumn}>
+            <View style={[styles.connectorDot, { backgroundColor: semantic.success }]} />
+            <View style={[styles.connectorLine, { backgroundColor: theme.colors.outlineVariant, opacity: 0.4 }]} />
+            <View style={[styles.connectorDot, { backgroundColor: theme.colors.error }]} />
+          </View>
 
-        <View style={styles.swapRow}>
-          <View style={styles.dividerLine} />
-          <SwapButton onPress={handleSwap} />
-          <View style={styles.dividerLine} />
+          {/* Input fields */}
+          <View style={styles.inputsColumn}>
+            <Pressable
+              style={[styles.stationInput, { backgroundColor: isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant }]}
+              onPress={fromPicker.open}
+            >
+              <Text
+                variant="bodyLarge"
+                style={{ flex: 1, color: fromPicker.station ? theme.colors.onSurface : theme.colors.outline, fontWeight: fromPicker.station ? '600' : '400' }}
+                numberOfLines={1}
+              >
+                {fromPicker.station?.name ?? 'Where from?'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={theme.colors.outline} />
+            </Pressable>
+
+            <Pressable
+              style={[styles.stationInput, { backgroundColor: isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant }]}
+              onPress={toPicker.open}
+            >
+              <Text
+                variant="bodyLarge"
+                style={{ flex: 1, color: toPicker.station ? theme.colors.onSurface : theme.colors.outline, fontWeight: toPicker.station ? '600' : '400' }}
+                numberOfLines={1}
+              >
+                {toPicker.station?.name ?? 'Where to?'}
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={theme.colors.outline} />
+            </Pressable>
+          </View>
+
+          {/* Swap button on the right */}
+          <Pressable
+            style={[styles.swapBtn, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}
+            onPress={handleSwap}
+          >
+            <Ionicons name="swap-vertical" size={20} color={theme.colors.primary} />
+          </Pressable>
         </View>
 
-        <Pressable style={styles.stationInput} onPress={toPicker.open}>
-          <Ionicons name="location" size={16} color={colors.error} />
-          <Text
-            style={[styles.stationText, !toPicker.station && styles.stationPlaceholder]}
-            numberOfLines={1}
-          >
-            {toPicker.station?.name ?? 'Select destination station'}
-          </Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.findButton, !canSearch && styles.findButtonDisabled]}
-          onPress={handleFindRoute}
-          disabled={!canSearch}
-        >
-          <Ionicons name="navigate" size={18} color={colors.white} />
-          <Text style={styles.findButtonText}>Find Route</Text>
-        </Pressable>
-
-        <View style={styles.timeOptions}>
-          <Text style={styles.timeOptionsLabel}>Departure time</Text>
-          <View style={styles.timeOptionsRow}>
+        {/* Time chips row */}
+        <View style={styles.timeRow}>
+          <Ionicons name="time-outline" size={16} color={theme.colors.onSurfaceVariant} />
+          <View style={styles.timeChips}>
             {[
               { label: 'Now', value: 0 },
               { label: '+15m', value: 15 },
               { label: '+30m', value: 30 },
               { label: '+1h', value: 60 },
-            ].map((option) => (
-              <Pressable
-                key={option.label}
-                style={[
-                  styles.timeChip,
-                  departureOffsetMinutes === option.value && styles.timeChipActive,
-                ]}
-                onPress={() => setDepartureOffsetMinutes(option.value)}
-              >
-                <Text
+            ].map((option) => {
+              const isActive = departureOffsetMinutes === option.value;
+              return (
+                <Pressable
+                  key={option.label}
                   style={[
-                    styles.timeChipText,
-                    departureOffsetMinutes === option.value && styles.timeChipTextActive,
+                    styles.timeChip,
+                    {
+                      backgroundColor: isActive
+                        ? theme.colors.primary
+                        : isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant,
+                    },
                   ]}
+                  onPress={() => setDepartureOffsetMinutes(option.value)}
                 >
-                  {option.label}
-                </Text>
-              </Pressable>
-            ))}
+                  <Text
+                    variant="labelMedium"
+                    style={{
+                      color: isActive ? theme.colors.onPrimary : theme.colors.onSurfaceVariant,
+                      fontWeight: isActive ? '700' : '500',
+                    }}
+                  >
+                    {option.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
         </View>
+
+        {/* Find Route button */}
+        <Pressable
+          style={[
+            styles.findButton,
+            {
+              backgroundColor: canSearch ? theme.colors.primary : (isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant),
+            },
+          ]}
+          onPress={handleFindRoute}
+          disabled={!canSearch}
+        >
+          <Ionicons
+            name="navigate"
+            size={20}
+            color={canSearch ? theme.colors.onPrimary : theme.colors.outline}
+          />
+          <Text
+            variant="titleSmall"
+            style={{
+              color: canSearch ? theme.colors.onPrimary : theme.colors.outline,
+              fontWeight: '700',
+            }}
+          >
+            Find Route
+          </Text>
+        </Pressable>
       </View>
 
       {/* Popular Routes */}
@@ -154,17 +211,26 @@ export function HomeScreen() {
             {popularRoutes.data!.map((route) => (
               <Pressable
                 key={route.routeKey}
-                style={({ pressed }) => [styles.popularCard, pressed && styles.popularPressed]}
                 onPress={() => handlePopularRoute(route.fromStationCode, route.toStationCode)}
               >
-                <View style={styles.popularRoute}>
-                  <Ionicons name="radio-button-on" size={12} color={colors.success} />
-                  <Text style={styles.popularCode}>{route.fromStationCode}</Text>
-                  <Ionicons name="arrow-forward" size={14} color={colors.textTertiary} />
-                  <Ionicons name="location" size={12} color={colors.error} />
-                  <Text style={styles.popularCode}>{route.toStationCode}</Text>
-                </View>
-                <Text style={styles.popularHits}>{route.hitCount}x</Text>
+                <Surface style={styles.popularCard} elevation={1}>
+                  <View style={styles.popularRoute}>
+                    <View style={[styles.popularDot, { backgroundColor: semantic.success }]} />
+                    <Text variant="labelLarge" style={{ color: theme.colors.onSurface }}>
+                      {route.fromStationCode}
+                    </Text>
+                    <Ionicons name="arrow-forward" size={14} color={theme.colors.outline} />
+                    <View style={[styles.popularDot, { backgroundColor: theme.colors.error }]} />
+                    <Text variant="labelLarge" style={{ color: theme.colors.onSurface }}>
+                      {route.toStationCode}
+                    </Text>
+                  </View>
+                  <View style={[styles.hitsBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+                    <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '700' }}>
+                      {route.hitCount}x
+                    </Text>
+                  </View>
+                </Surface>
               </Pressable>
             ))}
           </View>
@@ -200,132 +266,95 @@ export function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
   content: {
     padding: spacing.base,
-    gap: spacing.base,
+    gap: spacing.lg,
     paddingBottom: spacing['4xl'],
   },
+  // Hero
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    marginBottom: spacing.xs,
   },
   heroIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
+    width: 56,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroTitle: {
-    fontSize: typography.sizes['2xl'],
-    fontWeight: typography.weights.bold,
-    color: colors.text,
+  // Planner
+  plannerSection: {
+    gap: spacing.md,
   },
-  heroSubtitle: {
-    fontSize: typography.sizes.body,
-    color: colors.textSecondary,
+  stationsBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
   },
-  plannerCard: {
-    backgroundColor: colors.surface,
-    borderRadius: 20,
-    padding: spacing.base,
-    gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+  connectorColumn: {
+    alignItems: 'center',
+    gap: 0,
+    paddingVertical: 4,
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  connectorDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  connectorLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 20,
+  },
+  inputsColumn: {
+    flex: 1,
+    gap: spacing.sm,
   },
   stationInput: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: spacing.md,
-    borderRadius: 12,
+    paddingHorizontal: spacing.base,
+    paddingVertical: 16,
+    borderRadius: 16,
     gap: spacing.sm,
   },
-  stationText: {
-    flex: 1,
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.medium,
-    color: colors.text,
+  swapBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  stationPlaceholder: {
-    color: colors.textTertiary,
-    fontWeight: typography.weights.regular,
-  },
-  swapRow: {
+  // Time
+  timeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.xs,
   },
-  dividerLine: {
+  timeChips: {
+    flexDirection: 'row',
+    gap: spacing.xs,
     flex: 1,
-    height: 1,
-    backgroundColor: colors.borderLight,
   },
+  timeChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  // Find button
   findButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    borderRadius: 12,
     gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  findButtonDisabled: {
-    backgroundColor: colors.textTertiary,
-  },
-  findButtonText: {
-    color: colors.white,
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.bold,
-  },
-  timeOptions: {
-    marginTop: spacing.sm,
-    gap: spacing.xs,
-  },
-  timeOptionsLabel: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    fontWeight: typography.weights.medium,
-  },
-  timeOptionsRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  timeChip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 16,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
   },
-  timeChipActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-  },
-  timeChipText: {
-    fontSize: typography.sizes.sm,
-    color: colors.textSecondary,
-    fontWeight: typography.weights.medium,
-  },
-  timeChipTextActive: {
-    color: colors.primary,
-    fontWeight: typography.weights.semibold,
-  },
+  // Popular
   popularList: {
     gap: spacing.sm,
   },
@@ -333,29 +362,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.surface,
     padding: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  popularPressed: {
-    backgroundColor: colors.surfacePressed,
+    borderRadius: 16,
   },
   popularRoute: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  popularCode: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.text,
+  popularDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  popularHits: {
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-    color: colors.textTertiary,
+  hitsBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
   },
   notifList: {
     gap: spacing.sm,

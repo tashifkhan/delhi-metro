@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { typography } from '../theme';
+import { StyleSheet, View } from 'react-native';
+import { Text } from 'react-native-paper';
 
 interface Props {
   name: string;
@@ -10,7 +10,11 @@ interface Props {
 export function LineBadge({ name, color, compact }: Props) {
   return (
     <View style={[styles.badge, { backgroundColor: color }, compact && styles.compact]}>
-      <Text style={[styles.text, compact && styles.compactText]} numberOfLines={1}>
+      <Text
+        variant={compact ? 'labelSmall' : 'labelMedium'}
+        style={styles.text}
+        numberOfLines={1}
+      >
         {name}
       </Text>
     </View>
@@ -21,20 +25,15 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 14,
+    borderRadius: 999,
     alignSelf: 'flex-start',
   },
   compact: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 10,
   },
   text: {
     color: '#fff',
-    fontSize: typography.sizes.sm,
-    fontWeight: typography.weights.semibold,
-  },
-  compactText: {
-    fontSize: typography.sizes.xs,
+    fontWeight: '600',
   },
 });

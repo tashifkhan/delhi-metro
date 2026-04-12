@@ -1,58 +1,49 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { PassengerNotification } from '../types';
-import { colors, spacing, typography } from '../theme';
+import { spacing } from '../theme';
 
 interface Props {
   notification: PassengerNotification;
 }
 
 export function NotificationCard({ notification }: Props) {
+  const theme = useTheme();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.iconWrap}>
-        <Ionicons name="megaphone-outline" size={18} color={colors.primary} />
+    <Surface style={styles.container} elevation={1}>
+      <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+        <Ionicons name="megaphone-outline" size={18} color={theme.colors.onPrimaryContainer} />
       </View>
       <View style={styles.content}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text variant="bodyMedium" numberOfLines={2} style={{ color: theme.colors.onSurface }}>
           {notification.title}
         </Text>
-        <Text style={styles.date}>{notification.date}</Text>
+        <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
+          {notification.date}
+        </Text>
       </View>
-    </View>
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.surface,
     padding: spacing.base,
     gap: spacing.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderRadius: 16,
   },
   iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.primaryLight,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   content: {
     flex: 1,
     gap: 4,
-  },
-  title: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.medium,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  date: {
-    fontSize: typography.sizes.sm,
-    color: colors.textTertiary,
   },
 });

@@ -1,76 +1,85 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Surface, Text, useTheme, type MD3Theme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { FirstLastTrainResponse } from '../types';
-import { colors, spacing, typography } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
+import { spacing } from '../theme';
 
 interface Props {
   data: FirstLastTrainResponse;
 }
 
-function TrainRow({ label, time, icon }: { label: string; time: string; icon: keyof typeof Ionicons.glyphMap }) {
+function TrainRow({ label, time, icon, iconBg, theme }: {
+  label: string;
+  time: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  iconBg: string;
+  theme: MD3Theme;
+}) {
   return (
     <View style={styles.trainRow}>
-      <Ionicons name={icon} size={20} color={colors.primary} />
-      <View style={styles.trainInfo}>
-        <Text style={styles.trainLabel}>{label}</Text>
-        <Text style={styles.trainTime}>{time}</Text>
+      <View style={[styles.trainIcon, { backgroundColor: iconBg }]}>
+        <Ionicons name={icon} size={18} color={theme.colors.primary} />
       </View>
+      <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, flex: 1 }}>
+        {label}
+      </Text>
+      <Text variant="titleMedium" style={{ color: theme.colors.primary, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+        {time}
+      </Text>
     </View>
   );
 }
 
 export function FirstLastTrainCard({ data }: Props) {
+  const theme = useTheme();
+  const { isDark } = useAppTheme();
+
   const firstTime = data.first_train?.endstation_from_first_train_estimated_time ?? '—';
   const lastTime = data.last_train?.endstation_from_last_train_estimated_time ?? '—';
+  const iconBg = isDark ? theme.colors.elevation.level5 : theme.colors.primaryContainer;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Train Timings</Text>
-      <TrainRow label="First Train" time={firstTime} icon="sunny-outline" />
-      <View style={styles.divider} />
-      <TrainRow label="Last Train" time={lastTime} icon="moon-outline" />
-    </View>
+    <Surface style={styles.container} elevation={1}>
+      <View style={styles.headerRow}>
+        <Ionicons name="train-outline" size={18} color={theme.colors.primary} />
+        <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+          Train Timings
+        </Text>
+      </View>
+      <TrainRow label="First Train" time={firstTime} icon="sunny-outline" iconBg={iconBg} theme={theme} />
+      <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
+      <TrainRow label="Last Train" time={lastTime} icon="moon-outline" iconBg={iconBg} theme={theme} />
+    </Surface>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
+    borderRadius: 24,
     padding: spacing.base,
-    borderWidth: 1,
-    borderColor: colors.border,
     gap: spacing.md,
   },
-  heading: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.semibold,
-    color: colors.textSecondary,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   trainRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  trainInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  trainIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  trainLabel: {
-    fontSize: typography.sizes.body,
-    fontWeight: typography.weights.medium,
-    color: colors.text,
-  },
-  trainTime: {
-    fontSize: typography.sizes.base,
-    fontWeight: typography.weights.bold,
-    color: colors.primary,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.borderLight,
-    marginLeft: 32,
+    marginLeft: 48,
+    opacity: 0.3,
   },
 });

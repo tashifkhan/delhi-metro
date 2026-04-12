@@ -1,7 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
+import { Platform, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors } from '../theme';
 import { HomeStack } from './HomeStack';
 import { ExploreStack } from './ExploreStack';
 import { LinesStack } from './LinesStack';
@@ -20,26 +22,58 @@ const TAB_ICONS: Record<keyof RootTabParamList, { focused: keyof typeof Ionicons
 };
 
 export function RootTabs() {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: colors.tabActive,
-        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarActiveTintColor: theme.colors.onSecondaryContainer,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          paddingTop: 4,
+          backgroundColor: theme.colors.elevation.level2,
+          borderTopWidth: 0,
+          elevation: 0,
+          height: Platform.OS === 'ios' ? 88 : 72 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 28 : insets.bottom + 18,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          fontSize: 12,
+          fontWeight: '500',
+          marginTop: 2,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = focused ? icons.focused : icons.default;
-          return <Ionicons name={iconName} size={size} color={color} />;
+          return (
+            <View
+              style={
+                focused
+                  ? {
+                      backgroundColor: theme.colors.secondaryContainer,
+                      borderRadius: 999,
+                      width: 64,
+                      height: 32,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }
+                  : {
+                      width: 64,
+                      height: 32,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }
+              }
+            >
+              <Ionicons
+                name={iconName}
+                size={22}
+                color={focused ? theme.colors.onSecondaryContainer : color}
+              />
+            </View>
+          );
         },
       })}
     >
