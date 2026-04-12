@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
+import { useMaterial3Theme } from '@pchmn/expo-material3-theme';
 import {
   MD3DarkTheme,
   MD3LightTheme,
@@ -86,15 +87,35 @@ const ThemeContext = createContext<AppTheme>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const scheme = useColorScheme();
+  const { theme: materialTheme } = useMaterial3Theme({
+    fallbackSourceColor: lightScheme.primary,
+  });
+
   const value = useMemo<AppTheme>(() => {
     const isDark = scheme === 'dark';
+    const paperTheme: MD3Theme = isDark
+      ? {
+          ...MD3DarkTheme,
+          colors: {
+            ...MD3DarkTheme.colors,
+            ...materialTheme.dark,
+          },
+        }
+      : {
+          ...MD3LightTheme,
+          colors: {
+            ...MD3LightTheme.colors,
+            ...materialTheme.light,
+          },
+        };
+
     return {
-      paperTheme: isDark ? paperDarkTheme : paperLightTheme,
+      paperTheme,
       navTheme: isDark ? navigationDarkTheme : navigationLightTheme,
       isDark,
       semantic: isDark ? darkScheme : lightScheme,
     };
-  }, [scheme]);
+  }, [materialTheme.dark, materialTheme.light, scheme]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
