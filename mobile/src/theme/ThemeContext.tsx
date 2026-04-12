@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 import { useMaterial3Theme } from '@pchmn/expo-material3-theme';
 import {
   MD3DarkTheme,
@@ -10,8 +10,28 @@ import {
 import {
   DarkTheme as NavigationDarkTheme,
   DefaultTheme as NavigationDefaultTheme,
+  type Theme as NavigationTheme,
 } from '@react-navigation/native';
 import { lightScheme, darkScheme } from './colors';
+
+const IS_ANDROID_12_PLUS =
+  Platform.OS === 'android' &&
+  typeof Platform.Version === 'number' &&
+  Platform.Version >= 31;
+
+function createPaperTheme(
+  isDark: boolean,
+  scheme: Partial<MD3Theme['colors']>,
+): MD3Theme {
+  const baseTheme = isDark ? MD3DarkTheme : MD3LightTheme;
+  return {
+    ...baseTheme,
+    colors: {
+      ...baseTheme.colors,
+      ...scheme,
+    },
+  };
+}
 
 // Build Paper themes
 export const paperLightTheme: MD3Theme = {
@@ -73,14 +93,14 @@ export interface SemanticColors {
 
 interface AppTheme {
   paperTheme: MD3Theme;
-  navTheme: typeof navigationLightTheme;
+  navTheme: NavigationTheme;
   isDark: boolean;
   semantic: SemanticColors;
 }
 
 const ThemeContext = createContext<AppTheme>({
   paperTheme: paperLightTheme,
-  navTheme: navigationLightTheme,
+  navTheme: NavigationDefaultTheme,
   isDark: false,
   semantic: lightScheme,
 });
@@ -88,29 +108,52 @@ const ThemeContext = createContext<AppTheme>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const scheme = useColorScheme();
   const { theme: materialTheme } = useMaterial3Theme({
-    fallbackSourceColor: lightScheme.primary,
+    fallbackSourceColor: '#005FAF',
   });
 
   const value = useMemo<AppTheme>(() => {
     const isDark = scheme === 'dark';
-    const paperTheme: MD3Theme = isDark
-      ? {
-          ...MD3DarkTheme,
-          colors: {
-            ...MD3DarkTheme.colors,
-            ...materialTheme.dark,
-          },
-        }
-      : {
-          ...MD3LightTheme,
-          colors: {
-            ...MD3LightTheme.colors,
-            ...materialTheme.light,
-          },
-        };
+    const lightMaterialScheme: Partial<MD3Theme['colors']> =
+      IS_ANDROID_12_PLUS ? materialTheme.light : lightScheme;
+    const darkMaterialScheme: Partial<MD3Theme['colors']> =
+      IS_ANDROID_12_PLUS ? materialTheme.dark : darkScheme;
+
+    const materialLightTheme = createPaperTheme(false, lightMaterialScheme);
+    const materialDarkTheme = createPaperTheme(true, darkMaterialScheme);
+
+    const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
+      reactNavigationLight: NavigationDefaultTheme,
+      reactNavigationDark: NavigationDarkTheme,
+      materialLight: materialLightTheme,
+      materialDark: materialDarkTheme,
+    });
+
+    const navigationLightTheme: NavigationTheme = {
+      ...navLight,
+      colors: {
+        ...navLight.colors,
+        background: materialLightTheme.colors.background,
+        card: materialLightTheme.colors.surface,
+        text: materialLightTheme.colors.onSurface,
+        border: materialLightTheme.colors.outlineVariant,
+        primary: materialLightTheme.colors.primary,
+      },
+    };
+
+    const navigationDarkTheme: NavigationTheme = {
+      ...navDark,
+      colors: {
+        ...navDark.colors,
+        background: materialDarkTheme.colors.background,
+        card: materialDarkTheme.colors.elevation.level2,
+        text: materialDarkTheme.colors.onSurface,
+        border: materialDarkTheme.colors.outlineVariant,
+        primary: materialDarkTheme.colors.primary,
+      },
+    };
 
     return {
-      paperTheme,
+      paperTheme: isDark ? materialDarkTheme : materialLightTheme,
       navTheme: isDark ? navigationDarkTheme : navigationLightTheme,
       isDark,
       semantic: isDark ? darkScheme : lightScheme,
