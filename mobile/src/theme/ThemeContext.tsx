@@ -22,6 +22,7 @@ const IS_ANDROID_12_PLUS =
   typeof Platform.Version === 'number' &&
   Platform.Version >= 31;
 const SHOULD_USE_DYNAMIC_THEME = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
+const FALLBACK_SOURCE_COLOR = '#005FAF';
 
 function createPaperTheme(
   isDark: boolean,
@@ -112,7 +113,7 @@ const ThemeContext = createContext<AppTheme>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const scheme = useColorScheme();
   const { theme: materialTheme } = useMaterial3Theme({
-    fallbackSourceColor: '#005FAF',
+    fallbackSourceColor: FALLBACK_SOURCE_COLOR,
   });
 
   const value = useMemo<AppTheme>(() => {
