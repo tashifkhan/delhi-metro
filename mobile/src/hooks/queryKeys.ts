@@ -3,6 +3,8 @@ import type { MapFamily, MapFormat, RouteStrategy } from '../types';
 export const queryKeys = {
   lines: ['dmrc', 'lines'] as const,
   notifications: ['dmrc', 'notifications'] as const,
+  stationsAll: ['dmrc', 'stations-all'] as const,
+  stationsCache: ['dmrc', 'stations-cache'] as const,
   stationsSearch: (query: string) => ['dmrc', 'stations-search', query] as const,
   fareRoute: (fromStationCode: string, toStationCode: string, strategy: RouteStrategy) =>
     ['dmrc', 'fare-route', fromStationCode, toStationCode, strategy] as const,
