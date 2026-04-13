@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Animated, PanResponder, ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +35,34 @@ export function JourneyResultsScreen() {
     journeyTime,
   );
   const { data: lines } = useMetroLinesQuery();
+  const swipeHint = useRef(new Animated.Value(0)).current;
+  const strategyRef = useRef(strategy);
+  strategyRef.current = strategy;
+
+  const strategies: RouteStrategy[] = ['least-distance', 'minimum-interchange'];
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) =>
+        Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+      onPanResponderRelease: (_, gs) => {
+        const current = strategyRef.current;
+        if (gs.dx < -50 && current !== 'minimum-interchange') {
+          setStrategy('minimum-interchange');
+          Animated.sequence([
+            Animated.timing(swipeHint, { toValue: -8, duration: 120, useNativeDriver: true }),
+            Animated.spring(swipeHint, { toValue: 0, useNativeDriver: true }),
+          ]).start();
+        } else if (gs.dx > 50 && current !== 'least-distance') {
+          setStrategy('least-distance');
+          Animated.sequence([
+            Animated.timing(swipeHint, { toValue: 8, duration: 120, useNativeDriver: true }),
+            Animated.spring(swipeHint, { toValue: 0, useNativeDriver: true }),
+          ]).start();
+        }
+      },
+    }),
+  ).current;
 
   const selectedTimeLabel = useMemo(() => {
     if (!journeyTime) return 'Now';
@@ -65,6 +93,7 @@ export function JourneyResultsScreen() {
     strategy === 'least-distance' ? plan.least_distance_train : plan.minimum_interchange_train;
 
   return (
+    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.content}
@@ -127,7 +156,23 @@ export function JourneyResultsScreen() {
       </Surface>
 
       {/* Strategy toggle */}
-      <StrategyToggle active={strategy} onChange={setStrategy} />
+      <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
+        <StrategyToggle active={strategy} onChange={setStrategy} />
+        <View style={styles.swipeDots}>
+          {strategies.map((s) => (
+            <View
+              key={s}
+              style={[
+                styles.swipeDot,
+                {
+                  backgroundColor: strategy === s ? theme.colors.primary : theme.colors.outlineVariant,
+                  width: strategy === s ? 20 : 6,
+                },
+              ]}
+            />
+          ))}
+        </View>
+      </Animated.View>
 
       {/* Departure time */}
       <Surface style={styles.timePill} elevation={1}>
@@ -171,6 +216,7 @@ export function JourneyResultsScreen() {
       {/* First/Last train */}
       <FirstLastTrainCard data={trainTimes} />
     </ScrollView>
+    </View>
   );
 }
 
@@ -257,5 +303,16 @@ const styles = StyleSheet.create({
   },
   routeSegments: {
     gap: spacing.sm,
+  },
+  swipeDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: spacing.sm,
+  },
+  swipeDot: {
+    height: 6,
+    borderRadius: 3,
   },
 });
