@@ -47,7 +47,8 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 
 - API backend guide: `docs/api-backend-guide.md`
 - Expo app guide: `docs/expo-app-guide.md`
-- DMRC API flow notes: `docs/DMRC_API_FLOW.md`
+- Material 3 & Dynamic Theming: `docs/material-theming-guide.md`
+- DMRC API flow notes: `docs/dmrc-api-flow.md`
 - Expo APK release guide: `docs/expo-apk-release-guide.md`
 - API package README: `api/README.md`
 - Mobile package README: `mobile/README.md`
