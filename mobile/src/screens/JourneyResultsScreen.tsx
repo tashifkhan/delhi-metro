@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
-import { Animated, PanResponder, ScrollView, StyleSheet, View } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Surface, Text, useTheme } from 'react-native-paper';
-import { useJourneyPlanCachedQuery, useMetroLinesQuery } from '../hooks';
+import { useJourneyPlanCachedQuery, useMetroLinesQuery, useStationSearchQuery } from '../hooks';
 import { StrategyToggle } from '../components/StrategyToggle';
 import { JourneyFareSummary } from '../components/JourneyFareSummary';
 import { RouteSegmentView } from '../components/RouteSegmentView';
@@ -14,6 +15,7 @@ import { ErrorState } from '../components/ErrorState';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { RouteStrategy } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
+type Nav = NativeStackNavigationProp<HomeStackParamList, 'JourneyResults'>;
 import { spacing } from '../theme';
 
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
@@ -24,6 +26,7 @@ function normalizeLineKey(value: string): string {
 
 export function JourneyResultsScreen() {
   const route = useRoute<Route>();
+  const navigation = useNavigation<Nav>();
   const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
   const theme = useTheme();
   const { semantic, isDark } = useAppTheme();
@@ -35,6 +38,7 @@ export function JourneyResultsScreen() {
     journeyTime,
   );
   const { data: lines } = useMetroLinesQuery();
+  const { data: allStations } = useStationSearchQuery('');
   const swipeHint = useRef(new Animated.Value(0)).current;
   const strategyRef = useRef(strategy);
   strategyRef.current = strategy;
@@ -70,6 +74,16 @@ export function JourneyResultsScreen() {
     if (Number.isNaN(parsed.getTime())) return 'Custom time';
     return parsed.toLocaleString();
   }, [journeyTime]);
+
+  const stationCodeMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (allStations) {
+      for (const s of allStations) {
+        map.set(s.station_name.trim().toLowerCase(), s.station_code);
+      }
+    }
+    return map;
+  }, [allStations]);
 
   const lineColorMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -111,11 +125,18 @@ export function JourneyResultsScreen() {
             <View style={[styles.heroDot, { backgroundColor: semantic.success }]} />
             <Text
               variant="titleMedium"
-              style={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
+              style={{ flex: 1, color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
               numberOfLines={1}
             >
               {fromName}
             </Text>
+            <Pressable
+              onPress={() => navigation.navigate('StationDetail', { stationCode: fromCode, stationName: fromName })}
+              hitSlop={8}
+              style={[styles.heroInfoBtn, { backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.5)' }]}
+            >
+              <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
+            </Pressable>
           </View>
 
           <View style={styles.heroConnector}>
@@ -130,11 +151,18 @@ export function JourneyResultsScreen() {
             <View style={[styles.heroDot, { backgroundColor: theme.colors.error }]} />
             <Text
               variant="titleMedium"
-              style={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
+              style={{ flex: 1, color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '700' }}
               numberOfLines={1}
             >
               {toName}
             </Text>
+            <Pressable
+              onPress={() => navigation.navigate('StationDetail', { stationCode: toCode, stationName: toName })}
+              hitSlop={8}
+              style={[styles.heroInfoBtn, { backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.5)' }]}
+            >
+              <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
+            </Pressable>
           </View>
         </View>
 
@@ -208,6 +236,10 @@ export function JourneyResultsScreen() {
               segment={segment}
               lineColor={lineColorMap.get(normalizeLineKey(segment.line)) ?? theme.colors.primary}
               isLast={index === fare.route.length - 1}
+              stationCodeMap={stationCodeMap}
+              onStationPress={(code, name) =>
+                navigation.navigate('StationDetail', { stationCode: code, stationName: name })
+              }
             />
           ))}
         </View>
@@ -244,6 +276,13 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
+  },
+  heroInfoBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   heroConnector: {
     flexDirection: 'row',

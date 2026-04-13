@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { JourneyRouteSegment } from '../types';
@@ -9,10 +9,11 @@ interface Props {
   segment: JourneyRouteSegment;
   lineColor: string;
   isLast?: boolean;
-  onStationPress?: (stationName: string) => void;
+  stationCodeMap?: Map<string, string>;
+  onStationPress?: (stationCode: string, stationName: string) => void;
 }
 
-export function RouteSegmentView({ segment, lineColor, isLast, onStationPress }: Props) {
+export function RouteSegmentView({ segment, lineColor, isLast, stationCodeMap, onStationPress }: Props) {
   const theme = useTheme();
   const { semantic, isDark } = useAppTheme();
 
@@ -39,6 +40,7 @@ export function RouteSegmentView({ segment, lineColor, isLast, onStationPress }:
         <View style={styles.stations}>
           {segment.path.map((point, index) => {
             const isBold = index === 0 || index === segment.path.length - 1;
+            const code = stationCodeMap?.get(point.name.trim().toLowerCase());
             return (
               <View key={`${point.name}-${index}`} style={styles.stationRow}>
                 <View
@@ -54,13 +56,22 @@ export function RouteSegmentView({ segment, lineColor, isLast, onStationPress }:
                 <Text
                   variant={isBold ? 'bodyMedium' : 'bodySmall'}
                   style={{
+                    flex: 1,
                     color: isBold ? theme.colors.onSurface : theme.colors.onSurfaceVariant,
                     fontWeight: isBold ? '600' : '400',
                   }}
-                  onPress={() => onStationPress?.(point.name)}
                 >
                   {point.name}
                 </Text>
+                {code ? (
+                  <Pressable
+                    onPress={() => onStationPress?.(code, point.name)}
+                    hitSlop={8}
+                    style={[styles.infoBtn, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}
+                  >
+                    <Ionicons name="information-circle-outline" size={15} color={theme.colors.primary} />
+                  </Pressable>
+                ) : null}
               </View>
             );
           })}
@@ -121,6 +132,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    paddingRight: spacing.xs,
+  },
+  infoBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   stationDot: {
     width: 8,
