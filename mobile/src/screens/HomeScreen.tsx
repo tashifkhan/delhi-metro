@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Surface, Text, useTheme } from 'react-native-paper';
-import { usePopularRoutesQuery, useNotificationsQuery, useStationPicker } from '../hooks';
+import { usePopularRoutesQuery, useNotificationsQuery, useStationPicker, useMetroLinesQuery } from '../hooks';
 import type { SelectedStation } from '../hooks/useStationPicker';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
@@ -25,6 +25,10 @@ export function HomeScreen() {
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
   const notifications = useNotificationsQuery();
+  const linesQuery = useMetroLinesQuery();
+  const disruptedLines = (linesQuery.data ?? []).filter(
+    (l) => l.status.trim().toLowerCase() !== 'normal service',
+  );
   const [departureOffsetMinutes, setDepartureOffsetMinutes] = useState(0);
 
   const canSearch = fromPicker.station && toPicker.station;
@@ -202,6 +206,39 @@ export function HomeScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Disruption banner — only shown when lines have issues */}
+      {disruptedLines.length > 0 && (
+        <Pressable
+          style={[
+            styles.disruptionBanner,
+            { backgroundColor: isDark ? theme.colors.elevation.level2 : '#FFF8EC' },
+          ]}
+          onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
+        >
+          <View style={styles.disruptionLeft}>
+            <View style={[styles.disruptionIconWrap, { backgroundColor: isDark ? 'rgba(255,185,70,0.15)' : 'rgba(255,185,70,0.25)' }]}>
+              <Ionicons name="warning" size={16} color="#FFB946" />
+            </View>
+            <View style={styles.disruptionText}>
+              <Text variant="labelLarge" style={{ color: isDark ? '#FFB946' : '#7A4F00', fontWeight: '700' }}>
+                Service Disruptions
+              </Text>
+              <View style={styles.disruptionChips}>
+                {disruptedLines.map((line) => (
+                  <View
+                    key={line.id}
+                    style={[styles.disruptionChip, { backgroundColor: line.primary_color_code }]}
+                  >
+                    <Text style={styles.disruptionChipText}>{line.line_code}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={isDark ? '#FFB946' : '#7A4F00'} />
+        </Pressable>
+      )}
 
       {/* Popular Routes */}
       {(popularRoutes.data?.length ?? 0) > 0 && (
@@ -382,5 +419,48 @@ const styles = StyleSheet.create({
   },
   notifList: {
     gap: spacing.sm,
+  },
+  // Disruption banner
+  disruptionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.md,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,185,70,0.3)',
+  },
+  disruptionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    flex: 1,
+  },
+  disruptionIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  disruptionText: {
+    gap: spacing.xs,
+    flex: 1,
+  },
+  disruptionChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  disruptionChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  disruptionChipText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#fff',
+    letterSpacing: 0.5,
   },
 });

@@ -23,16 +23,17 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
   const theme = useTheme();
   const { isDark, semantic } = useAppTheme();
 
-  const primaryLineColor = station.metro_lines?.[0]?.primary_color_code ?? theme.colors.primary;
+  // API line colors are hex — safe to append hex alpha
+  const primaryLineColor = station.metro_lines?.[0]?.primary_color_code;
+  const iconBg = primaryLineColor?.startsWith('#')
+    ? primaryLineColor + '20'
+    : theme.colors.primaryContainer;
 
   return (
     <View style={styles.wrapper}>
       <Surface
-        style={[
-          styles.card,
-          { backgroundColor: isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant },
-        ]}
-        elevation={0}
+        style={styles.card}
+        elevation={isDark ? 0 : 1}
       >
         <TouchableRipple
           onPress={onPress}
@@ -46,13 +47,13 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
             <View
               style={[
                 styles.iconCircle,
-                { backgroundColor: isDark ? theme.colors.elevation.level4 : theme.colors.primaryContainer },
+                { backgroundColor: iconBg },
               ]}
             >
               {station.interchange ? (
                 <Ionicons name="git-compare" size={18} color={semantic.interchange} />
               ) : (
-                <Ionicons name="train" size={18} color={primaryLineColor} />
+                <Ionicons name="train" size={18} color={primaryLineColor ?? theme.colors.onSurfaceVariant} />
               )}
             </View>
 
@@ -66,7 +67,7 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
                 >
                   {station.station_name}
                 </Text>
-                <View style={[styles.codeBadge, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.background }]}>
+                <View style={[styles.codeBadge, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.surfaceVariant }]}>
                   <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
                     {station.station_code}
                   </Text>

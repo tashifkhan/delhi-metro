@@ -1,7 +1,7 @@
 import { FlatList, Modal, StyleSheet, View } from 'react-native';
 import { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ActivityIndicator, IconButton, Searchbar, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { ActivityIndicator, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LineBadge } from './LineBadge';
 import { useDebounce, useStationSearchQuery } from '../hooks';
@@ -85,14 +85,15 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.list}
             renderItem={({ item }) => {
-              const lineColor = item.metro_lines?.[0]?.primary_color_code ?? theme.colors.primary;
+              const lineColor = item.metro_lines?.[0]?.primary_color_code;
+              const iconBg = lineColor?.startsWith('#')
+                ? lineColor + '20'
+                : theme.colors.primaryContainer;
               return (
                 <View style={styles.resultWrapper}>
-                  <View
-                    style={[
-                      styles.resultCard,
-                      { backgroundColor: isDark ? theme.colors.elevation.level2 : theme.colors.surfaceVariant },
-                    ]}
+                  <Surface
+                    style={styles.resultCard}
+                    elevation={isDark ? 0 : 1}
                   >
                     <TouchableRipple
                       onPress={() => handleSelect(item)}
@@ -101,8 +102,8 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
                       style={styles.resultRipple}
                     >
                       <View style={styles.resultRow}>
-                        <View style={[styles.resultIcon, { backgroundColor: isDark ? theme.colors.elevation.level4 : theme.colors.primaryContainer }]}>
-                          <Ionicons name="train" size={18} color={lineColor} />
+                        <View style={[styles.resultIcon, { backgroundColor: iconBg }]}>
+                          <Ionicons name="train" size={18} color={lineColor ?? theme.colors.onSurfaceVariant} />
                         </View>
                         <View style={styles.resultContent}>
                           <View style={styles.resultNameRow}>
@@ -134,7 +135,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
                         </View>
                       </View>
                     </TouchableRipple>
-                  </View>
+                  </Surface>
                 </View>
               );
             }}
@@ -185,6 +186,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   resultCard: {
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  resultCardLight: {
     borderRadius: 18,
     overflow: 'hidden',
   },
