@@ -1,5 +1,6 @@
 import type { ApiClient } from '../api/client';
 import { popularRoutesRepository } from '../storage/popularRoutesRepository';
+import { stationSearchCacheRepository } from '../storage/stationSearchCacheRepository';
 import type {
   FirstLastTrainResponse,
   JourneyFareWithRoute,
@@ -37,6 +38,25 @@ export class DmrcService {
         filter: 'all',
       },
     });
+  }
+
+  getCachedStations(): Promise<StationSearchResult[] | null> {
+    return stationSearchCacheRepository.getStations();
+  }
+
+  async getAllStationsAndRefreshCache(): Promise<StationSearchResult[]> {
+    const cachedStations = await stationSearchCacheRepository.getStations();
+
+    try {
+      const stations = await this.searchStations('');
+      await stationSearchCacheRepository.saveStations(stations);
+      return stations;
+    } catch (error) {
+      if (cachedStations) {
+        return cachedStations;
+      }
+      throw error;
+    }
   }
 
   getFareRoute(request: JourneyRequest): Promise<JourneyFareWithRoute> {
