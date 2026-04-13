@@ -93,7 +93,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
                 <View style={styles.resultWrapper}>
                   <Surface
                     style={styles.resultCard}
-                    elevation={isDark ? 0 : 1}
+                    elevation={isDark ? 2 : 1}
                   >
                     <TouchableRipple
                       onPress={() => handleSelect(item)}

@@ -33,7 +33,7 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
     <View style={styles.wrapper}>
       <Surface
         style={styles.card}
-        elevation={isDark ? 0 : 1}
+        elevation={isDark ? 2 : 1}
       >
         <TouchableRipple
           onPress={onPress}
