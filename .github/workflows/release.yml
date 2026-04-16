@@ -38,11 +38,18 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --profile github-release --non-interactive --wait
 
-      - name: Download latest APK
+      - name: Resolve APK artifact URL
+        id: apk
         working-directory: mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build:download --platform android --profile github-release --latest --output "../DelhiMetro-${{ github.ref_name }}.apk"
+        run: |
+          BUILDS_JSON=$(eas build:list --platform android --status finished --build-profile github-release --git-commit-hash "${GITHUB_SHA}" --limit 1 --non-interactive --json)
+          APK_URL=$(echo "$BUILDS_JSON" | node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); const build = Array.isArray(data) ? data[0] : null; if (!build) { console.error('No finished Android build found for this commit.'); process.exit(1); } const url = build?.artifacts?.applicationArchiveUrl || build?.artifacts?.buildUrl; if (!url) { console.error('No APK artifact URL found on the finished build.'); process.exit(1); } process.stdout.write(url);")
+          echo "apk_url=${APK_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Download APK
+        run: curl -L "${{ steps.apk.outputs.apk_url }}" -o "DelhiMetro-${{ github.ref_name }}.apk"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
