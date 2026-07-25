@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import {
   usePopularRoutesQuery,
   useNotificationsQuery,
@@ -16,9 +16,11 @@ import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
 import { NotificationCard } from '../components/NotificationCard';
 import { Touchable } from '../components/Touchable';
+import { Reveal } from '../components/Reveal';
+import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
-import { spacing, radius, emphasis, onColor } from '../theme';
+import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -28,6 +30,8 @@ const TIME_OPTIONS = [
   { label: '+30m', value: 30 },
   { label: '+1h', value: 60 },
 ] as const;
+
+const RAIL_WIDTH = 28;
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -40,7 +44,7 @@ export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { semantic, fills, isDark } = useAppTheme();
+  const { semantic, fills } = useAppTheme();
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
@@ -104,37 +108,52 @@ export function HomeScreen() {
     });
   };
 
-  const renderStationRow = (
+  const renderEndpoint = (
     kind: 'from' | 'to',
     picker: ReturnType<typeof useStationPicker>,
   ) => {
     const isFrom = kind === 'from';
-    const dotColor = isFrom ? semantic.success : theme.colors.error;
     const label = isFrom ? 'From' : 'To';
-    const placeholder = isFrom ? 'Select departure' : 'Select destination';
+    const placeholder = isFrom ? 'Choose departure' : 'Choose destination';
 
     return (
       <Touchable
-        radius={radius.field}
+        radius={shape.md}
         onPress={picker.open}
         accessibilityLabel={`${label}: ${picker.station?.name ?? placeholder}`}
         accessibilityHint="Opens the station picker"
       >
-        <View style={styles.stationRow}>
-          <View style={styles.dotColumn}>
-            <View style={[styles.connector, !isFrom && { backgroundColor: theme.colors.outlineVariant }]} />
-            <View style={[styles.dot, { backgroundColor: dotColor }]} />
-            <View style={[styles.connector, isFrom && { backgroundColor: theme.colors.outlineVariant }]} />
+        <View style={styles.endpointRow}>
+          <View style={styles.rail}>
+            <View
+              style={[
+                styles.railLine,
+                { backgroundColor: theme.colors.outlineVariant },
+                isFrom ? styles.railFromCenter : styles.railToCenter,
+              ]}
+            />
+            <View
+              style={[
+                styles.dot,
+                {
+                  backgroundColor: isFrom ? semantic.success : theme.colors.error,
+                  borderColor: theme.colors.background,
+                },
+              ]}
+            />
           </View>
-          <View style={styles.stationText}>
-            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          <View style={styles.endpointText}>
+            <Text
+              variant="labelSmall"
+              style={[overline, { color: theme.colors.onSurfaceVariant }]}
+            >
               {label}
             </Text>
             <Text
-              variant="titleMedium"
+              variant="titleLarge"
               numberOfLines={1}
               style={[
-                picker.station ? emphasis.strong : undefined,
+                emphasis.strong,
                 { color: picker.station ? theme.colors.onSurface : theme.colors.outline },
               ]}
             >
@@ -153,231 +172,288 @@ export function HomeScreen() {
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero */}
-      <View style={styles.hero}>
-        <View style={[styles.heroIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Ionicons name="train" size={28} color={theme.colors.onPrimaryContainer} />
-        </View>
-        <View style={styles.heroText}>
-          <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
-            {greeting()}
-          </Text>
-          <Text
-            variant="headlineMedium"
-            style={[emphasis.heavy, { color: theme.colors.onSurface }]}
+      {/* Masthead */}
+      <Reveal index={0}>
+        <View style={styles.hero}>
+          <View style={styles.heroText}>
+            <Text
+              variant="labelSmall"
+              style={[overline, { color: theme.colors.primary }]}
+            >
+              {greeting()}
+            </Text>
+            <Text
+              variant="displaySmall"
+              style={[emphasis.heavy, styles.heroTitle, { color: theme.colors.onSurface }]}
+            >
+              Delhi Metro
+            </Text>
+          </View>
+          <Touchable
+            radius={radius.pill}
+            onPress={() => navigation.navigate('Appearance')}
+            accessibilityLabel="Appearance settings"
+            style={{ backgroundColor: fills.subtle }}
           >
-            Delhi Metro
-          </Text>
+            <View style={styles.heroAction}>
+              <Ionicons
+                name="color-palette-outline"
+                size={20}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </View>
+          </Touchable>
         </View>
-      </View>
+      </Reveal>
 
       {/* Journey planner */}
-      <Surface style={styles.plannerCard} elevation={isDark ? 2 : 1}>
-        <View style={styles.plannerRows}>
-          {renderStationRow('from', fromPicker)}
-          <View style={[styles.rowDivider, { backgroundColor: theme.colors.outlineVariant }]} />
-          {renderStationRow('to', toPicker)}
+      <Reveal index={1}>
+        <Card radius={radius.hero} elevated style={styles.plannerCard}>
+          {renderEndpoint('from', fromPicker)}
 
-          <View style={styles.swapAnchor} pointerEvents="box-none">
+          {/* The divider and the swap control share a row, so the rail visibly
+              runs between the two endpoints it reverses. */}
+          <View style={styles.swapRow}>
+            <View style={styles.rail}>
+              <View
+                style={[styles.railLine, { backgroundColor: theme.colors.outlineVariant }]}
+              />
+            </View>
+            <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
             <Touchable
               radius={radius.pill}
               onPress={handleSwap}
               accessibilityLabel="Swap departure and destination"
-              style={[styles.swapBtn, { backgroundColor: fills.accentSubtle }]}
+              style={[styles.swapBtn, { borderColor: theme.colors.outlineVariant }]}
             >
               <View style={styles.swapInner}>
-                <Ionicons name="swap-vertical" size={20} color={theme.colors.primary} />
+                <Ionicons name="swap-vertical" size={17} color={theme.colors.primary} />
               </View>
             </Touchable>
           </View>
-        </View>
 
-        {/* Departure time */}
-        <View style={styles.timeRow}>
-          <Ionicons name="time-outline" size={16} color={theme.colors.onSurfaceVariant} />
-          <View style={styles.timeChips}>
-            {TIME_OPTIONS.map((option) => {
-              const isActive = departureOffsetMinutes === option.value;
-              return (
-                <Touchable
-                  key={option.label}
-                  radius={radius.pill}
-                  onPress={() => setDepartureOffsetMinutes(option.value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isActive }}
-                  accessibilityLabel={`Depart ${option.label}`}
-                  style={{
-                    backgroundColor: isActive ? theme.colors.primary : fills.subtle,
-                  }}
-                >
-                  <View style={styles.timeChip}>
-                    <Text
-                      variant="labelMedium"
-                      style={[
-                        isActive ? emphasis.heavy : emphasis.medium,
-                        {
-                          color: isActive
-                            ? theme.colors.onPrimary
-                            : theme.colors.onSurfaceVariant,
-                        },
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </View>
-                </Touchable>
-              );
-            })}
-          </View>
-        </View>
+          {renderEndpoint('to', toPicker)}
 
-        {/* Find route */}
-        <Touchable
-          radius={radius.pill}
-          onPress={handleFindRoute}
-          disabled={!canSearch}
-          accessibilityLabel="Find route"
-          accessibilityHint={
-            canSearch ? undefined : 'Select a departure and destination station first'
-          }
-          style={{
-            backgroundColor: canSearch ? theme.colors.primary : theme.colors.surfaceDisabled,
-          }}
-        >
-          <View style={styles.findButton}>
-            <Ionicons
-              name="navigate"
-              size={20}
-              color={canSearch ? theme.colors.onPrimary : theme.colors.onSurfaceDisabled}
-            />
+          <View style={styles.plannerFooter}>
             <Text
-              variant="titleSmall"
-              style={[
-                emphasis.heavy,
-                {
-                  color: canSearch
-                    ? theme.colors.onPrimary
-                    : theme.colors.onSurfaceDisabled,
-                },
-              ]}
+              variant="labelSmall"
+              style={[overline, styles.departLabel, { color: theme.colors.onSurfaceVariant }]}
             >
-              Find Route
+              Depart
             </Text>
-          </View>
-        </Touchable>
-      </Surface>
-
-      {/* Disruption banner — only shown when lines have issues */}
-      {disruptedLines.length > 0 && (
-        <Touchable
-          radius={radius.card}
-          onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
-          scaleOnPress
-          accessibilityLabel={`${disruptedLines.length} lines with service disruptions. View alerts.`}
-          style={{ backgroundColor: semantic.warningContainer }}
-        >
-          <View style={styles.disruptionBanner}>
-            <View style={[styles.disruptionIconWrap, { backgroundColor: semantic.warning }]}>
-              <Ionicons name="warning" size={16} color={semantic.onWarning} />
-            </View>
-            <View style={styles.disruptionText}>
-              <Text
-                variant="labelLarge"
-                style={[emphasis.heavy, { color: semantic.onWarningContainer }]}
-              >
-                Service Disruptions
-              </Text>
-              <View style={styles.disruptionChips}>
-                {disruptedLines.map((line) => (
-                  <View
-                    key={line.id}
-                    style={[styles.disruptionChip, { backgroundColor: line.primary_color_code }]}
+            <View style={styles.timeChips}>
+              {TIME_OPTIONS.map((option) => {
+                const isActive = departureOffsetMinutes === option.value;
+                return (
+                  <Touchable
+                    key={option.label}
+                    radius={radius.pill}
+                    onPress={() => setDepartureOffsetMinutes(option.value)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isActive }}
+                    accessibilityLabel={`Depart ${option.label}`}
+                    style={{
+                      backgroundColor: isActive ? theme.colors.primary : 'transparent',
+                      borderWidth: 1,
+                      borderColor: isActive ? theme.colors.primary : theme.colors.outlineVariant,
+                    }}
                   >
-                    <Text
+                    <View style={styles.timeChip}>
+                      <Text
+                        variant="labelMedium"
+                        style={[
+                          emphasis.strong,
+                          {
+                            color: isActive
+                              ? theme.colors.onPrimary
+                              : theme.colors.onSurfaceVariant,
+                          },
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </View>
+                  </Touchable>
+                );
+              })}
+            </View>
+
+            <Touchable
+              radius={radius.pill}
+              onPress={handleFindRoute}
+              disabled={!canSearch}
+              accessibilityLabel="Find route"
+              accessibilityHint={
+                canSearch ? undefined : 'Select a departure and destination station first'
+              }
+              style={{
+                backgroundColor: canSearch
+                  ? theme.colors.primary
+                  : theme.colors.surfaceDisabled,
+              }}
+            >
+              <View style={styles.findButton}>
+                <Text
+                  variant="titleSmall"
+                  style={[
+                    emphasis.heavy,
+                    {
+                      color: canSearch
+                        ? theme.colors.onPrimary
+                        : theme.colors.onSurfaceDisabled,
+                    },
+                  ]}
+                >
+                  Find Route
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={18}
+                  color={canSearch ? theme.colors.onPrimary : theme.colors.onSurfaceDisabled}
+                />
+              </View>
+            </Touchable>
+          </View>
+        </Card>
+      </Reveal>
+
+      {/* Disruption banner */}
+      {disruptedLines.length > 0 && (
+        <Reveal index={2}>
+          <Touchable
+            radius={radius.card}
+            onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
+            scaleOnPress
+            accessibilityLabel={`${disruptedLines.length} lines with service disruptions. View alerts.`}
+            style={{ backgroundColor: semantic.warningContainer }}
+          >
+            <View style={styles.disruptionBanner}>
+              <Ionicons name="warning" size={18} color={semantic.onWarningContainer} />
+              <View style={styles.disruptionText}>
+                <Text
+                  variant="labelMedium"
+                  style={[overline, { color: semantic.onWarningContainer }]}
+                >
+                  Service disruptions
+                </Text>
+                <View style={styles.disruptionChips}>
+                  {disruptedLines.map((line) => (
+                    <View
+                      key={line.id}
                       style={[
-                        styles.disruptionChipText,
-                        { color: onColor(line.primary_color_code) },
+                        styles.disruptionChip,
+                        { backgroundColor: line.primary_color_code },
                       ]}
                     >
-                      {line.line_code}
-                    </Text>
-                  </View>
-                ))}
+                      <Text
+                        style={[
+                          styles.disruptionChipText,
+                          { color: onColor(line.primary_color_code) },
+                        ]}
+                      >
+                        {line.line_code}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
               </View>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={semantic.onWarningContainer}
+              />
             </View>
-            <Ionicons name="chevron-forward" size={18} color={semantic.onWarningContainer} />
-          </View>
-        </Touchable>
+          </Touchable>
+        </Reveal>
       )}
 
-      {/* Popular routes */}
+      {/* Popular routes — one grouped list rather than a stack of cards, so
+          five entries read as a set instead of five competing objects. */}
       {(popularRoutes.data?.length ?? 0) > 0 && (
-        <View style={styles.section}>
-          <SectionHeader title="Popular Routes" icon="repeat-outline" />
-          <View style={styles.popularList}>
-            {popularRoutes.data!.map((route) => (
-              <Touchable
-                key={route.routeKey}
-                radius={radius.card}
-                scaleOnPress
-                onPress={() => handlePopularRoute(route.fromStationCode, route.toStationCode)}
-                accessibilityLabel={`Plan ${nameForCode(route.fromStationCode)} to ${nameForCode(route.toStationCode)}`}
-                style={{ backgroundColor: fills.subtle }}
-              >
-                <View style={styles.popularCard}>
-                  <View style={styles.popularDots}>
-                    <View style={[styles.popularDot, { backgroundColor: semantic.success }]} />
+        <Reveal index={3}>
+          <View style={styles.section}>
+            <SectionHeader title="Frequent" icon="repeat-outline" />
+            <Card radius={radius.hero} style={styles.groupCard}>
+              {popularRoutes.data!.map((route, index) => (
+                <View key={route.routeKey}>
+                  {index > 0 && (
                     <View
-                      style={[styles.popularDotLine, { backgroundColor: theme.colors.outlineVariant }]}
+                      style={[
+                        styles.groupDivider,
+                        { backgroundColor: theme.colors.outlineVariant },
+                      ]}
                     />
-                    <View style={[styles.popularDot, { backgroundColor: theme.colors.error }]} />
-                  </View>
-                  <View style={styles.popularNames}>
-                    <Text
-                      variant="bodyMedium"
-                      numberOfLines={1}
-                      style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                    >
-                      {nameForCode(route.fromStationCode)}
-                    </Text>
-                    <Text
-                      variant="bodyMedium"
-                      numberOfLines={1}
-                      style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                    >
-                      {nameForCode(route.toStationCode)}
-                    </Text>
-                  </View>
-                  <View style={[styles.hitsBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-                    <Text
-                      variant="labelSmall"
-                      style={[emphasis.heavy, { color: theme.colors.onPrimaryContainer }]}
-                    >
-                      {route.hitCount}×
-                    </Text>
-                  </View>
+                  )}
+                  <Touchable
+                    radius={0}
+                    onPress={() =>
+                      handlePopularRoute(route.fromStationCode, route.toStationCode)
+                    }
+                    accessibilityLabel={`Plan ${nameForCode(route.fromStationCode)} to ${nameForCode(route.toStationCode)}`}
+                  >
+                    <View style={styles.routeRow}>
+                      <View style={styles.miniRail}>
+                        <View
+                          style={[styles.miniDot, { backgroundColor: semantic.success }]}
+                        />
+                        <View
+                          style={[
+                            styles.miniLine,
+                            { backgroundColor: theme.colors.outlineVariant },
+                          ]}
+                        />
+                        <View
+                          style={[styles.miniDot, { backgroundColor: theme.colors.error }]}
+                        />
+                      </View>
+                      <View style={styles.routeNames}>
+                        <Text
+                          variant="bodyLarge"
+                          numberOfLines={1}
+                          style={[emphasis.medium, { color: theme.colors.onSurface }]}
+                        >
+                          {nameForCode(route.fromStationCode)}
+                        </Text>
+                        <Text
+                          variant="bodyLarge"
+                          numberOfLines={1}
+                          style={[emphasis.medium, { color: theme.colors.onSurface }]}
+                        >
+                          {nameForCode(route.toStationCode)}
+                        </Text>
+                      </View>
+                      <Text
+                        variant="labelSmall"
+                        style={[overline, { color: theme.colors.onSurfaceVariant }]}
+                      >
+                        {route.hitCount}×
+                      </Text>
+                    </View>
+                  </Touchable>
                 </View>
-              </Touchable>
-            ))}
+              ))}
+            </Card>
           </View>
-        </View>
+        </Reveal>
       )}
 
       {/* Recent alerts */}
       {(notifications.data?.length ?? 0) > 0 && (
-        <View style={styles.section}>
-          <SectionHeader
-            title="Recent Alerts"
-            icon="megaphone-outline"
-            action="See all"
-            onAction={() => navigation.getParent()?.navigate('AlertsTab' as never)}
-          />
-          <View style={styles.notifList}>
-            {notifications.data!.slice(0, 3).map((notif) => (
-              <NotificationCard key={notif.id} notification={notif} />
-            ))}
+        <Reveal index={4}>
+          <View style={styles.section}>
+            <SectionHeader
+              title="Alerts"
+              icon="megaphone-outline"
+              action="All"
+              onAction={() => navigation.getParent()?.navigate('AlertsTab' as never)}
+            />
+            <View style={styles.notifList}>
+              {notifications.data!.slice(0, 3).map((notif) => (
+                <NotificationCard key={notif.id} notification={notif} />
+              ))}
+            </View>
           </View>
-        </View>
+        </Reveal>
       )}
 
       <StationPicker
@@ -396,102 +472,109 @@ export function HomeScreen() {
   );
 }
 
-const SWAP_SIZE = 44;
-
 const styles = StyleSheet.create({
   content: {
     padding: spacing.base,
     gap: spacing.xl,
     paddingBottom: spacing['4xl'],
   },
-  // Hero
+  // Masthead
   hero: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  heroIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.icon,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   heroText: {
     flex: 1,
+    gap: 2,
+  },
+  heroTitle: {
+    letterSpacing: -0.8,
+  },
+  heroAction: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   // Planner
   plannerCard: {
     borderRadius: radius.hero,
     padding: spacing.md,
-    gap: spacing.md,
+
   },
-  plannerRows: {
-    position: 'relative',
-  },
-  stationRow: {
+  endpointRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingRight: SWAP_SIZE + spacing.md,
-    minHeight: 64,
+    paddingVertical: spacing.sm,
+    paddingRight: spacing.sm,
   },
-  dotColumn: {
-    width: 32,
-    alignItems: 'center',
+  rail: {
+    width: RAIL_WIDTH,
     alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  connector: {
+  railLine: {
+    position: 'absolute',
     width: 2,
-    flex: 1,
-    backgroundColor: 'transparent',
+    top: 0,
+    bottom: 0,
+  },
+  railFromCenter: {
+    top: '50%',
+  },
+  railToCenter: {
+    bottom: '50%',
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    // A ring in the page color punches a gap in the rail, so the dot reads as
+    // a station sitting on the line rather than a blob painted over it.
+    borderWidth: 3,
   },
-  stationText: {
+  endpointText: {
     flex: 1,
     gap: 1,
   },
-  rowDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 32 + spacing.sm,
-    opacity: 0.6,
-  },
-  swapAnchor: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-  swapBtn: {
-    width: SWAP_SIZE,
-    height: SWAP_SIZE,
-  },
-  swapInner: {
-    width: SWAP_SIZE,
-    height: SWAP_SIZE,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  // Time
-  timeRow: {
+  swapRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 40,
+  },
+  divider: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    marginLeft: spacing.sm,
+    opacity: 0.7,
+  },
+  swapBtn: {
+    borderWidth: 1,
+    marginLeft: spacing.md,
+  },
+  swapInner: {
+    width: 38,
+    height: 38,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plannerFooter: {
     gap: spacing.sm,
-    paddingLeft: spacing.xs,
+    paddingTop: spacing.base,
+  },
+  departLabel: {
+    paddingLeft: 2,
   },
   timeChips: {
     flexDirection: 'row',
     gap: spacing.xs,
-    flex: 1,
   },
   timeChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 13,
+    paddingVertical: 7,
     alignItems: 'center',
   },
   findButton: {
@@ -499,43 +582,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: 16,
+    paddingVertical: 15,
+    marginTop: spacing.xs,
   },
   // Sections
   section: {
     gap: spacing.xs,
   },
-  popularList: {
-    gap: spacing.sm,
+  groupCard: {
+    borderRadius: radius.hero,
+
+    overflow: 'hidden',
   },
-  popularCard: {
+  groupDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: spacing.base + 10,
+    opacity: 0.5,
+  },
+  routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
   },
-  popularDots: {
+  miniRail: {
     alignItems: 'center',
-    paddingVertical: 4,
+    alignSelf: 'stretch',
+    paddingVertical: 6,
   },
-  popularDot: {
-    width: 8,
-    height: 8,
+  miniDot: {
+    width: 7,
+    height: 7,
     borderRadius: 4,
   },
-  popularDotLine: {
-    width: 2,
-    height: 14,
-    marginVertical: 2,
-  },
-  popularNames: {
+  miniLine: {
+    width: 1.5,
     flex: 1,
-    gap: 6,
+    minHeight: 12,
+    marginVertical: 3,
   },
-  hitsBadge: {
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
+  routeNames: {
+    flex: 1,
+    gap: 3,
   },
   notifList: {
     gap: spacing.sm,
@@ -545,17 +634,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    padding: spacing.md,
-  },
-  disruptionIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.iconSmall,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
   },
   disruptionText: {
-    gap: spacing.xs,
+    gap: spacing.sm,
     flex: 1,
   },
   disruptionChips: {
@@ -566,7 +649,7 @@ const styles = StyleSheet.create({
   disruptionChip: {
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: radius.badge,
+    borderRadius: shape.xs,
   },
   disruptionChipText: {
     fontSize: 10,

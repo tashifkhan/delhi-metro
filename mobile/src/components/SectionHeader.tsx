@@ -2,12 +2,11 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Touchable } from './Touchable';
-import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, radius, emphasis } from '../theme';
+import { spacing, radius, emphasis, overline } from '../theme';
 
 interface Props {
   title: string;
-  /** Optional leading glyph, shown in a tinted tile. */
+  /** Optional leading glyph. */
   icon?: keyof typeof Ionicons.glyphMap;
   /** Trailing tally, e.g. the number of items in the section. */
   count?: number;
@@ -17,39 +16,34 @@ interface Props {
   inset?: boolean;
 }
 
-export function SectionHeader({
-  title,
-  icon,
-  count,
-  action,
-  onAction,
-  inset = false,
-}: Props) {
+/**
+ * Section label.
+ *
+ * The glyph is bare rather than sitting in a tinted tile: stacked down a
+ * screen those tiles compete with the content they are supposed to introduce.
+ * Emphasis comes from tracked capitals instead, which stays quiet at any size.
+ */
+export function SectionHeader({ title, icon, count, action, onAction, inset = false }: Props) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
 
   return (
     <View style={[styles.container, inset && styles.insetContainer]}>
       {icon && (
-        <View style={[styles.iconWrap, { backgroundColor: fills.accentSubtle }]}>
-          <Ionicons name={icon} size={15} color={theme.colors.primary} />
-        </View>
+        <Ionicons name={icon} size={14} color={theme.colors.onSurfaceVariant} />
       )}
       <Text
-        variant="titleMedium"
-        style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
+        variant="labelMedium"
+        style={[overline, styles.title, { color: theme.colors.onSurfaceVariant }]}
       >
         {title}
       </Text>
       {count !== undefined && (
-        <View style={[styles.countBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Text
-            variant="labelSmall"
-            style={[emphasis.heavy, { color: theme.colors.onPrimaryContainer }]}
-          >
-            {count}
-          </Text>
-        </View>
+        <Text
+          variant="labelMedium"
+          style={[emphasis.heavy, { color: theme.colors.onSurfaceVariant }]}
+        >
+          {count}
+        </Text>
       )}
       {action && onAction ? (
         <Touchable
@@ -58,10 +52,10 @@ export function SectionHeader({
           accessibilityLabel={`${action}, ${title}`}
         >
           <View style={styles.action}>
-            <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+            <Text variant="labelMedium" style={[emphasis.strong, { color: theme.colors.primary }]}>
               {action}
             </Text>
-            <Ionicons name="chevron-forward" size={14} color={theme.colors.primary} />
+            <Ionicons name="chevron-forward" size={13} color={theme.colors.primary} />
           </View>
         </Touchable>
       ) : null}
@@ -79,28 +73,14 @@ const styles = StyleSheet.create({
   insetContainer: {
     paddingHorizontal: spacing.base,
   },
-  iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.badge,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   title: {
     flex: 1,
-  },
-  countBadge: {
-    minWidth: 24,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: radius.pill,
-    alignItems: 'center',
   },
   action: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
     paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingLeft: spacing.sm,
   },
 });

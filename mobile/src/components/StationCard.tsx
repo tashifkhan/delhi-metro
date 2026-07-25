@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LineBadge } from './LineBadge';
 import { Touchable } from './Touchable';
+import { Card } from './Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis, tabular, tint } from '../theme';
 import type { StationLineBadge } from '../types';
@@ -31,7 +32,7 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
 
   return (
     <View style={styles.wrapper}>
-      <Surface style={styles.card} elevation={isDark ? 2 : 1}>
+      <Card style={styles.card}>
         <Touchable
           radius={radius.card}
           onPress={onPress}
@@ -114,7 +115,7 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
             ) : null}
           </View>
         </Touchable>
-      </Surface>
+      </Card>
     </View>
   );
 }

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Card } from './Card';
 import type { FirstLastTrainResponse } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis, tabular } from '../theme';
@@ -42,13 +43,13 @@ function TrainRow({
 
 export function FirstLastTrainCard({ data }: Props) {
   const theme = useTheme();
-  const { isDark, fills } = useAppTheme();
+  const { fills } = useAppTheme();
 
   const firstTime = data.first_train?.endstation_from_first_train_estimated_time ?? '—';
   const lastTime = data.last_train?.endstation_from_last_train_estimated_time ?? '—';
 
   return (
-    <Surface style={styles.container} elevation={isDark ? 2 : 1}>
+    <Card radius={radius.hero} style={styles.container}>
       <View style={styles.headerRow}>
         <View style={[styles.headerIcon, { backgroundColor: fills.accentSubtle }]}>
           <Ionicons name="time-outline" size={15} color={theme.colors.primary} />
@@ -70,7 +71,7 @@ export function FirstLastTrainCard({ data }: Props) {
         icon="moon-outline"
         iconBg={fills.accentSubtle}
       />
-    </Surface>
+    </Card>
   );
 }
 

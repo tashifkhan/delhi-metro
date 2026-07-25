@@ -4,7 +4,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { useJourneyPlanCachedQuery, useMetroLinesQuery, useStationSearchQuery } from '../hooks';
 import { StrategyToggle } from '../components/StrategyToggle';
 import { JourneyFareSummary } from '../components/JourneyFareSummary';
@@ -14,6 +14,7 @@ import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { StationPicker } from '../components/StationPicker';
 import { Touchable } from '../components/Touchable';
+import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { RouteStrategy } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
@@ -159,14 +160,28 @@ export function JourneyResultsScreen() {
             accessibilityLabel={`Change ${label}, currently ${name}`}
           >
             <View style={styles.heroStationPress}>
-              <View
-                style={[
-                  styles.heroDot,
-                  { backgroundColor: isFrom ? semantic.success : theme.colors.error },
-                ]}
-              />
+              {/* Same vertical rail as the planner on Home, so a journey looks
+                  like the same object before and after it is planned. */}
+              <View style={styles.heroRail}>
+                <View
+                  style={[
+                    styles.heroRailLine,
+                    { backgroundColor: fills.onHeroText },
+                    isFrom ? styles.heroRailFromCenter : styles.heroRailToCenter,
+                  ]}
+                />
+                <View
+                  style={[
+                    styles.heroDot,
+                    {
+                      backgroundColor: isFrom ? semantic.success : theme.colors.error,
+                      borderColor: fills.hero,
+                    },
+                  ]}
+                />
+              </View>
               <Text
-                variant="titleMedium"
+                variant="titleLarge"
                 style={[emphasis.heavy, styles.heroStationName, { color: fills.onHeroText }]}
                 numberOfLines={2}
               >
@@ -206,11 +221,14 @@ export function JourneyResultsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Journey hero */}
-        <Surface style={[styles.heroCard, { backgroundColor: fills.hero }]} elevation={0}>
+        <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>
           <View>
             {renderEndpoint('from', fromName, fromCode)}
 
             <View style={styles.heroConnector}>
+              <View style={styles.heroRail}>
+                <View style={[styles.heroRailLine, { backgroundColor: fills.onHeroText }]} />
+              </View>
               <View style={[styles.heroLine, { backgroundColor: fills.onHeroText }]} />
               <Touchable
                 radius={radius.pill}
@@ -222,7 +240,6 @@ export function JourneyResultsScreen() {
                   <Ionicons name="swap-vertical" size={18} color={heroIconColor} />
                 </View>
               </Touchable>
-              <View style={[styles.heroLine, { backgroundColor: fills.onHeroText }]} />
             </View>
 
             {renderEndpoint('to', toName, toCode)}
@@ -251,7 +268,7 @@ export function JourneyResultsScreen() {
               </View>
             ))}
           </View>
-        </Surface>
+        </View>
 
         {/* Strategy toggle */}
         <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
@@ -274,7 +291,7 @@ export function JourneyResultsScreen() {
         </Animated.View>
 
         {/* Departure time */}
-        <Surface style={styles.timePill} elevation={isDark ? 2 : 1}>
+        <Card style={styles.timePill}>
           <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
           <Text
             variant="bodyMedium"
@@ -290,12 +307,12 @@ export function JourneyResultsScreen() {
               {selectedTimeLabel}
             </Text>
           </View>
-        </Surface>
+        </Card>
 
         <JourneyFareSummary fare={fare} />
 
         {/* Route visualization */}
-        <Surface style={styles.routeCard} elevation={isDark ? 2 : 1}>
+        <Card radius={radius.hero} style={styles.routeCard}>
           <View style={styles.routeHeader}>
             <View style={[styles.routeHeaderIcon, { backgroundColor: fills.accentSubtle }]}>
               <Ionicons name="navigate-outline" size={15} color={theme.colors.primary} />
@@ -324,7 +341,7 @@ export function JourneyResultsScreen() {
               />
             ))}
           </View>
-        </Surface>
+        </Card>
 
         <FirstLastTrainCard data={trainTimes} />
       </ScrollView>
@@ -361,14 +378,34 @@ const styles = StyleSheet.create({
   heroStationPress: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    paddingRight: spacing.sm,
+  },
+  heroRail: {
+    width: 26,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroRailLine: {
+    position: 'absolute',
+    width: 2,
+    top: 0,
+    bottom: 0,
+    opacity: 0.25,
+  },
+  heroRailFromCenter: {
+    top: '50%',
+  },
+  heroRailToCenter: {
+    bottom: '50%',
   },
   heroDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 3,
   },
   heroStationName: {
     flex: 1,
@@ -385,15 +422,16 @@ const styles = StyleSheet.create({
   heroConnector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: spacing.sm,
+    height: 40,
   },
   heroLine: {
     flex: 1,
-    height: 2,
-    opacity: 0.2,
+    height: StyleSheet.hairlineWidth,
+    marginLeft: spacing.sm,
+    opacity: 0.3,
   },
   heroSwapBtn: {
-    marginHorizontal: spacing.sm,
+    marginLeft: spacing.md,
   },
   heroSwapInner: {
     width: 40,

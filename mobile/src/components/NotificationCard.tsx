@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Card } from './Card';
 import type { PassengerNotification } from '../types';
-import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis } from '../theme';
 
 interface Props {
@@ -11,10 +11,9 @@ interface Props {
 
 export function NotificationCard({ notification }: Props) {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
 
   return (
-    <Surface style={styles.container} elevation={isDark ? 2 : 1}>
+    <Card style={styles.container}>
       <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
         <Ionicons name="megaphone-outline" size={18} color={theme.colors.onPrimaryContainer} />
       </View>
@@ -33,7 +32,7 @@ export function NotificationCard({ notification }: Props) {
           </Text>
         </View>
       </View>
-    </Surface>
+    </Card>
   );
 }
 

@@ -24,10 +24,20 @@ const TAB_ICONS: Record<
   AlertsTab: { focused: 'notifications', default: 'notifications-outline' },
 };
 
-/** M3 navigation bar: 32dp active indicator + label, 80dp total content height. */
+/**
+ * M3 navigation bar geometry. The bar is 80dp tall above the safe-area inset:
+ * 12dp padding, a 32dp active indicator, 4dp gap, the label, then 12dp padding.
+ * Content must clear INDICATOR_HEIGHT + LABEL_GAP + LABEL_HEIGHT (52dp), so the
+ * vertical padding is budgeted on top of that rather than carved out of it.
+ */
 const INDICATOR_HEIGHT = 32;
 const INDICATOR_WIDTH = 64;
-const BAR_CONTENT_HEIGHT = 64;
+const LABEL_GAP = 4;
+const LABEL_HEIGHT = 16;
+const BAR_PADDING_TOP = 12;
+const BAR_PADDING_BOTTOM = 12;
+const BAR_HEIGHT =
+  BAR_PADDING_TOP + INDICATOR_HEIGHT + LABEL_GAP + LABEL_HEIGHT + BAR_PADDING_BOTTOM;
 
 export function RootTabs() {
   const theme = useTheme();
@@ -43,16 +53,16 @@ export function RootTabs() {
           backgroundColor: theme.colors.elevation.level2,
           borderTopWidth: 0,
           elevation: 0,
-          // The inset is added once, as bottom padding; folding it into the
-          // height as well used to squeeze the icon and label into 46dp.
-          height: BAR_CONTENT_HEIGHT + insets.bottom,
-          paddingTop: 10,
-          paddingBottom: insets.bottom + 8,
+          // The inset extends the bar; it is not shared with the content box.
+          height: BAR_HEIGHT + insets.bottom,
+          paddingTop: BAR_PADDING_TOP,
+          paddingBottom: BAR_PADDING_BOTTOM + insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 12,
+          lineHeight: LABEL_HEIGHT,
           fontWeight: '500',
-          marginTop: 4,
+          marginTop: LABEL_GAP,
         },
         tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];

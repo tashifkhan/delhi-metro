@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import { Divider, Surface, Text, useTheme } from 'react-native-paper';
+import { Divider, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useStationDetailQuery } from '../hooks';
 import { LineBadge } from '../components/LineBadge';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
+import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, radius, emphasis, tabular } from '../theme';
@@ -29,11 +30,11 @@ function Section({
   defaultExpanded?: boolean;
 }) {
   const theme = useTheme();
-  const { isDark, fills } = useAppTheme();
+  const { fills } = useAppTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <Surface style={styles.section} elevation={isDark ? 2 : 1}>
+    <Card radius={radius.hero} style={styles.section}>
       <Touchable
         // Square ripple: the header is the top slice of the card, and the
         // parent Surface already clips the rounded corners.
@@ -75,7 +76,7 @@ function Section({
           <View style={styles.sectionContent}>{children}</View>
         </>
       )}
-    </Surface>
+    </Card>
   );
 }
 
@@ -202,7 +203,7 @@ export function StationDetailScreen() {
       showsVerticalScrollIndicator={false}
     >
       {/* Hero */}
-      <Surface style={[styles.heroCard, { backgroundColor: fills.hero }]} elevation={0}>
+      <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>
         <View style={styles.heroTop}>
           <View style={[styles.codeBox, { backgroundColor: fills.onHero }]}>
             <Text
@@ -271,7 +272,7 @@ export function StationDetailScreen() {
             ))}
           </View>
         )}
-      </Surface>
+      </View>
 
       {/* Station info */}
       <Section title="Station Info" icon="information-circle-outline">

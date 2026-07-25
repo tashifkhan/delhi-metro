@@ -2,11 +2,12 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { useMetroLinesQuery } from '../hooks';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
+import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { MetroLine } from '../types';
 import type { LinesStackParamList } from '../navigation/types';
@@ -19,7 +20,7 @@ const NORMAL_STATUS = 'normal service';
 function LineCard({ line }: { line: MetroLine }) {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
-  const { semantic, isDark } = useAppTheme();
+  const { semantic } = useAppTheme();
 
   const disrupted = line.status.trim().toLowerCase() !== NORMAL_STATUS;
   const statusFg = disrupted ? semantic.onWarningContainer : semantic.onSuccessContainer;
@@ -27,7 +28,7 @@ function LineCard({ line }: { line: MetroLine }) {
 
   return (
     <View style={styles.cardWrapper}>
-      <Surface style={styles.card} elevation={isDark ? 2 : 1}>
+      <Card style={styles.card}>
         <Touchable
           radius={radius.card}
           onPress={() =>
@@ -98,7 +99,7 @@ function LineCard({ line }: { line: MetroLine }) {
             <Ionicons name="chevron-forward" size={18} color={theme.colors.outline} />
           </View>
         </Touchable>
-      </Surface>
+      </Card>
     </View>
   );
 }

@@ -1,10 +1,11 @@
 import { useRef, useEffect } from 'react';
 import { Animated, ScrollView, StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme } from 'react-native-paper';
+import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Card } from './Card';
 import { useMetroLinesQuery } from '../hooks';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, radius, shape, emphasis, onColor } from '../theme';
+import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
 import type { MetroLine } from '../types';
 
 const NORMAL_STATUS = 'normal service';
@@ -32,7 +33,7 @@ function PulseDot({ color }: { color: string }) {
 
 function LineCard({ line }: { line: MetroLine }) {
   const theme = useTheme();
-  const { semantic, isDark } = useAppTheme();
+  const { semantic } = useAppTheme();
   const disrupted = isDisrupted(line);
 
   // Status colors come from the fixed semantic roles rather than literals, so
@@ -41,7 +42,7 @@ function LineCard({ line }: { line: MetroLine }) {
   const statusBg = disrupted ? semantic.warningContainer : semantic.successContainer;
 
   return (
-    <Surface style={styles.card} elevation={isDark ? 2 : 1}>
+    <Card style={styles.card}>
       <View style={[styles.lineStrip, { backgroundColor: line.primary_color_code }]} />
       <View style={styles.content}>
         <View style={styles.titleRow}>
@@ -81,13 +82,13 @@ function LineCard({ line }: { line: MetroLine }) {
           {disrupted && <PulseDot color={semantic.warning} />}
         </View>
       </View>
-    </Surface>
+    </Card>
   );
 }
 
 export function LineStatusCarousel() {
   const theme = useTheme();
-  const { semantic, fills } = useAppTheme();
+  const { semantic } = useAppTheme();
   const { data: lines } = useMetroLinesQuery();
 
   if (!lines?.length) return null;
@@ -99,12 +100,10 @@ export function LineStatusCarousel() {
   return (
     <View style={styles.wrapper}>
       <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIconWrap, { backgroundColor: fills.accentSubtle }]}>
-          <Ionicons name="pulse-outline" size={15} color={theme.colors.primary} />
-        </View>
+        <Ionicons name="pulse-outline" size={14} color={theme.colors.onSurfaceVariant} />
         <Text
-          variant="titleMedium"
-          style={[emphasis.heavy, styles.sectionTitle, { color: theme.colors.onSurface }]}
+          variant="labelMedium"
+          style={[overline, styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}
         >
           Line Status
         </Text>
@@ -161,13 +160,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.base,
-  },
-  sectionIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.badge,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   sectionTitle: {
     flex: 1,
