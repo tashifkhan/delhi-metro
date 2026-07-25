@@ -31,4 +31,20 @@ export const tabular: TextStyle = {
   fontVariant: ['tabular-nums'],
 };
 
-export const typography = { weights, emphasis, tabular } as const;
+/**
+ * Small tracked capitals for field labels and section metadata.
+ *
+ * The type scale alone can't separate a label from its value when both sit at
+ * similar sizes — "FROM" and a station name read as equals. Casing and letter
+ * spacing do the work that size can't, and keep labels quiet without fading
+ * them to an unreadable grey.
+ *
+ * Pair with a `labelSmall` or `labelMedium` variant.
+ */
+export const overline: TextStyle = {
+  textTransform: 'uppercase',
+  letterSpacing: 1.1,
+  fontWeight: weights.semibold,
+};
+
+export const typography = { weights, emphasis, tabular, overline } as const;
