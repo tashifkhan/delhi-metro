@@ -4,7 +4,7 @@ import { Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useMetroLinesQuery } from '../hooks';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, radius, shape, emphasis, onColor } from '../theme';
 import type { MetroLine } from '../types';
 
 const NORMAL_STATUS = 'normal service';
@@ -13,59 +13,72 @@ function isDisrupted(line: MetroLine) {
   return line.status.trim().toLowerCase() !== NORMAL_STATUS;
 }
 
-function PulseDot() {
+function PulseDot({ color }: { color: string }) {
   const opacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.loop(
+    const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(opacity, { toValue: 0.2, duration: 700, useNativeDriver: true }),
         Animated.timing(opacity, { toValue: 1, duration: 700, useNativeDriver: true }),
       ]),
-    ).start();
+    );
+    loop.start();
+    return () => loop.stop();
   }, [opacity]);
 
-  return <Animated.View style={[styles.pulseDot, { opacity }]} />;
+  return <Animated.View style={[styles.pulseDot, { opacity, backgroundColor: color }]} />;
 }
 
 function LineCard({ line }: { line: MetroLine }) {
   const theme = useTheme();
+  const { semantic, isDark } = useAppTheme();
   const disrupted = isDisrupted(line);
 
-  const statusColor = disrupted ? '#B45309' : '#15803D';
-  const statusBg   = disrupted ? '#FEF3C7' : '#DCFCE7';
-  const statusColorDark = disrupted ? '#FCD34D' : '#4ADE80';
-  const statusBgDark    = disrupted ? 'rgba(253,211,77,0.15)' : 'rgba(74,222,128,0.12)';
-
-  const { isDark } = useAppTheme();
+  // Status colors come from the fixed semantic roles rather than literals, so
+  // they stay legible under Material You's wallpaper-derived palettes.
+  const statusFg = disrupted ? semantic.onWarningContainer : semantic.onSuccessContainer;
+  const statusBg = disrupted ? semantic.warningContainer : semantic.successContainer;
 
   return (
-    <Surface style={styles.card} elevation={1}>
-      {/* Content */}
+    <Surface style={styles.card} elevation={isDark ? 2 : 1}>
+      <View style={[styles.lineStrip, { backgroundColor: line.primary_color_code }]} />
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, fontWeight: '700', flex: 1 }} numberOfLines={1}>
+          <Text
+            variant="bodyMedium"
+            style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
+            numberOfLines={1}
+          >
             {line.line_color}
           </Text>
           <View style={[styles.lineCodeBadge, { backgroundColor: line.primary_color_code }]}>
-            <Text style={styles.lineCodeText}>{line.line_code}</Text>
+            <Text
+              style={[styles.lineCodeText, { color: onColor(line.primary_color_code) }]}
+            >
+              {line.line_code}
+            </Text>
           </View>
         </View>
-        <Text style={{ color: theme.colors.outline, fontSize: 12, marginTop: 1 }} numberOfLines={1}>
+        <Text
+          variant="bodySmall"
+          style={{ color: theme.colors.onSurfaceVariant }}
+          numberOfLines={1}
+        >
           {line.start_station} – {line.end_station}
         </Text>
-        <View style={[styles.statusRow, { marginTop: 6 }]}>
-          <View style={[styles.statusPill, { backgroundColor: isDark ? statusBgDark : statusBg }]}>
+        <View style={styles.statusRow}>
+          <View style={[styles.statusPill, { backgroundColor: statusBg }]}>
             <Ionicons
-              name={disrupted ? 'warning-outline' : 'checkmark-circle-outline'}
+              name={disrupted ? 'warning' : 'checkmark-circle'}
               size={11}
-              color={isDark ? statusColorDark : statusColor}
+              color={statusFg}
             />
-            <Text style={[styles.statusText, { color: isDark ? statusColorDark : statusColor }]} numberOfLines={1}>
+            <Text style={[styles.statusText, { color: statusFg }]} numberOfLines={1}>
               {disrupted ? line.status : 'Normal Service'}
             </Text>
           </View>
-          {disrupted && <PulseDot />}
+          {disrupted && <PulseDot color={semantic.warning} />}
         </View>
       </View>
     </Surface>
@@ -74,39 +87,57 @@ function LineCard({ line }: { line: MetroLine }) {
 
 export function LineStatusCarousel() {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
+  const { semantic, fills } = useAppTheme();
   const { data: lines } = useMetroLinesQuery();
 
   if (!lines?.length) return null;
 
   const sorted = [...lines].sort((a, b) => (isDisrupted(a) ? 0 : 1) - (isDisrupted(b) ? 0 : 1));
-  const hasDisruptions = lines.some(isDisrupted);
+  const disruptedCount = lines.filter(isDisrupted).length;
+  const hasDisruptions = disruptedCount > 0;
 
   return (
     <View style={styles.wrapper}>
-      {/* Section header */}
       <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIconWrap, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.primaryContainer }]}>
-          <Ionicons name="pulse-outline" size={16} color={theme.colors.primary} />
+        <View style={[styles.sectionIconWrap, { backgroundColor: fills.accentSubtle }]}>
+          <Ionicons name="pulse-outline" size={15} color={theme.colors.primary} />
         </View>
-        <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+        <Text
+          variant="titleMedium"
+          style={[emphasis.heavy, styles.sectionTitle, { color: theme.colors.onSurface }]}
+        >
           Line Status
         </Text>
-        {hasDisruptions ? (
-          <View style={[styles.badge, { backgroundColor: '#FCD34D' }]}>
-            <Text style={[styles.badgeText, { color: '#1A0A00' }]}>
-              {lines.filter(isDisrupted).length} disrupted
-            </Text>
-          </View>
-        ) : (
-          <View style={[styles.badge, { backgroundColor: isDark ? 'rgba(74,222,128,0.12)' : '#DCFCE7' }]}>
-            <Ionicons name="checkmark-circle" size={12} color={isDark ? '#4ADE80' : '#15803D'} />
-            <Text style={[styles.badgeText, { color: isDark ? '#4ADE80' : '#15803D' }]}>All clear</Text>
-          </View>
-        )}
+        <View
+          style={[
+            styles.badge,
+            {
+              backgroundColor: hasDisruptions
+                ? semantic.warningContainer
+                : semantic.successContainer,
+            },
+          ]}
+        >
+          <Ionicons
+            name={hasDisruptions ? 'warning' : 'checkmark-circle'}
+            size={12}
+            color={hasDisruptions ? semantic.onWarningContainer : semantic.onSuccessContainer}
+          />
+          <Text
+            style={[
+              styles.badgeText,
+              {
+                color: hasDisruptions
+                  ? semantic.onWarningContainer
+                  : semantic.onSuccessContainer,
+              },
+            ]}
+          >
+            {hasDisruptions ? `${disruptedCount} disrupted` : 'All clear'}
+          </Text>
+        </View>
       </View>
 
-      {/* Horizontal carousel */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -122,7 +153,7 @@ export function LineStatusCarousel() {
 
 const styles = StyleSheet.create({
   wrapper: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     paddingTop: spacing.base,
   },
   sectionHeader: {
@@ -134,18 +165,20 @@ const styles = StyleSheet.create({
   sectionIconWrap: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: radius.badge,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sectionTitle: {
+    flex: 1,
+  },
   badge: {
-    marginLeft: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
   },
   badgeText: {
     fontSize: 11,
@@ -154,48 +187,55 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: spacing.base,
     gap: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingVertical: spacing.xs,
   },
-  // Card mirrors NotificationCard but fixed width
   card: {
-    width: 220,
+    width: 232,
     flexDirection: 'row',
-    padding: spacing.base,
-    gap: spacing.md,
-    borderRadius: 16,
+    borderRadius: radius.card,
+    overflow: 'hidden',
+  },
+  lineStrip: {
+    width: 5,
+    alignSelf: 'stretch',
   },
   content: {
     flex: 1,
+    padding: spacing.md,
+    gap: 3,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
+  title: {
+    flex: 1,
+  },
   lineCodeBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: shape.xs,
   },
   lineCodeText: {
     fontSize: 10,
     fontWeight: '800',
-    color: '#fff',
     letterSpacing: 0.4,
   },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: 4,
   },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 999,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    flexShrink: 1,
   },
   statusText: {
     fontSize: 10,
@@ -206,6 +246,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#FCD34D',
   },
 });

@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
+import { spacing, radius, emphasis } from '../theme';
 
 interface Props {
   title: string;
@@ -11,15 +12,24 @@ interface Props {
 
 export function EmptyState({ title, subtitle, icon = 'folder-open-outline' }: Props) {
   const theme = useTheme();
+  const { fills } = useAppTheme();
 
   return (
     <View style={styles.container}>
-      <Ionicons name={icon} size={48} color={theme.colors.onSurfaceVariant} />
-      <Text variant="titleMedium" style={{ color: theme.colors.onSurfaceVariant, textAlign: 'center' }}>
+      <View style={[styles.iconWrap, { backgroundColor: fills.subtle }]}>
+        <Ionicons name={icon} size={32} color={theme.colors.onSurfaceVariant} />
+      </View>
+      <Text
+        variant="titleMedium"
+        style={[emphasis.strong, styles.text, { color: theme.colors.onSurface }]}
+      >
         {title}
       </Text>
       {subtitle ? (
-        <Text variant="bodyMedium" style={{ color: theme.colors.outline, textAlign: 'center' }}>
+        <Text
+          variant="bodyMedium"
+          style={[styles.text, { color: theme.colors.onSurfaceVariant }]}
+        >
           {subtitle}
         </Text>
       ) : null}
@@ -34,5 +44,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     gap: spacing.sm,
+  },
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.hero,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  text: {
+    textAlign: 'center',
   },
 });

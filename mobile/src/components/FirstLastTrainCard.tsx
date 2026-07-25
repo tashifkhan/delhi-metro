@@ -1,30 +1,39 @@
 import { StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme, type MD3Theme } from 'react-native-paper';
+import { Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { FirstLastTrainResponse } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, radius, emphasis, tabular } from '../theme';
 
 interface Props {
   data: FirstLastTrainResponse;
 }
 
-function TrainRow({ label, time, icon, iconBg, theme }: {
+function TrainRow({
+  label,
+  time,
+  icon,
+  iconBg,
+}: {
   label: string;
   time: string;
   icon: keyof typeof Ionicons.glyphMap;
   iconBg: string;
-  theme: MD3Theme;
 }) {
+  const theme = useTheme();
+
   return (
     <View style={styles.trainRow}>
       <View style={[styles.trainIcon, { backgroundColor: iconBg }]}>
         <Ionicons name={icon} size={18} color={theme.colors.primary} />
       </View>
-      <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, flex: 1 }}>
+      <Text variant="bodyMedium" style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>
         {label}
       </Text>
-      <Text variant="titleMedium" style={{ color: theme.colors.primary, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+      <Text
+        variant="titleMedium"
+        style={[emphasis.heavy, tabular, { color: theme.colors.onSurface }]}
+      >
         {time}
       </Text>
     </View>
@@ -33,30 +42,41 @@ function TrainRow({ label, time, icon, iconBg, theme }: {
 
 export function FirstLastTrainCard({ data }: Props) {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
+  const { isDark, fills } = useAppTheme();
 
   const firstTime = data.first_train?.endstation_from_first_train_estimated_time ?? '—';
   const lastTime = data.last_train?.endstation_from_last_train_estimated_time ?? '—';
-  const iconBg = isDark ? theme.colors.elevation.level5 : theme.colors.primaryContainer;
 
   return (
-    <Surface style={styles.container} elevation={1}>
+    <Surface style={styles.container} elevation={isDark ? 2 : 1}>
       <View style={styles.headerRow}>
-        <Ionicons name="train-outline" size={18} color={theme.colors.primary} />
-        <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
+        <View style={[styles.headerIcon, { backgroundColor: fills.accentSubtle }]}>
+          <Ionicons name="time-outline" size={15} color={theme.colors.primary} />
+        </View>
+        <Text variant="titleSmall" style={[emphasis.heavy, { color: theme.colors.onSurface }]}>
           Train Timings
         </Text>
       </View>
-      <TrainRow label="First Train" time={firstTime} icon="sunny-outline" iconBg={iconBg} theme={theme} />
+      <TrainRow
+        label="First train"
+        time={firstTime}
+        icon="sunny-outline"
+        iconBg={fills.accentSubtle}
+      />
       <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
-      <TrainRow label="Last Train" time={lastTime} icon="moon-outline" iconBg={iconBg} theme={theme} />
+      <TrainRow
+        label="Last train"
+        time={lastTime}
+        icon="moon-outline"
+        iconBg={fills.accentSubtle}
+      />
     </Surface>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
+    borderRadius: radius.hero,
     padding: spacing.base,
     gap: spacing.md,
   },
@@ -64,6 +84,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  headerIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.badge,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   trainRow: {
     flexDirection: 'row',
@@ -73,13 +100,16 @@ const styles = StyleSheet.create({
   trainIcon: {
     width: 36,
     height: 36,
-    borderRadius: 12,
+    borderRadius: radius.iconSmall,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  label: {
+    flex: 1,
+  },
   divider: {
-    height: 1,
-    marginLeft: 48,
-    opacity: 0.3,
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 36 + spacing.md,
+    opacity: 0.5,
   },
 });
