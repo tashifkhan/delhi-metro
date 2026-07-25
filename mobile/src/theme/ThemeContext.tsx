@@ -1,4 +1,12 @@
-import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { Platform, useColorScheme } from 'react-native';
 import {
   isDynamicThemeSupported,
@@ -16,12 +24,25 @@ import {
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
 import { lightScheme, darkScheme, darkSurfaceIdentity } from './colors';
+import { rgba } from './colorMath';
+import {
+  DYNAMIC_PALETTE_ID,
+  buildScheme,
+  paletteFromId,
+  toAmoled,
+  toHighContrast,
+} from './palettes';
+import {
+  appSettingsRepository,
+  DEFAULT_SETTINGS,
+  type AppSettings,
+} from '../storage/appSettingsRepository';
 
 const IS_ANDROID_12_PLUS =
   Platform.OS === 'android' &&
   typeof Platform.Version === 'number' &&
   Platform.Version >= 31;
-const SHOULD_USE_DYNAMIC_THEME = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
+const DYNAMIC_THEME_AVAILABLE = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
 const FALLBACK_SOURCE_COLOR = '#005FAF';
 
 function createPaperTheme(
@@ -42,9 +63,9 @@ export const paperLightTheme: MD3Theme = createPaperTheme(false, lightScheme);
 export const paperDarkTheme: MD3Theme = createPaperTheme(true, darkScheme);
 
 /**
- * Semantic status roles. Deliberately fixed rather than wallpaper-derived:
- * "disrupted" and "working lift" must stay legible as warning/success even
- * when Material You swings the accent hue, so only accent roles go dynamic.
+ * Semantic status roles. Deliberately fixed rather than palette-derived:
+ * "disrupted" and "working lift" must stay legible as warning/success whatever
+ * palette is chosen, so only accent roles follow the palette.
  */
 export interface SemanticColors {
   success: string;
@@ -88,6 +109,15 @@ export interface SurfaceFills {
   selected: string;
   /** Control floating above scrolling content (map zoom buttons). */
   floating: string;
+  /**
+   * Hairline that gives a card its edge.
+   *
+   * Elevation shadows are essentially invisible against a true-black
+   * background, so in dark mode a card only reads as a distinct object if it
+   * is outlined. In light mode the shadow already does that job and a border
+   * would just add noise, so this goes transparent.
+   */
+  hairline: string;
 }
 
 function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
@@ -104,6 +134,7 @@ function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
     onHeroText: isDark ? colors.onSurface : colors.onPrimaryContainer,
     selected: isDark ? colors.primaryContainer : colors.surface,
     floating: isDark ? colors.elevation.level4 : colors.surface,
+    hairline: isDark ? rgba(colors.outlineVariant, 0.55) : 'transparent',
   };
 }
 
@@ -113,6 +144,12 @@ interface AppTheme {
   isDark: boolean;
   semantic: SemanticColors;
   fills: SurfaceFills;
+  settings: AppSettings;
+  updateSettings: (patch: Partial<AppSettings>) => void;
+  /** False until stored settings have been read, to avoid a theme flash. */
+  settingsLoaded: boolean;
+  /** Whether this device can source colors from the wallpaper. */
+  dynamicAvailable: boolean;
 }
 
 const ThemeContext = createContext<AppTheme>({
@@ -121,6 +158,10 @@ const ThemeContext = createContext<AppTheme>({
   isDark: false,
   semantic: lightScheme,
   fills: createFills(paperLightTheme, false),
+  settings: DEFAULT_SETTINGS,
+  updateSettings: () => {},
+  settingsLoaded: false,
+  dynamicAvailable: DYNAMIC_THEME_AVAILABLE,
 });
 
 function createNavigationTheme(
@@ -142,51 +183,98 @@ function createNavigationTheme(
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const scheme = useColorScheme();
+  const systemScheme = useColorScheme();
   const { theme: materialTheme } = useMaterial3Theme({
     fallbackSourceColor: FALLBACK_SOURCE_COLOR,
   });
 
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    appSettingsRepository.load().then((stored) => {
+      if (!active) return;
+      setSettings(stored);
+      setSettingsLoaded(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    // Apply optimistically so the UI repaints on tap; the write is a
+    // background concern and must not make the toggle feel laggy.
+    setSettings((current) => {
+      const next = { ...current, ...patch };
+      void appSettingsRepository.save(next);
+      return next;
+    });
+  }, []);
+
   const value = useMemo<AppTheme>(() => {
-    const isDark = scheme === 'dark';
+    const isDark =
+      settings.themeMode === 'system'
+        ? systemScheme === 'dark'
+        : settings.themeMode === 'dark';
 
-    const lightMaterialScheme: Partial<MD3Theme['colors']> =
-      SHOULD_USE_DYNAMIC_THEME ? materialTheme.light : lightScheme;
+    const palette = paletteFromId(settings.paletteId);
+    const useDynamic = palette.id === DYNAMIC_PALETTE_ID && DYNAMIC_THEME_AVAILABLE;
 
-    // Dynamic dark keeps the wallpaper-derived accents and tonal ramp, but the
-    // true-black background/surface are forced back on: they are the app's
-    // dark-mode identity, and the library's default dark greys wash it out.
-    const darkMaterialScheme: Partial<MD3Theme['colors']> =
-      SHOULD_USE_DYNAMIC_THEME
+    let scheme: Partial<MD3Theme['colors']>;
+    if (useDynamic) {
+      scheme = isDark
         ? {
+            // Dynamic dark keeps the wallpaper accents and tonal ramp, but the
+            // true-black background/surface are forced back on: they are the
+            // app's dark identity, and the library's greys wash it out.
             ...materialTheme.dark,
             background: darkSurfaceIdentity.background,
             surface: darkSurfaceIdentity.surface,
           }
-        : darkScheme;
+        : materialTheme.light;
+    } else {
+      scheme = buildScheme(palette, isDark);
+    }
 
-    const materialLightTheme = createPaperTheme(false, lightMaterialScheme);
-    const materialDarkTheme = createPaperTheme(true, darkMaterialScheme);
+    if (isDark && settings.amoledDark) {
+      scheme = toAmoled(scheme);
+    }
+    if (settings.highContrast) {
+      scheme = toHighContrast(scheme, isDark);
+    }
 
+    const activeTheme = createPaperTheme(isDark, scheme);
+
+    // adaptNavigationTheme wants both, so pair the active theme with a plain
+    // counterpart rather than rebuilding the unused side from the palette.
     const { LightTheme: navLight, DarkTheme: navDark } = adaptNavigationTheme({
       reactNavigationLight: NavigationDefaultTheme,
       reactNavigationDark: NavigationDarkTheme,
-      materialLight: materialLightTheme,
-      materialDark: materialDarkTheme,
+      materialLight: isDark ? paperLightTheme : activeTheme,
+      materialDark: isDark ? activeTheme : paperDarkTheme,
     });
-
-    const activeTheme = isDark ? materialDarkTheme : materialLightTheme;
 
     return {
       paperTheme: activeTheme,
-      navTheme: isDark
-        ? createNavigationTheme(navDark, materialDarkTheme, true)
-        : createNavigationTheme(navLight, materialLightTheme, false),
+      navTheme: createNavigationTheme(isDark ? navDark : navLight, activeTheme, isDark),
       isDark,
       semantic: isDark ? darkScheme : lightScheme,
       fills: createFills(activeTheme, isDark),
+      settings,
+      updateSettings,
+      settingsLoaded,
+      dynamicAvailable: DYNAMIC_THEME_AVAILABLE,
     };
-  }, [materialTheme.dark, materialTheme.light, scheme]);
+  }, [
+    materialTheme.dark,
+    materialTheme.light,
+    systemScheme,
+    settings,
+    settingsLoaded,
+    updateSettings,
+  ]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -197,6 +285,6 @@ export function useAppTheme() {
 
 export const themeRuntimeConfig = {
   isAndroid12Plus: IS_ANDROID_12_PLUS,
-  shouldUseDynamicTheme: SHOULD_USE_DYNAMIC_THEME,
+  shouldUseDynamicTheme: DYNAMIC_THEME_AVAILABLE,
   fallbackSourceColor: FALLBACK_SOURCE_COLOR,
 } as const;
