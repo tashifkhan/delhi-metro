@@ -138,6 +138,32 @@ This adds/updates fields such as:
 - `expo.updates.url`
 - `expo.runtimeVersion`
 
+## 6b. Publish to tashif.codes F-Droid repo
+
+Tag-driven GitHub releases automatically dispatch F-Droid publishing when
+`TASHIF_CODES_WORKFLOW_TOKEN` is set on this repository (fine-grained PAT with
+**Actions: Read and write** on `tashifkhan/tashif.codes`).
+
+Manual re-import of an existing release:
+
+```bash
+# From this repo
+gh workflow run fdroid-release.yml \
+  --repo tashifkhan/delhi-metro \
+  --field tag=v1.1.0 \
+  --field apk_pattern='DelhiMetro-v*.apk'
+
+# Or directly on the website
+gh workflow run publish-fdroid.yml \
+  --repo tashifkhan/tashif.codes \
+  --field source_repository=tashifkhan/delhi-metro \
+  --field release_tag=v1.1.0 \
+  --field apk_pattern='DelhiMetro-v*.apk'
+```
+
+Install page: https://tashif.codes/fdroid  
+Repo URL: https://tashif.codes/fdroid/repo
+
 ## 7. Build APK (Cloud Recommended)
 
 Cloud build is the most reliable for release artifacts.

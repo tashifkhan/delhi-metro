@@ -1,5 +1,13 @@
 name: Build and Release APK
 
+# Builds a production APK with EAS, attaches it to a GitHub Release, then
+# dispatches the F-Droid publish workflow on tashif.codes.
+#
+# Required secrets:
+#   EXPO_TOKEN                    — Expo account token for EAS builds
+#   TASHIF_CODES_WORKFLOW_TOKEN   — PAT with actions:write on tashifkhan/tashif.codes
+#                                   (optional; skip F-Droid if unset)
+
 on:
   push:
     tags:
@@ -11,6 +19,11 @@ permissions:
 jobs:
   build-android:
     runs-on: ubuntu-latest
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      TASHIF_CODES_WORKFLOW_TOKEN: ${{ secrets.TASHIF_CODES_WORKFLOW_TOKEN }}
+      TASHIF_CODES_REPO: tashifkhan/tashif.codes
+      RELEASE_TAG: ${{ github.ref_name }}
 
     steps:
       - name: Checkout repository
@@ -56,5 +69,59 @@ jobs:
         with:
           files: DelhiMetro-${{ github.ref_name }}.apk
           generate_release_notes: true
+          body: |
+            ## Delhi Metro ${{ github.ref_name }}
+
+            Production Android APK built with EAS (`github-release` profile).
+
+            | | |
+            |---|---|
+            | **Package** | `codes.tashif.delhimetro` |
+            | **Tag** | `${{ github.ref_name }}` |
+
+            ### Install
+
+            - **F-Droid (recommended):** add `https://tashif.codes/fdroid/repo` in F-Droid → Settings → Repositories, then install **Delhi Metro**.
+            - **Direct APK:** download the `.apk` attached below (enable “Install unknown apps” if prompted).
+            - **Website:** https://tashif.codes/fdroid
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Trigger tashif.codes F-Droid publish
+        if: ${{ env.TASHIF_CODES_WORKFLOW_TOKEN != '' }}
+        env:
+          GH_TOKEN: ${{ env.TASHIF_CODES_WORKFLOW_TOKEN }}
+        run: |
+          set -euo pipefail
+          echo "Dispatching publish-fdroid.yml on $TASHIF_CODES_REPO for $RELEASE_TAG"
+          gh workflow run publish-fdroid.yml \
+            --repo "$TASHIF_CODES_REPO" \
+            --field source_repository="${{ github.repository }}" \
+            --field release_tag="$RELEASE_TAG" \
+            --field apk_pattern='DelhiMetro-v*.apk'
+
+          sleep 3
+          RUN_URL="$(gh run list \
+            --repo "$TASHIF_CODES_REPO" \
+            --workflow=publish-fdroid.yml \
+            --limit 1 \
+            --json url \
+            --jq '.[0].url' || true)"
+          if [[ -n "${RUN_URL:-}" ]]; then
+            echo "F-Droid workflow: $RUN_URL"
+            {
+              echo "### F-Droid publish"
+              echo "Triggered: $RUN_URL"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Summary
+        run: |
+          {
+            echo "## Delhi Metro ${RELEASE_TAG}"
+            echo ""
+            echo "- APK: \`DelhiMetro-${RELEASE_TAG}.apk\`"
+            echo "- Release: https://github.com/${{ github.repository }}/releases/tag/${RELEASE_TAG}"
+            echo "- F-Droid page: https://tashif.codes/fdroid"
+            echo "- F-Droid repo: https://tashif.codes/fdroid/repo"
+          } >> "$GITHUB_STEP_SUMMARY"
