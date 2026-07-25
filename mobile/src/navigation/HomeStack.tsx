@@ -4,6 +4,7 @@ import { Appbar, useTheme } from 'react-native-paper';
 import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyResultsScreen } from '../screens/JourneyResultsScreen';
 import { StationDetailScreen } from '../screens/StationDetailScreen';
+import { AppearanceScreen } from '../screens/AppearanceScreen';
 import type { HomeStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -33,6 +34,11 @@ export function HomeStack() {
         name="StationDetail"
         component={StationDetailScreen}
         options={({ route }) => ({ title: route.params.stationName })}
+      />
+      <Stack.Screen
+        name="Appearance"
+        component={AppearanceScreen}
+        options={{ title: 'Appearance' }}
       />
     </Stack.Navigator>
   );

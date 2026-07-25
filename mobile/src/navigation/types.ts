@@ -10,6 +10,7 @@ export type HomeStackParamList = {
     journeyTime?: string;
   };
   StationDetail: { stationCode: string; stationName: string };
+  Appearance: undefined;
 };
 
 export type ExploreStackParamList = {
