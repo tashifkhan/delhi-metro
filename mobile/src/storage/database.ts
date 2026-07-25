@@ -21,6 +21,10 @@ async function openDb(): Promise<SQLite.SQLiteDatabase> {
       payload_json TEXT NOT NULL,
       last_updated_at INTEGER NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
   `);
   return db;
 }
