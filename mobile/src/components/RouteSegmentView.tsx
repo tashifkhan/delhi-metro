@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Touchable } from './Touchable';
 import type { JourneyRouteSegment } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, radius, shape, emphasis, onColor } from '../theme';
 
 interface Props {
   segment: JourneyRouteSegment;
@@ -13,77 +14,125 @@ interface Props {
   onStationPress?: (stationCode: string, stationName: string) => void;
 }
 
-export function RouteSegmentView({ segment, lineColor, isLast, stationCodeMap, onStationPress }: Props) {
+const RAIL_WIDTH = 28;
+const RAIL_THICKNESS = 3;
+
+export function RouteSegmentView({
+  segment,
+  lineColor,
+  isLast,
+  stationCodeMap,
+  onStationPress,
+}: Props) {
   const theme = useTheme();
-  const { semantic, isDark } = useAppTheme();
+  const { semantic } = useAppTheme();
+  const pillText = onColor(lineColor);
 
   return (
     <View style={styles.container}>
-      {/* Line header with colored pill */}
+      {/* Line header */}
       <View style={styles.header}>
         <View style={[styles.linePill, { backgroundColor: lineColor }]}>
-          <View style={styles.linePillDot} />
-          <Text variant="labelMedium" style={{ color: '#fff', fontWeight: '700' }}>
+          <Ionicons name="train" size={12} color={pillText} />
+          <Text variant="labelMedium" style={[emphasis.heavy, { color: pillText }]}>
             {segment.line}
           </Text>
         </View>
         {segment.path_time ? (
-          <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
-            {segment.path_time}
-          </Text>
+          <View style={styles.durationRow}>
+            <Ionicons name="time-outline" size={12} color={theme.colors.onSurfaceVariant} />
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {segment.path_time}
+            </Text>
+          </View>
         ) : null}
       </View>
 
-      {/* Station list */}
-      <View style={styles.stationsContainer}>
-        <View style={[styles.lineBar, { backgroundColor: lineColor, opacity: isDark ? 0.6 : 0.4 }]} />
-        <View style={styles.stations}>
-          {segment.path.map((point, index) => {
-            const isBold = index === 0 || index === segment.path.length - 1;
-            const code = stationCodeMap?.get(point.name.trim().toLowerCase());
-            return (
-              <View key={`${point.name}-${index}`} style={styles.stationRow}>
+      {/* Station timeline — dots ride on the rail rather than sitting beside it */}
+      <View style={styles.stations}>
+        {segment.path.map((point, index) => {
+          const isFirst = index === 0;
+          const isTerminus = isFirst || index === segment.path.length - 1;
+          const code = stationCodeMap?.get(point.name.trim().toLowerCase());
+          const isLastRow = index === segment.path.length - 1;
+
+          const row = (
+            <View style={styles.stationRow}>
+              <View style={styles.rail}>
+                <View
+                  style={[
+                    styles.railLine,
+                    { backgroundColor: lineColor },
+                    isFirst && styles.railLineFromCenter,
+                    isLastRow && styles.railLineToCenter,
+                  ]}
+                />
                 <View
                   style={[
                     styles.stationDot,
                     {
                       borderColor: lineColor,
-                      backgroundColor: isBold ? lineColor : theme.colors.surface,
+                      backgroundColor: isTerminus ? lineColor : theme.colors.background,
                     },
-                    isBold && styles.stationDotBold,
+                    isTerminus && styles.stationDotTerminus,
                   ]}
                 />
-                <Text
-                  variant={isBold ? 'bodyMedium' : 'bodySmall'}
-                  style={{
-                    flex: 1,
-                    color: isBold ? theme.colors.onSurface : theme.colors.onSurfaceVariant,
-                    fontWeight: isBold ? '600' : '400',
-                  }}
-                >
-                  {point.name}
-                </Text>
-                {code ? (
-                  <Pressable
-                    onPress={() => onStationPress?.(code, point.name)}
-                    hitSlop={8}
-                    style={[styles.infoBtn, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}
-                  >
-                    <Ionicons name="information-circle-outline" size={15} color={theme.colors.primary} />
-                  </Pressable>
-                ) : null}
               </View>
-            );
-          })}
-        </View>
+
+              <Text
+                variant={isTerminus ? 'bodyMedium' : 'bodySmall'}
+                style={[
+                  isTerminus ? emphasis.strong : undefined,
+                  styles.stationName,
+                  {
+                    color: isTerminus
+                      ? theme.colors.onSurface
+                      : theme.colors.onSurfaceVariant,
+                  },
+                ]}
+              >
+                {point.name}
+              </Text>
+
+              {code ? (
+                <Ionicons
+                  name="information-circle-outline"
+                  size={16}
+                  color={theme.colors.outline}
+                />
+              ) : null}
+            </View>
+          );
+
+          return code && onStationPress ? (
+            <Touchable
+              key={`${point.name}-${index}`}
+              radius={shape.md}
+              onPress={() => onStationPress(code, point.name)}
+              accessibilityLabel={`${point.name}, view station details`}
+            >
+              {row}
+            </Touchable>
+          ) : (
+            <View key={`${point.name}-${index}`}>{row}</View>
+          );
+        })}
       </View>
 
-      {/* Interchange indicator */}
+      {/* Interchange callout */}
       {!isLast && segment.station_interchange_time > 0 ? (
-        <View style={[styles.interchange, { backgroundColor: semantic.warningContainer, opacity: isDark ? 1 : 0.5 }]}>
-          <Ionicons name="git-compare" size={16} color={semantic.interchange} />
-          <Text variant="labelMedium" style={{ color: semantic.interchange, fontWeight: '600' }}>
-            Change here ({segment.station_interchange_time} min)
+        <View
+          style={[
+            styles.interchange,
+            { backgroundColor: semantic.interchangeContainer },
+          ]}
+        >
+          <Ionicons name="git-compare" size={15} color={semantic.onInterchangeContainer} />
+          <Text
+            variant="labelMedium"
+            style={[emphasis.strong, { color: semantic.onInterchangeContainer }]}
+          >
+            Change here · {segment.station_interchange_time} min
           </Text>
         </View>
       ) : null}
@@ -99,6 +148,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.sm,
   },
   linePill: {
     flexDirection: 'row',
@@ -106,61 +156,68 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    borderRadius: 999,
+    borderRadius: radius.pill,
+    flexShrink: 1,
   },
-  linePillDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.5)',
-  },
-  stationsContainer: {
+  durationRow: {
     flexDirection: 'row',
-    marginLeft: 14,
-    gap: spacing.md,
-  },
-  lineBar: {
-    width: 3,
-    borderRadius: 1.5,
+    alignItems: 'center',
+    gap: 3,
   },
   stations: {
-    flex: 1,
-    paddingVertical: spacing.xs,
-    gap: spacing.sm,
+    marginLeft: spacing.xs,
   },
   stationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingRight: spacing.xs,
+    paddingRight: spacing.sm,
+    minHeight: 40,
   },
-  infoBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    justifyContent: 'center',
+  rail: {
+    width: RAIL_WIDTH,
+    alignSelf: 'stretch',
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  railLine: {
+    position: 'absolute',
+    width: RAIL_THICKNESS,
+    top: 0,
+    bottom: 0,
+    borderRadius: RAIL_THICKNESS / 2,
+  },
+  /** First row: the rail starts at the dot, so nothing is drawn above it. */
+  railLineFromCenter: {
+    top: '50%',
+  },
+  /** Last row: the rail ends at the dot. */
+  railLineToCenter: {
+    bottom: '50%',
   },
   stationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 2,
-  },
-  stationDotBold: {
     width: 10,
     height: 10,
     borderRadius: 5,
+    borderWidth: 2.5,
+  },
+  stationDotTerminus: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 0,
+  },
+  stationName: {
+    flex: 1,
   },
   interchange: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginLeft: spacing.sm,
+    marginLeft: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 12,
+    borderRadius: radius.iconSmall,
     alignSelf: 'flex-start',
   },
 });

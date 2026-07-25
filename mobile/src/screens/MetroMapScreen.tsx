@@ -13,13 +13,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { ActivityIndicator, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useMapFamilyPrimaryQuery } from '../hooks';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { EmptyState } from '../components/EmptyState';
+import { Touchable } from '../components/Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, radius } from '../theme';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MIN_SCALE = 1;
@@ -47,7 +49,7 @@ function clampTranslation(tx: number, ty: number, s: number, w: number, h: numbe
 
 export function MetroMapScreen() {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
+  const { fills } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, refetch } = useMapFamilyPrimaryQuery('network');
   const [imageLoading, setImageLoading] = useState(true);
@@ -190,50 +192,53 @@ export function MetroMapScreen() {
               </Animated.View>
             </>
           ) : (
-            <View style={styles.noImage}>
-              <Ionicons name="image-outline" size={48} color={theme.colors.outline} />
-              <Text variant="bodyMedium" style={{ color: theme.colors.outline }}>
-                Map image not available
-              </Text>
-            </View>
+            <EmptyState
+              title="Map unavailable"
+              subtitle="The network map could not be loaded right now"
+              icon="map-outline"
+            />
           )}
         </Pressable>
       </View>
 
       {/* Zoom controls — sibling of canvas, outside PanResponder */}
-      <View style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'] }]} pointerEvents="box-none">
-        <Pressable
-          style={[styles.zoomBtn, { backgroundColor: isDark ? theme.colors.elevation.level4 : theme.colors.surface }]}
-          onPress={handleZoomIn}
-        >
-          <Ionicons name="add" size={22} color={theme.colors.onSurface} />
-        </Pressable>
-        <Pressable
-          style={[styles.zoomBtn, { backgroundColor: isDark ? theme.colors.elevation.level4 : theme.colors.surface }]}
-          onPress={handleZoomOut}
-        >
-          <Ionicons name="remove" size={22} color={theme.colors.onSurface} />
-        </Pressable>
-      </View>
-
-      {/* FAB — sibling of canvas, outside PanResponder */}
-      <Pressable
-        style={[
-          styles.fab,
-          {
-            bottom: insets.bottom + spacing['2xl'],
-            left: spacing.base,
-            backgroundColor: downloading ? theme.colors.surfaceVariant : theme.colors.primary,
-          },
-        ]}
-        onPress={handleDownloadPdf}
-        disabled={downloading}
+      <Surface
+        style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'] }]}
+        elevation={3}
       >
-        {downloading
-          ? <ActivityIndicator size={26} color={theme.colors.onSurfaceVariant} />
-          : <Ionicons name="download-outline" size={26} color={theme.colors.onPrimary} />
-        }
-      </Pressable>
+        <Touchable
+          radius={radius.iconSmall}
+          onPress={handleZoomIn}
+          accessibilityLabel="Zoom in"
+          style={{ backgroundColor: fills.floating }}
+        >
+          <View style={styles.zoomBtn}>
+            <Ionicons name="add" size={22} color={theme.colors.onSurface} />
+          </View>
+        </Touchable>
+        <View style={[styles.zoomDivider, { backgroundColor: theme.colors.outlineVariant }]} />
+        <Touchable
+          radius={radius.iconSmall}
+          onPress={handleZoomOut}
+          accessibilityLabel="Zoom out"
+          style={{ backgroundColor: fills.floating }}
+        >
+          <View style={styles.zoomBtn}>
+            <Ionicons name="remove" size={22} color={theme.colors.onSurface} />
+          </View>
+        </Touchable>
+      </Surface>
+
+      {/* Download FAB — sibling of canvas, outside PanResponder */}
+      <FAB
+        icon={downloading ? 'progress-download' : 'download'}
+        label="PDF"
+        loading={downloading}
+        disabled={downloading}
+        onPress={handleDownloadPdf}
+        accessibilityLabel="Download the network map as a PDF"
+        style={[styles.fab, { bottom: insets.bottom + spacing['2xl'] }]}
+      />
     </View>
   );
 }
@@ -266,31 +271,22 @@ const styles = StyleSheet.create({
   zoomControls: {
     position: 'absolute',
     right: spacing.base,
-    gap: spacing.sm,
+    borderRadius: radius.icon,
+    overflow: 'hidden',
   },
   zoomBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: 48,
+    height: 48,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
+  },
+  zoomDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginHorizontal: spacing.sm,
   },
   fab: {
     position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    left: spacing.base,
+    borderRadius: radius.icon,
   },
 });

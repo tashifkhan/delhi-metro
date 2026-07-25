@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
-import { Platform, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeStack } from './HomeStack';
@@ -13,13 +13,21 @@ import type { RootTabParamList } from './types';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const TAB_ICONS: Record<keyof RootTabParamList, { focused: keyof typeof Ionicons.glyphMap; default: keyof typeof Ionicons.glyphMap }> = {
+const TAB_ICONS: Record<
+  keyof RootTabParamList,
+  { focused: keyof typeof Ionicons.glyphMap; default: keyof typeof Ionicons.glyphMap }
+> = {
   HomeTab: { focused: 'train', default: 'train-outline' },
   SearchTab: { focused: 'search', default: 'search-outline' },
   LinesTab: { focused: 'git-branch', default: 'git-branch-outline' },
   MapTab: { focused: 'map', default: 'map-outline' },
   AlertsTab: { focused: 'notifications', default: 'notifications-outline' },
 };
+
+/** M3 navigation bar: 32dp active indicator + label, 80dp total content height. */
+const INDICATOR_HEIGHT = 32;
+const INDICATOR_WIDTH = 64;
+const BAR_CONTENT_HEIGHT = 64;
 
 export function RootTabs() {
   const theme = useTheme();
@@ -35,40 +43,28 @@ export function RootTabs() {
           backgroundColor: theme.colors.elevation.level2,
           borderTopWidth: 0,
           elevation: 0,
-          height: Platform.OS === 'ios' ? 88 : 72 + insets.bottom,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : insets.bottom + 18,
+          // The inset is added once, as bottom padding; folding it into the
+          // height as well used to squeeze the icon and label into 46dp.
+          height: BAR_CONTENT_HEIGHT + insets.bottom,
+          paddingTop: 10,
+          paddingBottom: insets.bottom + 8,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
-          marginTop: 2,
+          marginTop: 4,
         },
         tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
-          const iconName = focused ? icons.focused : icons.default;
           return (
             <View
-              style={
-                focused
-                  ? {
-                      backgroundColor: theme.colors.secondaryContainer,
-                      borderRadius: 999,
-                      width: 64,
-                      height: 32,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }
-                  : {
-                      width: 64,
-                      height: 32,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                    }
-              }
+              style={[
+                styles.indicator,
+                focused && { backgroundColor: theme.colors.secondaryContainer },
+              ]}
             >
               <Ionicons
-                name={iconName}
+                name={focused ? icons.focused : icons.default}
                 size={22}
                 color={focused ? theme.colors.onSecondaryContainer : color}
               />
@@ -85,3 +81,13 @@ export function RootTabs() {
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  indicator: {
+    width: INDICATOR_WIDTH,
+    height: INDICATOR_HEIGHT,
+    borderRadius: INDICATOR_HEIGHT / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});

@@ -1,9 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { Touchable } from './Touchable';
 import type { RouteStrategy } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing } from '../theme';
+import { spacing, shape, emphasis } from '../theme';
 
 interface Props {
   active: RouteStrategy;
@@ -17,39 +18,39 @@ const OPTIONS: { value: RouteStrategy; label: string; icon: keyof typeof Ionicon
 
 export function StrategyToggle({ active, onChange }: Props) {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
+  const { fills } = useAppTheme();
 
   return (
-    <View style={[styles.container, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}>
+    <View
+      style={[styles.container, { backgroundColor: fills.subtleStrong }]}
+      accessibilityRole="radiogroup"
+    >
       {OPTIONS.map((option) => {
         const isActive = active === option.value;
+        const foreground = isActive ? theme.colors.primary : theme.colors.onSurfaceVariant;
+
         return (
-          <Pressable
-            key={option.value}
-            style={[
-              styles.option,
-              isActive && [
-                styles.activeOption,
-                { backgroundColor: isDark ? theme.colors.primaryContainer : theme.colors.surface },
-              ],
-            ]}
-            onPress={() => onChange(option.value)}
-          >
-            <Ionicons
-              name={option.icon}
-              size={18}
-              color={isActive ? theme.colors.primary : theme.colors.onSurfaceVariant}
-            />
-            <Text
-              variant="labelLarge"
-              style={{
-                color: isActive ? theme.colors.primary : theme.colors.onSurfaceVariant,
-                fontWeight: isActive ? '700' : '500',
-              }}
+          <View key={option.value} style={styles.slot}>
+            <Touchable
+              radius={shape.md}
+              onPress={() => onChange(option.value)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={`Route preference: ${option.label}`}
+              style={isActive ? { backgroundColor: fills.selected } : undefined}
             >
-              {option.label}
-            </Text>
-          </Pressable>
+              <View style={styles.option}>
+                <Ionicons name={option.icon} size={18} color={foreground} />
+                <Text
+                  variant="labelLarge"
+                  style={[isActive ? emphasis.heavy : emphasis.medium, { color: foreground }]}
+                  numberOfLines={1}
+                >
+                  {option.label}
+                </Text>
+              </View>
+            </Touchable>
+          </View>
         );
       })}
     </View>
@@ -59,23 +60,19 @@ export function StrategyToggle({ active, onChange }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderRadius: 20,
+    borderRadius: shape.lg,
     padding: 4,
+    gap: 4,
+  },
+  slot: {
+    flex: 1,
   },
   option: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
     paddingVertical: 12,
-    borderRadius: 16,
-  },
-  activeOption: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingHorizontal: spacing.sm,
   },
 });

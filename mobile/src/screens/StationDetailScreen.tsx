@@ -1,16 +1,17 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import { Chip, Divider, Surface, Text, useTheme } from 'react-native-paper';
+import { Divider, Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useStationDetailQuery } from '../hooks';
 import { LineBadge } from '../components/LineBadge';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { Touchable } from '../components/Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
-import { spacing } from '../theme';
+import { spacing, radius, emphasis, tabular } from '../theme';
 
 type Route = RouteProp<HomeStackParamList, 'StationDetail'>;
 
@@ -28,34 +29,49 @@ function Section({
   defaultExpanded?: boolean;
 }) {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
+  const { isDark, fills } = useAppTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   return (
-    <Surface style={styles.section} elevation={1}>
-      <Pressable style={styles.sectionHeader} onPress={() => setExpanded(!expanded)}>
-        <View style={[styles.sectionIconCircle, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.primaryContainer }]}>
-          <Ionicons name={icon} size={16} color={theme.colors.primary} />
-        </View>
-        <Text variant="titleSmall" style={{ flex: 1, color: theme.colors.onSurface, fontWeight: '700' }}>
-          {title}
-        </Text>
-        {count !== undefined && (
-          <View style={[styles.countBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '700' }}>
-              {count}
-            </Text>
+    <Surface style={styles.section} elevation={isDark ? 2 : 1}>
+      <Touchable
+        // Square ripple: the header is the top slice of the card, and the
+        // parent Surface already clips the rounded corners.
+        radius={0}
+        onPress={() => setExpanded(!expanded)}
+        accessibilityLabel={title}
+        accessibilityState={{ expanded }}
+      >
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIconCircle, { backgroundColor: fills.accentSubtle }]}>
+            <Ionicons name={icon} size={16} color={theme.colors.primary} />
           </View>
-        )}
-        <Ionicons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={18}
-          color={theme.colors.outline}
-        />
-      </Pressable>
+          <Text
+            variant="titleSmall"
+            style={[emphasis.heavy, styles.sectionTitle, { color: theme.colors.onSurface }]}
+          >
+            {title}
+          </Text>
+          {count !== undefined && (
+            <View style={[styles.countBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Text
+                variant="labelSmall"
+                style={[emphasis.heavy, { color: theme.colors.onPrimaryContainer }]}
+              >
+                {count}
+              </Text>
+            </View>
+          )}
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color={theme.colors.onSurfaceVariant}
+          />
+        </View>
+      </Touchable>
       {expanded && (
         <>
-          <Divider style={{ opacity: 0.2, marginHorizontal: spacing.base }} />
+          <Divider style={{ opacity: 0.3, marginHorizontal: spacing.base }} />
           <View style={styles.sectionContent}>{children}</View>
         </>
       )}
@@ -63,16 +79,78 @@ function Section({
   );
 }
 
-function InfoRow({ label, value, icon }: { label: string; value: string | null | undefined; icon?: keyof typeof Ionicons.glyphMap }) {
+function InfoRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | null | undefined;
+  icon?: keyof typeof Ionicons.glyphMap;
+}) {
   const theme = useTheme();
   if (!value) return null;
+
   return (
     <View style={styles.infoRow}>
-      {icon && <Ionicons name={icon} size={14} color={theme.colors.outline} style={{ marginTop: 2 }} />}
-      <Text variant="bodySmall" style={{ color: theme.colors.outline, width: 90 }}>{label}</Text>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurface, flex: 1, textAlign: 'right', fontWeight: '500' }}>
+      {icon && <Ionicons name={icon} size={15} color={theme.colors.onSurfaceVariant} />}
+      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+        {label}
+      </Text>
+      <Text
+        variant="bodyMedium"
+        style={[emphasis.medium, styles.infoValue, { color: theme.colors.onSurface }]}
+      >
         {value}
       </Text>
+    </View>
+  );
+}
+
+/** Shared shell for the platform / gate / lift entries. */
+function ItemCard({
+  icon,
+  iconColor,
+  title,
+  meta,
+  metaIcon = 'navigate-outline',
+  trailing,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  title: string;
+  meta?: string | null;
+  metaIcon?: keyof typeof Ionicons.glyphMap;
+  trailing?: React.ReactNode;
+}) {
+  const theme = useTheme();
+  const { fills } = useAppTheme();
+
+  return (
+    <View style={[styles.itemCard, { backgroundColor: fills.subtleStrong }]}>
+      <View style={styles.itemCardHeader}>
+        <View style={[styles.itemCardIcon, { backgroundColor: fills.accentSubtle }]}>
+          <Ionicons name={icon} size={14} color={iconColor ?? theme.colors.primary} />
+        </View>
+        <Text
+          variant="bodyMedium"
+          style={[emphasis.strong, styles.itemCardTitle, { color: theme.colors.onSurface }]}
+        >
+          {title}
+        </Text>
+        {trailing}
+      </View>
+      {meta ? (
+        <View style={styles.itemCardMeta}>
+          <Ionicons name={metaIcon} size={12} color={theme.colors.onSurfaceVariant} />
+          <Text
+            variant="bodySmall"
+            style={[styles.itemCardMetaText, { color: theme.colors.onSurfaceVariant }]}
+          >
+            {meta}
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -108,7 +186,7 @@ export function StationDetailScreen() {
   const route = useRoute<Route>();
   const { stationCode } = route.params;
   const theme = useTheme();
-  const { semantic, isDark } = useAppTheme();
+  const { semantic, fills } = useAppTheme();
   const { data: station, isLoading, isError, refetch } = useStationDetailQuery(stationCode);
 
   if (isLoading) return <LoadingState message="Loading station details..." />;
@@ -121,64 +199,71 @@ export function StationDetailScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
     >
-      {/* Hero header */}
-      <Surface
-        style={[
-          styles.heroCard,
-          { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.primaryContainer },
-        ]}
-        elevation={0}
-      >
+      {/* Hero */}
+      <Surface style={[styles.heroCard, { backgroundColor: fills.hero }]} elevation={0}>
         <View style={styles.heroTop}>
-          <View style={[styles.codeBox, { backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.8)' }]}>
-            <Text variant="titleMedium" style={{ color: theme.colors.primary, fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+          <View style={[styles.codeBox, { backgroundColor: fills.onHero }]}>
+            <Text
+              variant="titleMedium"
+              style={[emphasis.heavy, tabular, { color: fills.onHeroText }]}
+            >
               {station.station_code}
             </Text>
           </View>
           <View style={styles.heroInfo}>
             <Text
               variant="headlineSmall"
-              style={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '800' }}
+              style={[emphasis.heavy, { color: fills.onHeroText }]}
               numberOfLines={2}
             >
               {station.station_name}
             </Text>
             {station.station_commercial_name && (
-              <Text variant="bodySmall" style={{ color: isDark ? theme.colors.onSurfaceVariant : theme.colors.onPrimaryContainer, opacity: 0.7 }}>
+              <Text
+                variant="bodySmall"
+                style={[styles.heroSubtitle, { color: fills.onHeroText }]}
+                numberOfLines={2}
+              >
                 {station.station_commercial_name}
               </Text>
             )}
           </View>
         </View>
 
-        {/* Tags row */}
-        <View style={styles.tagsRow}>
-          {station.station_type && (
-            <Chip
-              compact
-              mode="flat"
-              icon={() => <Ionicons name="business-outline" size={12} color={isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer} />}
-              style={{ backgroundColor: isDark ? theme.colors.elevation.level5 : 'rgba(255,255,255,0.7)' }}
-              textStyle={{ color: isDark ? theme.colors.onSurface : theme.colors.onPrimaryContainer, fontWeight: '600', fontSize: 12 }}
-            >
-              {station.station_type}
-            </Chip>
-          )}
-          {station.interchange && (
-            <Chip
-              compact
-              mode="flat"
-              icon={() => <Ionicons name="git-compare" size={12} color={semantic.interchange} />}
-              style={{ backgroundColor: semantic.warningContainer }}
-              textStyle={{ color: semantic.interchange, fontWeight: '600', fontSize: 12 }}
-            >
-              Interchange
-            </Chip>
-          )}
-        </View>
+        {/* Tags */}
+        {(station.station_type || station.interchange) && (
+          <View style={styles.tagsRow}>
+            {station.station_type && (
+              <View style={[styles.tag, { backgroundColor: fills.onHero }]}>
+                <Ionicons name="business-outline" size={12} color={fills.onHeroText} />
+                <Text
+                  variant="labelSmall"
+                  style={[emphasis.strong, { color: fills.onHeroText }]}
+                >
+                  {station.station_type}
+                </Text>
+              </View>
+            )}
+            {station.interchange && (
+              <View style={[styles.tag, { backgroundColor: semantic.interchangeContainer }]}>
+                <Ionicons
+                  name="git-compare"
+                  size={12}
+                  color={semantic.onInterchangeContainer}
+                />
+                <Text
+                  variant="labelSmall"
+                  style={[emphasis.strong, { color: semantic.onInterchangeContainer }]}
+                >
+                  Interchange
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
 
-        {/* Line badges inline */}
         {station.metro_lines.length > 0 && (
           <View style={styles.lineBadgesRow}>
             {station.metro_lines.map((line) => (
@@ -188,7 +273,7 @@ export function StationDetailScreen() {
         )}
       </Surface>
 
-      {/* Contact & Location */}
+      {/* Station info */}
       <Section title="Station Info" icon="information-circle-outline">
         <InfoRow label="Mobile" value={station.mobile} icon="call-outline" />
         <InfoRow label="Landline" value={station.landline} icon="call-outline" />
@@ -200,8 +285,11 @@ export function StationDetailScreen() {
           />
         )}
         {station.station_description && (
-          <View style={styles.descriptionBox}>
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, lineHeight: 18 }}>
+          <View style={[styles.descriptionBox, { backgroundColor: fills.subtleStrong }]}>
+            <Text
+              variant="bodySmall"
+              style={[styles.description, { color: theme.colors.onSurfaceVariant }]}
+            >
               {station.station_description}
             </Text>
           </View>
@@ -211,92 +299,109 @@ export function StationDetailScreen() {
       {/* Platforms */}
       {station.platforms.length > 0 && (
         <Section title="Platforms" icon="layers-outline" count={station.platforms.length}>
-          {station.platforms.map((platform, i) => (
-            <View key={i} style={[styles.itemCard, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}>
-              <View style={styles.itemCardHeader}>
-                <View style={[styles.itemCardIcon, { backgroundColor: isDark ? theme.colors.elevation.level4 : theme.colors.primaryContainer }]}>
-                  <Ionicons name="train-outline" size={14} color={lineColor} />
-                </View>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, fontWeight: '600' }}>
-                  {platform.platform_name}
-                </Text>
-              </View>
-              {getPlatformDirection(platform.train_towards) && (
-                <View style={styles.itemCardMeta}>
-                  <Ionicons name="arrow-forward-outline" size={12} color={theme.colors.outline} />
-                  <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
-                    Towards {getPlatformDirection(platform.train_towards)}
-                  </Text>
-                </View>
-              )}
-            </View>
-          ))}
+          {station.platforms.map((platform, i) => {
+            const direction = getPlatformDirection(platform.train_towards);
+            return (
+              <ItemCard
+                key={i}
+                icon="train-outline"
+                iconColor={lineColor}
+                title={platform.platform_name}
+                meta={direction ? `Towards ${direction}` : null}
+                metaIcon="arrow-forward-outline"
+              />
+            );
+          })}
         </Section>
       )}
 
       {/* Gates */}
       {station.gates.length > 0 && (
-        <Section title="Gates" icon="enter-outline" count={station.gates.length} defaultExpanded={false}>
+        <Section
+          title="Gates"
+          icon="enter-outline"
+          count={station.gates.length}
+          defaultExpanded={false}
+        >
           {station.gates.map((gate, i) => (
-            <View key={i} style={[styles.itemCard, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}>
-              <View style={styles.itemCardHeader}>
-                <View style={[styles.itemCardIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                  <Ionicons name="enter-outline" size={14} color={theme.colors.primary} />
-                </View>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, fontWeight: '600', flex: 1 }}>
-                  {gate.gate_name}
-                </Text>
-                {gate.divyang_friendly && (
-                  <View style={[styles.accessBadge, { backgroundColor: semantic.successContainer }]}>
-                    <Ionicons name="accessibility" size={12} color={semantic.success} />
+            <ItemCard
+              key={i}
+              icon="enter-outline"
+              title={gate.gate_name}
+              meta={gate.location}
+              trailing={
+                gate.divyang_friendly ? (
+                  <View
+                    style={[styles.accessBadge, { backgroundColor: semantic.successContainer }]}
+                  >
+                    <Ionicons
+                      name="accessibility"
+                      size={12}
+                      color={semantic.onSuccessContainer}
+                    />
                   </View>
-                )}
-              </View>
-              {gate.location && (
-                <View style={styles.itemCardMeta}>
-                  <Ionicons name="navigate-outline" size={12} color={theme.colors.outline} />
-                  <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
-                    {gate.location}
-                  </Text>
-                </View>
-              )}
-            </View>
+                ) : undefined
+              }
+            />
           ))}
         </Section>
       )}
 
       {/* Lifts */}
       {station.lifts.length > 0 && (
-        <Section title="Lifts" icon="arrow-up-outline" count={station.lifts.length} defaultExpanded={false}>
+        <Section
+          title="Lifts"
+          icon="arrow-up-outline"
+          count={station.lifts.length}
+          defaultExpanded={false}
+        >
           {station.lifts.map((lift, i) => {
             const liftStatus = getLiftStatusMeta(lift.status);
             return (
-              <View key={i} style={[styles.itemCard, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}>
-                <View style={styles.itemCardHeader}>
-                  <View style={[styles.itemCardIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                    <Ionicons name="arrow-up-outline" size={14} color={theme.colors.primary} />
-                  </View>
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurface, fontWeight: '600', flex: 1 }}>
-                    {lift.name || lift.lift_type || 'Lift'}
-                  </Text>
-                  {liftStatus && (
-                    <View style={[styles.statusBadge, { backgroundColor: liftStatus.isWorking ? semantic.successContainer : theme.colors.errorContainer }]}>
-                      <View style={[styles.statusDot, { backgroundColor: liftStatus.isWorking ? semantic.success : theme.colors.error }]} />
-                      <Text variant="labelSmall" style={{ color: liftStatus.isWorking ? semantic.success : theme.colors.error, fontWeight: '600' }}>
+              <ItemCard
+                key={i}
+                icon="arrow-up-outline"
+                title={lift.name || lift.lift_type || 'Lift'}
+                meta={lift.description_location}
+                trailing={
+                  liftStatus ? (
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: liftStatus.isWorking
+                            ? semantic.successContainer
+                            : theme.colors.errorContainer,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.statusDot,
+                          {
+                            backgroundColor: liftStatus.isWorking
+                              ? semantic.onSuccessContainer
+                              : theme.colors.onErrorContainer,
+                          },
+                        ]}
+                      />
+                      <Text
+                        variant="labelSmall"
+                        style={[
+                          emphasis.strong,
+                          {
+                            color: liftStatus.isWorking
+                              ? semantic.onSuccessContainer
+                              : theme.colors.onErrorContainer,
+                          },
+                        ]}
+                      >
                         {liftStatus.label}
                       </Text>
                     </View>
-                  )}
-                </View>
-                {lift.description_location && (
-                  <View style={styles.itemCardMeta}>
-                    <Ionicons name="navigate-outline" size={12} color={theme.colors.outline} />
-                    <Text variant="bodySmall" style={{ color: theme.colors.outline }}>
-                      {lift.description_location}
-                    </Text>
-                  </View>
-                )}
-              </View>
+                  ) : undefined
+                }
+              />
             );
           })}
         </Section>
@@ -307,16 +412,12 @@ export function StationDetailScreen() {
         <Section title="Facilities" icon="grid-outline" count={station.station_facility.length}>
           <View style={styles.facilityGrid}>
             {station.station_facility.map((f, i) => (
-              <Chip
-                key={i}
-                compact
-                mode="flat"
-                icon={() => <Ionicons name="checkmark-circle" size={14} color={semantic.success} />}
-                style={{ backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }}
-                textStyle={{ color: theme.colors.onSurface, fontSize: 12 }}
-              >
-                {f.name}
-              </Chip>
+              <View key={i} style={[styles.facilityChip, { backgroundColor: fills.subtleStrong }]}>
+                <Ionicons name="checkmark-circle" size={14} color={semantic.success} />
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurface }}>
+                  {f.name}
+                </Text>
+              </View>
             ))}
           </View>
         </Section>
@@ -333,7 +434,7 @@ const styles = StyleSheet.create({
   },
   // Hero
   heroCard: {
-    borderRadius: 28,
+    borderRadius: radius.hero,
     padding: spacing.lg,
     gap: spacing.md,
   },
@@ -343,9 +444,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   codeBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
+    minWidth: 64,
+    height: 64,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.icon,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -353,10 +455,21 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  heroSubtitle: {
+    opacity: 0.75,
+  },
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
   },
   lineBadgesRow: {
     flexDirection: 'row',
@@ -365,7 +478,7 @@ const styles = StyleSheet.create({
   },
   // Sections
   section: {
-    borderRadius: 24,
+    borderRadius: radius.hero,
     overflow: 'hidden',
   },
   sectionHeader: {
@@ -377,39 +490,46 @@ const styles = StyleSheet.create({
   sectionIconCircle: {
     width: 32,
     height: 32,
-    borderRadius: 10,
+    borderRadius: radius.iconSmall,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  sectionTitle: {
+    flex: 1,
+  },
   countBadge: {
-    minWidth: 26,
-    height: 26,
-    borderRadius: 13,
-    justifyContent: 'center',
+    minWidth: 24,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: radius.pill,
     alignItems: 'center',
-    paddingHorizontal: 6,
   },
   sectionContent: {
     padding: spacing.base,
-    paddingTop: spacing.md,
     gap: spacing.sm,
   },
   // Info rows
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.sm,
     paddingVertical: spacing.xs,
+  },
+  infoValue: {
+    flex: 1,
+    textAlign: 'right',
   },
   descriptionBox: {
     marginTop: spacing.xs,
     padding: spacing.md,
-    borderRadius: 12,
-    backgroundColor: 'rgba(128,128,128,0.06)',
+    borderRadius: radius.iconSmall,
   },
-  // Item cards (platforms, gates, lifts)
+  description: {
+    lineHeight: 19,
+  },
+  // Item cards
   itemCard: {
-    borderRadius: 16,
+    borderRadius: radius.card,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -421,30 +541,36 @@ const styles = StyleSheet.create({
   itemCardIcon: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: radius.badge,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  itemCardTitle: {
+    flex: 1,
   },
   itemCardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginLeft: 36,
+    marginLeft: 28 + spacing.sm,
+  },
+  itemCardMetaText: {
+    flex: 1,
   },
   accessBadge: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
   },
   statusDot: {
     width: 6,
@@ -456,5 +582,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+  },
+  facilityChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
   },
 });

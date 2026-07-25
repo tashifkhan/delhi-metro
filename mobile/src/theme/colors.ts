@@ -3,6 +3,13 @@
  *
  * Dark palette: deep true-blacks with cool-blue tonal surfaces
  * like Metrolist — moody, layered, premium feel.
+ *
+ * Alongside the standard M3 roles each scheme carries app-specific semantic
+ * roles (success / warning / interchange). They follow the same
+ * `role` + `onRole` + `roleContainer` + `onRoleContainer` shape as M3 proper,
+ * so they compose the same way and survive dynamic theming — see
+ * `ThemeContext`, which keeps these fixed while accent roles follow the
+ * wallpaper. Never hardcode a status color at the call site; use these.
  */
 
 export const lightScheme = {
@@ -45,12 +52,19 @@ export const lightScheme = {
   onSurfaceDisabled: 'rgba(26, 28, 30, 0.38)',
   backdrop: 'rgba(45, 49, 56, 0.4)',
 
-  // App-specific semantic tokens
+  // App-specific semantic roles
   success: 'rgb(27, 109, 48)',
-  successContainer: 'rgb(163, 246, 169)',
+  onSuccess: 'rgb(255, 255, 255)',
+  successContainer: 'rgb(186, 243, 189)',
+  onSuccessContainer: 'rgb(0, 33, 9)',
   warning: 'rgb(123, 88, 0)',
-  warningContainer: 'rgb(255, 222, 161)',
+  onWarning: 'rgb(255, 255, 255)',
+  warningContainer: 'rgb(255, 232, 190)',
+  onWarningContainer: 'rgb(38, 26, 0)',
   interchange: 'rgb(139, 80, 0)',
+  onInterchange: 'rgb(255, 255, 255)',
+  interchangeContainer: 'rgb(255, 220, 186)',
+  onInterchangeContainer: 'rgb(44, 22, 0)',
 };
 
 export const darkScheme = {
@@ -93,10 +107,24 @@ export const darkScheme = {
   onSurfaceDisabled: 'rgba(227, 226, 230, 0.38)',
   backdrop: 'rgba(45, 49, 56, 0.4)',
 
-  // App-specific semantic tokens
+  // App-specific semantic roles
   success: 'rgb(135, 217, 142)',
+  onSuccess: 'rgb(0, 57, 15)',
   successContainer: 'rgb(0, 83, 25)',
+  onSuccessContainer: 'rgb(163, 246, 169)',
   warning: 'rgb(245, 191, 72)',
+  onWarning: 'rgb(64, 45, 0)',
   warningContainer: 'rgb(94, 66, 0)',
+  onWarningContainer: 'rgb(255, 222, 161)',
   interchange: 'rgb(255, 184, 106)',
+  onInterchange: 'rgb(72, 38, 0)',
+  interchangeContainer: 'rgb(102, 55, 0)',
+  onInterchangeContainer: 'rgb(255, 220, 186)',
 };
+
+/** The dark surface stack that defines the app's identity in dark mode. */
+export const darkSurfaceIdentity = {
+  background: darkScheme.background,
+  surface: darkScheme.surface,
+  elevation: darkScheme.elevation,
+} as const;
