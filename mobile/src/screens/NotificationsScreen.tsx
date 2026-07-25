@@ -1,18 +1,16 @@
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from 'react-native-paper';
 import { useNotificationsQuery } from '../hooks';
 import { NotificationCard } from '../components/NotificationCard';
 import { LineStatusCarousel } from '../components/LineStatusCarousel';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { useAppTheme } from '../theme/ThemeContext';
+import { SectionHeader } from '../components/SectionHeader';
 import { spacing } from '../theme';
 
 export function NotificationsScreen() {
   const theme = useTheme();
-  const { isDark } = useAppTheme();
   const { data, isLoading, isError, refetch, isRefetching } = useNotificationsQuery();
 
   if (isLoading) return <LoadingState message="Loading alerts..." />;
@@ -21,21 +19,12 @@ export function NotificationsScreen() {
   const ListHeader = (
     <View>
       <LineStatusCarousel />
-      <View style={[styles.noticeHeader, { borderBottomColor: theme.colors.outlineVariant }]}>
-        <View style={[styles.noticeIconWrap, { backgroundColor: isDark ? theme.colors.elevation.level3 : theme.colors.surfaceVariant }]}>
-          <Ionicons name="megaphone-outline" size={16} color={theme.colors.primary} />
-        </View>
-        <Text variant="titleSmall" style={{ color: theme.colors.onSurface, fontWeight: '700' }}>
-          Passenger Notices
-        </Text>
-        {!!data?.length && (
-          <View style={[styles.countBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text variant="labelSmall" style={{ color: theme.colors.onPrimaryContainer, fontWeight: '700' }}>
-              {data.length}
-            </Text>
-          </View>
-        )}
-      </View>
+      <SectionHeader
+        title="Passenger Notices"
+        icon="megaphone-outline"
+        count={data?.length}
+        inset
+      />
     </View>
   );
 
@@ -46,7 +35,11 @@ export function NotificationsScreen() {
       style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
       ListHeaderComponent={ListHeader}
-      renderItem={({ item }) => <NotificationCard notification={item} />}
+      renderItem={({ item }) => (
+        <View style={styles.cardWrapper}>
+          <NotificationCard notification={item} />
+        </View>
+      )}
       refreshing={isRefetching}
       onRefresh={refetch}
       ListEmptyComponent={
@@ -62,31 +55,11 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   list: {
-    gap: spacing.sm,
     flexGrow: 1,
     paddingBottom: spacing['3xl'],
   },
-  noticeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  cardWrapper: {
     paddingHorizontal: spacing.base,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  noticeIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  countBadge: {
-    marginLeft: 'auto',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 999,
-    minWidth: 24,
-    alignItems: 'center',
+    paddingVertical: spacing.xs,
   },
 });
