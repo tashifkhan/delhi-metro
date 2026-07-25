@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { RouteSegmentView } from '../components/RouteSegmentView';
 import { FirstLastTrainCard } from '../components/FirstLastTrainCard';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
+import { StationPicker } from '../components/StationPicker';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { RouteStrategy } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
@@ -31,6 +32,40 @@ export function JourneyResultsScreen() {
   const theme = useTheme();
   const { semantic, isDark } = useAppTheme();
   const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
+  const [editing, setEditing] = useState<'from' | 'to' | null>(null);
+
+  const handleSwapStations = useCallback(() => {
+    navigation.setParams({
+      fromCode: toCode,
+      fromName: toName,
+      toCode: fromCode,
+      toName: fromName,
+    });
+  }, [navigation, fromCode, fromName, toCode, toName]);
+
+  const handleStationSelect = useCallback(
+    (station: { code: string; name: string }) => {
+      const target = editing;
+      setEditing(null);
+      if (!target) return;
+
+      if (target === 'from') {
+        // Picking the current destination as origin just reverses the journey.
+        if (station.code === toCode) {
+          handleSwapStations();
+          return;
+        }
+        navigation.setParams({ fromCode: station.code, fromName: station.name });
+      } else {
+        if (station.code === fromCode) {
+          handleSwapStations();
+          return;
+        }
+        navigation.setParams({ toCode: station.code, toName: station.name });
+      }
+    },
+    [editing, navigation, fromCode, toCode, handleSwapStations],
+  );
 
   const { data: plan, isLoading, isError, refetch } = useJourneyPlanCachedQuery(
     fromCode,
@@ -121,7 +156,10 @@ export function JourneyResultsScreen() {
         elevation={0}
       >
         <View style={styles.heroStations}>
-          <View style={styles.heroStationRow}>
+          <Pressable
+            style={({ pressed }) => [styles.heroStationRow, pressed && styles.heroStationRowPressed]}
+            onPress={() => setEditing('from')}
+          >
             <View style={[styles.heroDot, { backgroundColor: semantic.success }]} />
             <Text
               variant="titleMedium"
@@ -130,6 +168,12 @@ export function JourneyResultsScreen() {
             >
               {fromName}
             </Text>
+            <Ionicons
+              name="pencil"
+              size={14}
+              color={isDark ? theme.colors.onSurfaceVariant : theme.colors.onPrimaryContainer}
+              style={styles.heroEditIcon}
+            />
             <Pressable
               onPress={() => navigation.navigate('StationDetail', { stationCode: fromCode, stationName: fromName })}
               hitSlop={8}
@@ -137,17 +181,24 @@ export function JourneyResultsScreen() {
             >
               <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
             </Pressable>
-          </View>
+          </Pressable>
 
           <View style={styles.heroConnector}>
             <View style={[styles.heroLine, { backgroundColor: isDark ? theme.colors.outlineVariant : theme.colors.primary, opacity: 0.3 }]} />
-            <View style={[styles.heroArrowCircle, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.surface }]}>
-              <Ionicons name="arrow-down" size={18} color={theme.colors.primary} />
-            </View>
+            <Pressable
+              onPress={handleSwapStations}
+              hitSlop={8}
+              style={[styles.heroArrowCircle, { backgroundColor: isDark ? theme.colors.elevation.level5 : theme.colors.surface }]}
+            >
+              <Ionicons name="swap-vertical" size={18} color={theme.colors.primary} />
+            </Pressable>
             <View style={[styles.heroLine, { backgroundColor: isDark ? theme.colors.outlineVariant : theme.colors.primary, opacity: 0.3 }]} />
           </View>
 
-          <View style={styles.heroStationRow}>
+          <Pressable
+            style={({ pressed }) => [styles.heroStationRow, pressed && styles.heroStationRowPressed]}
+            onPress={() => setEditing('to')}
+          >
             <View style={[styles.heroDot, { backgroundColor: theme.colors.error }]} />
             <Text
               variant="titleMedium"
@@ -156,6 +207,12 @@ export function JourneyResultsScreen() {
             >
               {toName}
             </Text>
+            <Ionicons
+              name="pencil"
+              size={14}
+              color={isDark ? theme.colors.onSurfaceVariant : theme.colors.onPrimaryContainer}
+              style={styles.heroEditIcon}
+            />
             <Pressable
               onPress={() => navigation.navigate('StationDetail', { stationCode: toCode, stationName: toName })}
               hitSlop={8}
@@ -163,7 +220,7 @@ export function JourneyResultsScreen() {
             >
               <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
             </Pressable>
-          </View>
+          </Pressable>
         </View>
 
         {/* Inline stats row */}
@@ -248,6 +305,13 @@ export function JourneyResultsScreen() {
       {/* First/Last train */}
       <FirstLastTrainCard data={trainTimes} />
     </ScrollView>
+
+    <StationPicker
+      visible={editing !== null}
+      onSelect={handleStationSelect}
+      onClose={() => setEditing(null)}
+      title={editing === 'to' ? 'Change Destination' : 'Change Departure'}
+    />
     </View>
   );
 }
@@ -276,6 +340,12 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
+  },
+  heroStationRowPressed: {
+    opacity: 0.6,
+  },
+  heroEditIcon: {
+    opacity: 0.45,
   },
   heroInfoBtn: {
     width: 30,
