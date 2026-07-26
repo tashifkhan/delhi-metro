@@ -3,13 +3,13 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Image,
   LayoutChangeEvent,
   PanResponder,
   Pressable,
   StyleSheet,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -53,6 +53,7 @@ export function MetroMapScreen() {
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, refetch } = useMapFamilyPrimaryQuery('network');
   const [imageLoading, setImageLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [canvasSize, setCanvasSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
 
@@ -170,7 +171,7 @@ export function MetroMapScreen() {
         {...panResponder.panHandlers}
       >
         <Pressable onPress={handleDoubleTap} style={styles.canvasFill}>
-          {imageUrl ? (
+          {imageUrl && !imageFailed ? (
             <>
               {imageLoading && (
                 <View style={[StyleSheet.absoluteFill, styles.loader, { backgroundColor: theme.colors.background }]}>
@@ -186,17 +187,33 @@ export function MetroMapScreen() {
                 <Image
                   source={{ uri: imageUrl }}
                   style={{ width: canvasSize.width, height: canvasSize.height }}
-                  resizeMode="contain"
+                  contentFit="contain"
+                  cachePolicy="disk"
+                  enforceEarlyResizing
                   onLoadEnd={() => setImageLoading(false)}
+                  onError={() => {
+                    setImageLoading(false);
+                    setImageFailed(true);
+                  }}
                 />
               </Animated.View>
             </>
           ) : (
-            <EmptyState
-              title="Map unavailable"
-              subtitle="The network map could not be loaded right now"
-              icon="map-outline"
-            />
+            imageFailed ? (
+              <ErrorState
+                message="The complete network map could not be loaded"
+                onRetry={() => {
+                  setImageFailed(false);
+                  setImageLoading(true);
+                }}
+              />
+            ) : (
+              <EmptyState
+                title="Map unavailable"
+                subtitle="The complete network map is not available right now"
+                icon="map-outline"
+              />
+            )
           )}
         </Pressable>
       </View>
