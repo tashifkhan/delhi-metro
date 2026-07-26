@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { TouchableRipple, useTheme } from 'react-native-paper';
 import { radius as radii, tint } from '../theme';
+import { spring } from '../theme/motion';
+import { useHaptics } from '../hooks/useHaptics';
 
 interface Props {
   onPress?: () => void;
@@ -26,6 +28,12 @@ interface Props {
   scaleOnPress?: boolean;
   /** Overrides the default 12% on-surface state layer. */
   rippleColor?: string;
+  /**
+   * Haptic fired on press. Off by default — buzzing on every tap, including
+   * plain navigation, trains people to ignore the feedback. Opt in where the
+   * press actually changes state.
+   */
+  haptic?: 'select' | 'press' | false;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: 'button' | 'link' | 'tab' | 'checkbox' | 'radio';
@@ -51,12 +59,14 @@ export function Touchable({
   style,
   scaleOnPress = false,
   rippleColor,
+  haptic = false,
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
   accessibilityState,
 }: Props) {
   const theme = useTheme();
+  const haptics = useHaptics();
   const scale = useRef(new Animated.Value(1)).current;
 
   const animateTo = useCallback(
@@ -65,8 +75,9 @@ export function Touchable({
       Animated.spring(scale, {
         toValue,
         useNativeDriver: true,
-        speed: 40,
-        bounciness: 0,
+        // `effect` rather than `spatial`: an overshoot on a settling card
+        // reads as a wobble, not as weight.
+        ...spring.effect,
       }).start();
     },
     [scale, scaleOnPress],
@@ -75,9 +86,14 @@ export function Touchable({
   const handlePressIn = useCallback(() => animateTo(PRESSED_SCALE), [animateTo]);
   const handlePressOut = useCallback(() => animateTo(1), [animateTo]);
 
+  const handlePress = useCallback(() => {
+    if (haptic) haptics[haptic]();
+    onPress?.();
+  }, [haptic, haptics, onPress]);
+
   const content = (
     <TouchableRipple
-      onPress={onPress}
+      onPress={handlePress}
       onLongPress={onLongPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
