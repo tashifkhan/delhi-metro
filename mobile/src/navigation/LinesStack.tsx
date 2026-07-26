@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Appbar, useTheme } from 'react-native-paper';
+import { useStackScreenOptions } from './useStackScreenOptions';
 
 import { MetroLinesScreen } from '../screens/MetroLinesScreen';
 import { LineStationsScreen } from '../screens/LineStationsScreen';
@@ -9,23 +9,11 @@ import type { LinesStackParamList } from './types';
 const Stack = createNativeStackNavigator<LinesStackParamList>();
 
 export function LinesStack() {
-  const theme = useTheme();
+  const screenOptions = useStackScreenOptions();
 
   return (
     <Stack.Navigator
-      screenOptions={({ navigation }) => ({
-        header: ({ options, back }) => (
-          <Appbar.Header style={{ backgroundColor: theme.colors.elevation.level2 }} elevated={false}>
-            {back && <Appbar.BackAction onPress={navigation.goBack} color={theme.colors.onSurface} />}
-            <Appbar.Content
-              title={options.title ?? ''}
-              color={theme.colors.onSurface}
-              titleStyle={{ fontWeight: '700' }}
-            />
-          </Appbar.Header>
-        ),
-        contentStyle: { backgroundColor: theme.colors.background },
-      })}
+      screenOptions={screenOptions}
     >
       <Stack.Screen name="MetroLines" component={MetroLinesScreen} options={{ title: 'Metro Lines' }} />
       <Stack.Screen
