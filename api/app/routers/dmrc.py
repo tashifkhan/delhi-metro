@@ -16,6 +16,7 @@ from app.schemas.dmrc import (
     JourneyPlan,
     MetroLine,
     PassengerNotification,
+    PassengerNotificationDetail,
     RouteStrategy,
     StationByLineItem,
     StationDetail,
@@ -67,6 +68,31 @@ async def get_notifications(
     """Fetch current passenger notifications."""
 
     return await service.get_notifications()
+
+
+@router.get(
+    "/notifications/{page_slug}",
+    response_model=PassengerNotificationDetail,
+    summary="Get notification details",
+    description=(
+        "Returns the detailed DMRC corporate page linked from a passenger "
+        "notification, including its raw HTML content."
+    ),
+)
+async def get_notification_detail(
+    service: Annotated[DmrcService, Depends(get_dmrc_service)],
+    page_slug: Annotated[
+        str,
+        Path(
+            min_length=1,
+            pattern=r"^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$",
+            description="Notification page slug, e.g. service-update-3.",
+        ),
+    ],
+) -> PassengerNotificationDetail:
+    """Fetch a notification's detailed corporate page by slug."""
+
+    return await service.notification_detail(page_slug=page_slug)
 
 
 @router.get(

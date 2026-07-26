@@ -20,6 +20,7 @@ from app.schemas.dmrc import (
     JourneyPlan,
     MetroLine,
     PassengerNotification,
+    PassengerNotificationDetail,
     RouteStrategy,
     StationByLineItem,
     StationDetail,
@@ -162,6 +163,24 @@ class DmrcService:
     async def get_notifications(self) -> list[PassengerNotification]:
         payload = await self._client.get_json_list("passengers/notification/")
         return self._validate_with_adapter(self._notification_adapter, payload)
+
+    async def notification_detail(
+        self,
+        page_slug: str,
+    ) -> PassengerNotificationDetail:
+        """Return the corporate page content linked by a notification."""
+
+        normalized_slug = page_slug.strip()
+        encoded_slug = quote(normalized_slug, safe="")
+        payload = await self._client.get_json_list(f"corporate/{encoded_slug}/")
+
+        if not payload:
+            raise UpstreamApiError(
+                message=f"Notification detail '{normalized_slug}' was not found",
+                status_code=404,
+            )
+
+        return self._validate_model(PassengerNotificationDetail, payload[0])
 
     async def station_search(
         self,

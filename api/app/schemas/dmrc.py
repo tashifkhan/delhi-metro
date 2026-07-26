@@ -77,6 +77,20 @@ class PassengerNotification(BaseModel):
     date: str
 
 
+class PassengerNotificationDetail(BaseModel):
+    """Detailed corporate page linked from a passenger notification."""
+
+    model_config = ConfigDict(extra="allow")
+
+    page_id: int
+    title: str
+    content: str
+    page_slug: str
+    cover_photo: AssetImage | None = None
+    seo_title: str | None = None
+    search_description: str | None = None
+
+
 class StationSearchResult(BaseModel):
     """Compact station object used in search results."""
 

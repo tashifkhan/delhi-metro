@@ -31,6 +31,7 @@ Main endpoints:
 - `GET /api/v1/health`
 - `GET /api/v1/dmrc/lines`
 - `GET /api/v1/dmrc/notifications`
+- `GET /api/v1/dmrc/notifications/{page_slug}`
 - `GET /api/v1/dmrc/stations/search`
 - `GET /api/v1/dmrc/lines/{line_code}/stations`
 - `GET /api/v1/dmrc/stations/{station_code}`
