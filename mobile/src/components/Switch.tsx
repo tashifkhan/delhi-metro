@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from 'react-native-paper';
 import { useAppTheme } from '../theme/ThemeContext';
+import { spring } from '../theme/motion';
 
 interface Props {
   value: boolean;
@@ -42,8 +43,9 @@ export function Switch({ value, onValueChange, disabled, accessibilityLabel }: P
     Animated.spring(progress, {
       toValue: value ? 1 : 0,
       useNativeDriver: false,
-      speed: 14,
-      bounciness: 4,
+      // Spatial: a thumb that travels should overshoot a touch, like an
+      // object with mass coming to rest.
+      ...spring.spatial,
     }).start();
   }, [value, progress]);
 

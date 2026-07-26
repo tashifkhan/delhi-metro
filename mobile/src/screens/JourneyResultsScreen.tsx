@@ -14,6 +14,7 @@ import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { StationPicker } from '../components/StationPicker';
 import { Touchable } from '../components/Touchable';
+import { Reveal } from '../components/Reveal';
 import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { RouteStrategy } from '../types';
@@ -221,6 +222,7 @@ export function JourneyResultsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Journey hero */}
+        <Reveal index={0} replayOnFocus={false}>
         <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>
           <View>
             {renderEndpoint('from', fromName, fromCode)}
@@ -269,8 +271,10 @@ export function JourneyResultsScreen() {
             ))}
           </View>
         </View>
+        </Reveal>
 
         {/* Strategy toggle */}
+        <Reveal index={1} replayOnFocus={false}>
         <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
           <StrategyToggle active={strategy} onChange={setStrategy} />
           <View style={styles.swipeDots}>
@@ -289,8 +293,10 @@ export function JourneyResultsScreen() {
             ))}
           </View>
         </Animated.View>
+        </Reveal>
 
         {/* Departure time */}
+        <Reveal index={2} replayOnFocus={false}>
         <Card style={styles.timePill}>
           <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
           <Text
@@ -308,10 +314,14 @@ export function JourneyResultsScreen() {
             </Text>
           </View>
         </Card>
+        </Reveal>
 
-        <JourneyFareSummary fare={fare} />
+        <Reveal index={3} replayOnFocus={false}>
+          <JourneyFareSummary fare={fare} />
+        </Reveal>
 
         {/* Route visualization */}
+        <Reveal index={4} replayOnFocus={false}>
         <Card radius={radius.hero} style={styles.routeCard}>
           <View style={styles.routeHeader}>
             <View style={[styles.routeHeaderIcon, { backgroundColor: fills.accentSubtle }]}>
@@ -342,8 +352,11 @@ export function JourneyResultsScreen() {
             ))}
           </View>
         </Card>
+        </Reveal>
 
-        <FirstLastTrainCard data={trainTimes} />
+        <Reveal index={5} replayOnFocus={false}>
+          <FirstLastTrainCard data={trainTimes} />
+        </Reveal>
       </ScrollView>
 
       <StationPicker

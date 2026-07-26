@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +21,7 @@ import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
+import { spring } from '../theme/motion';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -93,11 +94,23 @@ export function HomeScreen() {
     });
   };
 
+  // Half a turn per tap, accumulating, so the icon keeps rotating the same
+  // way instead of snapping back — the motion mirrors what the action does.
+  const swapSpin = useRef(new Animated.Value(0)).current;
+  const swapTurns = useRef(0);
+
   const handleSwap = useCallback(() => {
     const temp = fromPicker.station;
     fromPicker.setStation(toPicker.station);
     toPicker.setStation(temp);
-  }, [fromPicker, toPicker]);
+
+    swapTurns.current += 1;
+    Animated.spring(swapSpin, {
+      toValue: swapTurns.current,
+      useNativeDriver: true,
+      ...spring.spatial,
+    }).start();
+  }, [fromPicker, toPicker, swapSpin]);
 
   const handlePopularRoute = (fromCode: string, toCode: string) => {
     navigation.navigate('JourneyResults', {
@@ -222,12 +235,26 @@ export function HomeScreen() {
             <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
             <Touchable
               radius={radius.pill}
+              haptic="press"
               onPress={handleSwap}
               accessibilityLabel="Swap departure and destination"
               style={[styles.swapBtn, { borderColor: theme.colors.outlineVariant }]}
             >
               <View style={styles.swapInner}>
-                <Ionicons name="swap-vertical" size={17} color={theme.colors.primary} />
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        rotate: swapSpin.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '180deg'],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Ionicons name="swap-vertical" size={17} color={theme.colors.primary} />
+                </Animated.View>
               </View>
             </Touchable>
           </View>
@@ -248,6 +275,7 @@ export function HomeScreen() {
                   <Touchable
                     key={option.label}
                     radius={radius.pill}
+                    haptic="select"
                     onPress={() => setDepartureOffsetMinutes(option.value)}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: isActive }}
@@ -280,6 +308,7 @@ export function HomeScreen() {
 
             <Touchable
               radius={radius.pill}
+              haptic="press"
               onPress={handleFindRoute}
               disabled={!canSearch}
               accessibilityLabel="Find route"

@@ -6,6 +6,7 @@ import { Switch } from '../components/Switch';
 import { Card } from '../components/Card';
 import { Touchable } from '../components/Touchable';
 import { SectionHeader } from '../components/SectionHeader';
+import { useHaptics } from '../hooks/useHaptics';
 import { useAppTheme } from '../theme/ThemeContext';
 import {
   DYNAMIC_PALETTE_ID,
@@ -51,6 +52,7 @@ function PaletteCard({
     <View style={styles.paletteSlot}>
       <Touchable
         radius={radius.hero}
+        haptic="select"
         onPress={onPress}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
@@ -108,13 +110,20 @@ function ToggleCard({
   onChange: (next: boolean) => void;
 }) {
   const theme = useTheme();
+  const haptics = useHaptics();
 
+  // Weighted by direction, so switching on and off feel distinguishable —
+  // hence the explicit call rather than Touchable's `haptic` prop.
+  const handleToggle = () => {
+    haptics.toggle(!value);
+    onChange(!value);
+  };
 
   return (
     <Card radius={radius.hero} style={styles.toggleSurface}>
       <Touchable
         radius={radius.hero}
-        onPress={() => onChange(!value)}
+        onPress={handleToggle}
         accessibilityRole="checkbox"
         accessibilityState={{ selected: value }}
         accessibilityLabel={title}
@@ -183,6 +192,7 @@ export function AppearanceScreen() {
               <View key={mode.id} style={styles.modeSlot}>
                 <Touchable
                   radius={radius.hero}
+                  haptic="select"
                   onPress={() => updateSettings({ themeMode: mode.id })}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: active }}

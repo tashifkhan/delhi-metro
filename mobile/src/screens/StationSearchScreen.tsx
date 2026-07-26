@@ -6,12 +6,16 @@ import { Searchbar, Text, useTheme } from 'react-native-paper';
 import { useDebounce, useStationSearchQuery } from '../hooks';
 import { StationCard } from '../components/StationCard';
 import { StationListSkeleton } from '../components/StationListSkeleton';
+import { Reveal } from '../components/Reveal';
 import { EmptyState } from '../components/EmptyState';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { ExploreStackParamList } from '../navigation/types';
 import { spacing, radius } from '../theme';
 
 type Nav = NativeStackNavigationProp<ExploreStackParamList, 'StationSearch'>;
+
+/** How many rows stagger before results simply appear. */
+const STAGGER_LIMIT = 8;
 
 export function StationSearchScreen() {
   const navigation = useNavigation<Nav>();
@@ -54,16 +58,20 @@ export function StationSearchScreen() {
               </Text>
             ) : null
           }
-          renderItem={({ item }) => (
-            <StationCard
-              station={item}
-              onPress={() =>
-                navigation.navigate('StationDetail', {
-                  stationCode: item.station_code,
-                  stationName: item.station_name,
-                })
-              }
-            />
+          renderItem={({ item, index }) => (
+            // Only the first screenful staggers; further rows appear as they
+            // scroll into view, where a delay would read as lag.
+            <Reveal index={index < STAGGER_LIMIT ? index : 0} replayOnFocus={false}>
+              <StationCard
+                station={item}
+                onPress={() =>
+                  navigation.navigate('StationDetail', {
+                    stationCode: item.station_code,
+                    stationName: item.station_name,
+                  })
+                }
+              />
+            </Reveal>
           )}
           ListEmptyComponent={
             <EmptyState

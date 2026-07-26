@@ -32,6 +32,7 @@ export function NotificationsScreen() {
     <FlatList
       data={data}
       keyExtractor={(item) => String(item.id)}
+      contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
       ListHeaderComponent={ListHeader}

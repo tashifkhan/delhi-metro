@@ -35,6 +35,7 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
       <Card style={styles.card}>
         <Touchable
           radius={radius.card}
+          haptic="select"
           onPress={onPress}
           accessibilityLabel={`${station.station_name}, code ${station.station_code}${
             station.interchange ? ', interchange station' : ''

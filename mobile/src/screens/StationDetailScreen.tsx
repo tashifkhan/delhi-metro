@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { LayoutAnimation, ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Divider, Text, useTheme } from 'react-native-paper';
@@ -13,6 +13,7 @@ import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, radius, emphasis, tabular } from '../theme';
+import { duration } from '../theme/motion';
 
 type Route = RouteProp<HomeStackParamList, 'StationDetail'>;
 
@@ -33,13 +34,26 @@ function Section({
   const { fills } = useAppTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
 
+  const handleToggle = () => {
+    // Animate the height change itself, so the section grows into place
+    // instead of the content snapping in at full size.
+    LayoutAnimation.configureNext({
+      duration: duration.medium2,
+      update: { type: LayoutAnimation.Types.easeInEaseOut },
+      create: { type: LayoutAnimation.Types.easeInEaseOut, property: 'opacity' },
+      delete: { type: LayoutAnimation.Types.easeInEaseOut, property: 'opacity' },
+    });
+    setExpanded((v) => !v);
+  };
+
   return (
     <Card radius={radius.hero} style={styles.section}>
       <Touchable
         // Square ripple: the header is the top slice of the card, and the
         // parent Surface already clips the rounded corners.
         radius={0}
-        onPress={() => setExpanded(!expanded)}
+        haptic="select"
+        onPress={handleToggle}
         accessibilityLabel={title}
         accessibilityState={{ expanded }}
       >
