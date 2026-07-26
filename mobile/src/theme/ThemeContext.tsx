@@ -23,7 +23,7 @@ import {
   DefaultTheme as NavigationDefaultTheme,
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
-import { lightScheme, darkScheme, darkSurfaceIdentity } from './colors';
+import { lightScheme, darkScheme } from './colors';
 import { rgba } from './colorMath';
 import {
   DYNAMIC_PALETTE_ID,
@@ -222,21 +222,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const palette = paletteFromId(settings.paletteId);
     const useDynamic = palette.id === DYNAMIC_PALETTE_ID && DYNAMIC_THEME_AVAILABLE;
 
-    let scheme: Partial<MD3Theme['colors']>;
-    if (useDynamic) {
-      scheme = isDark
-        ? {
-            // Dynamic dark keeps the wallpaper accents and tonal ramp, but the
-            // true-black background/surface are forced back on: they are the
-            // app's dark identity, and the library's greys wash it out.
-            ...materialTheme.dark,
-            background: darkSurfaceIdentity.background,
-            surface: darkSurfaceIdentity.surface,
-          }
-        : materialTheme.light;
-    } else {
-      scheme = buildScheme(palette, isDark);
-    }
+    // Wallpaper mode keeps the tonal surfaces Material You generates. Forcing
+    // them to black here would make the AMOLED setting a no-op in this mode —
+    // pure black is the toggle's job, not the palette's.
+    let scheme: Partial<MD3Theme['colors']> = useDynamic
+      ? isDark
+        ? materialTheme.dark
+        : materialTheme.light
+      : buildScheme(palette, isDark);
 
     if (isDark && settings.amoledDark) {
       scheme = toAmoled(scheme);

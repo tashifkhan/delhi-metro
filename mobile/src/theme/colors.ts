@@ -122,9 +122,3 @@ export const darkScheme = {
   onInterchangeContainer: 'rgb(255, 220, 186)',
 };
 
-/** The dark surface stack that defines the app's identity in dark mode. */
-export const darkSurfaceIdentity = {
-  background: darkScheme.background,
-  surface: darkScheme.surface,
-  elevation: darkScheme.elevation,
-} as const;
