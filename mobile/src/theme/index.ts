@@ -1,4 +1,4 @@
-export { lightScheme, darkScheme, darkSurfaceIdentity } from './colors';
+export { lightScheme, darkScheme } from './colors';
 export {
   ThemeProvider,
   useAppTheme,
@@ -11,6 +11,7 @@ export {
 export { spacing } from './spacing';
 export { shape, radius } from './shape';
 export { typography, weights, emphasis, tabular, overline } from './typography';
+export { motion, duration, easing, spring } from './motion';
 export { onColor, tint, luminance } from './contrast';
 export {
   PALETTES,
