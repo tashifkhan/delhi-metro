@@ -11,21 +11,25 @@ This document is based on live requests to:
 
 ### Proven downloadable assets
 
-The frontend is a React SPA. Route pages do not contain direct HTML image links; assets are listed in:
+The frontend is a React SPA. Route pages do not contain direct HTML image
+links. Some assets are listed in:
 
 - `https://delhimetrorail.com/asset-manifest.json`
 
-From that manifest, these map assets are directly downloadable:
+The current full-resolution network map and PDF are referenced inside the
+compiled `main.js` bundle instead of the manifest. The manifest's
+`mapimgEng` file is only a 550 × 332 preview and must not be selected as the
+primary map.
 
-- Network map (HD image):
-  - `https://delhimetrorail.com/static/media/DMRC-Network-Map-Hindi-English-18032026.6a940651.jpeg`
+Assets verified on 27 July 2026:
+
+- Network map image: `DMRC-NMRC-NCRTC-MAP-16.07.2026.3bd317f6.jpg`
   - Type: `image/jpeg`
-  - Size: `7460570` bytes
-  - Resolution: `12286 x 9136`
-- Network map (PDF):
-  - `https://delhimetrorail.com/static/media/DMRC-Network-Map-Hindi-English-VA-23032026.00317293.pdf`
+  - Size: `9565911` bytes
+  - Resolution: `17250 x 15750`
+- Network map PDF: `DMRC-NMRC-NCRTC-MAP-16.07.2026.14a605a6.pdf`
   - Type: `application/pdf`
-  - Size: `270558` bytes
+  - Size: `2743904` bytes
 
 Airport/Rapid specific images in current build:
 
@@ -36,13 +40,14 @@ Airport/Rapid specific images in current build:
   - `https://delhimetrorail.com/static/media/RAPID-METRO.741fc16a.jpg`
   - Resolution: `1000 x 667`
 
-Note: in this deployment, only one map PDF is exposed in `asset-manifest.json`, and it is the full network map PDF.
+The hashed names change when DMRC publishes a new build, so clients should
+resolve them through this project's map API rather than hardcoding these URLs.
 
 ### Download commands
 
 ```bash
-curl -L "https://delhimetrorail.com/static/media/DMRC-Network-Map-Hindi-English-18032026.6a940651.jpeg" -o dmrc-network-map-hd.jpeg
-curl -L "https://delhimetrorail.com/static/media/DMRC-Network-Map-Hindi-English-VA-23032026.00317293.pdf" -o dmrc-network-map.pdf
+curl -L "https://dmrc-rest-api.vercel.app/api/v1/dmrc/maps/network/download?format=image" -o dmrc-network-map-hd.jpg
+curl -L "https://dmrc-rest-api.vercel.app/api/v1/dmrc/maps/network/download?format=pdf" -o dmrc-network-map.pdf
 curl -L "https://delhimetrorail.com/static/media/AIRPORT-EXPRESS.8b991cc0.jpg" -o dmrc-airport-express.jpg
 curl -L "https://delhimetrorail.com/static/media/RAPID-METRO.741fc16a.jpg" -o dmrc-rapid-metro.jpg
 ```
@@ -50,11 +55,14 @@ curl -L "https://delhimetrorail.com/static/media/RAPID-METRO.741fc16a.jpg" -o dm
 ### Programmatic way to always get latest map files
 
 1. Fetch `asset-manifest.json`.
-2. Parse `files` object.
-3. Filter by names containing `Network-Map`, `AIRPORT-EXPRESS`, `RAPID-METRO` and extensions `jpg|jpeg|png|pdf`.
-4. Download resolved hashed URLs.
+2. Parse its `files` object and locate the compiled `main.js` path.
+3. Extract `static/media/*.(jpg|jpeg|png|svg|pdf)` references from that bundle.
+4. Merge bundle references with the manifest files.
+5. Filter and rank full `DMRC-NMRC-NCRTC-MAP` / `DMRC-Network-Map`
+   assets above the small `mapimg` preview.
+6. Download the resolved hashed URL.
 
-This avoids hardcoding hash names that change on deploy.
+This handles both DMRC build layouts and avoids hardcoding hashes.
 
 ## 2) DMRC API base and headers
 
@@ -99,6 +107,25 @@ Top-level fields:
 - `link_to_internal_page`
 - `link_to_outside_url`
 - `date`
+
+## `GET /corporate/{page_slug}/`
+
+Purpose: detailed page content for corporate-page notifications.
+
+Example:
+
+- `/corporate/service-update-3/`
+
+The upstream response is a one-item array. The wrapper endpoint
+`GET /api/v1/dmrc/notifications/{page_slug}` returns that item as an object with:
+
+- `page_id`
+- `title`
+- `content` (raw HTML)
+- `page_slug`
+- `cover_photo`
+- `seo_title`
+- `search_description`
 
 ## `GET /line_list`
 

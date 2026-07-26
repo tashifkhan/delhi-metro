@@ -97,6 +97,8 @@ All routes are under:
 
 - `GET /api/v1/dmrc/notifications`
   - Returns DMRC passenger notifications feed
+- `GET /api/v1/dmrc/notifications/{page_slug}`
+  - Returns the detailed corporate page for a notification, including raw HTML content
 
 - `GET /api/v1/dmrc/stations/search?query=<text>&filter=all|least-distance|minimum-interchange`
   - Search stations by keyword
@@ -134,7 +136,8 @@ Convenience strategy-specific endpoints are also available:
 ### Map Asset Discovery and Delivery
 
 - `GET /api/v1/dmrc/maps/assets`
-  - Lists discovered assets from DMRC frontend `asset-manifest.json`
+  - Lists assets discovered from DMRC's `asset-manifest.json` and the media
+    references embedded in its current main JavaScript bundle
 
 - `GET /api/v1/dmrc/maps/{family}`
   - `family`: `network`, `airport-express`, `rapid-metro`
@@ -175,7 +178,9 @@ Behavior:
 - Station codes are normalized to uppercase by service logic.
 - `journey_time` must be ISO-8601 datetime when provided.
 - DMRC upstream can be sensitive to non-browser headers; client defaults are preconfigured.
-- Map assets are discovered dynamically from the frontend manifest to avoid hardcoded hashed filenames.
+- Map assets are discovered dynamically from the frontend manifest and main
+  bundle to avoid stale hashed filenames. The full network map is ranked above
+  DMRC's small `mapimg` preview.
 
 ## Related Docs
 
