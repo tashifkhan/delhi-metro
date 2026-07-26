@@ -512,7 +512,7 @@ async def download_map_file(
         family=family,
         format_filter=format_filter,
     )
-    _, content, headers, _ = await map_service.download_asset_by_id(asset.id)
+    _, content, headers, _ = await map_service.download_asset(asset)
     media_type = headers.get("content-type", "application/octet-stream")
     filename = asset.source_path.rsplit("/", maxsplit=1)[-1]
 

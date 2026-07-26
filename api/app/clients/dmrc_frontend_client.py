@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import re
+import time
 from collections.abc import Mapping
+from pathlib import PurePosixPath
 
 import httpx
 
@@ -14,9 +17,17 @@ from app.core.errors import UpstreamApiError
 class DmrcFrontendClient:
     """HTTP client for non-API frontend resources hosted on delhimetrorail.com."""
 
+    _asset_cache_ttl_seconds = 15 * 60
+    _static_asset_pattern = re.compile(
+        r"""static/media/[^"'\\?]+?\.(?:jpe?g|png|svg|pdf)""",
+        flags=re.IGNORECASE,
+    )
+
     def __init__(self) -> None:
         self._client: httpx.AsyncClient | None = None
         self._loop_id: int | None = None
+        self._asset_files_cache: dict[str, str] | None = None
+        self._asset_files_cached_at = 0.0
 
     def _build_client(self) -> httpx.AsyncClient:
         """Create a configured async HTTP client."""
@@ -96,6 +107,72 @@ class DmrcFrontendClient:
             if isinstance(key, str) and isinstance(value, str):
                 normalized[key] = value
         return normalized
+
+    async def _get_text(self, path: str) -> str:
+        """Download a frontend text asset."""
+
+        client = await self._get_client()
+        try:
+            response = await client.get(path.lstrip("/"))
+        except httpx.TimeoutException as exc:
+            raise UpstreamApiError("DMRC frontend bundle request timed out") from exc
+        except httpx.HTTPError as exc:
+            raise UpstreamApiError("DMRC frontend bundle transport failure") from exc
+
+        if response.status_code >= 400:
+            raise UpstreamApiError(
+                message="DMRC frontend bundle request failed",
+                status_code=response.status_code,
+            )
+        return response.text
+
+    @classmethod
+    def _extract_static_asset_paths(cls, bundle: str) -> set[str]:
+        """Extract static image/PDF paths embedded in a compiled JS bundle."""
+
+        return {f"/{match}" for match in cls._static_asset_pattern.findall(bundle)}
+
+    async def get_asset_files(self) -> dict[str, str]:
+        """Return manifest assets plus files referenced by the main JS bundle.
+
+        DMRC's current React build does not include every imported media file in
+        ``asset-manifest.json``. In particular, the full network map and its PDF
+        are emitted as module references inside the main bundle, while the
+        manifest only exposes a small ``mapimg`` preview.
+        """
+
+        now = time.monotonic()
+        if (
+            self._asset_files_cache is not None
+            and now - self._asset_files_cached_at < self._asset_cache_ttl_seconds
+        ):
+            return dict(self._asset_files_cache)
+
+        files = await self.get_manifest_files()
+        discovered = dict(files)
+        main_bundles = [
+            value
+            for key, value in files.items()
+            if value.lower().endswith(".js")
+            and (
+                key.lower() == "main.js"
+                or PurePosixPath(value).name.lower().startswith("main.")
+            )
+        ]
+
+        # Bundle inspection is an enhancement over the manifest. If DMRC
+        # temporarily blocks a bundle request, keep serving manifest assets.
+        for bundle_path in main_bundles:
+            try:
+                bundle = await self._get_text(bundle_path)
+            except UpstreamApiError:
+                continue
+            for asset_path in self._extract_static_asset_paths(bundle):
+                discovered.setdefault(f"bundle:{asset_path}", asset_path)
+
+        self._asset_files_cache = discovered
+        self._asset_files_cached_at = now
+        return dict(discovered)
 
     async def head(self, path: str) -> tuple[int, dict[str, str], str]:
         """Run a HEAD request against a static asset path."""

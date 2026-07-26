@@ -31,7 +31,12 @@ class MapService:
         _MapPattern(
             family=MapFamily.NETWORK,
             label="DMRC Network Map",
-            tokens=("network-map", "dmrc-network-map", "mapimg"),
+            tokens=(
+                "dmrc-nmrc-ncrtc-map",
+                "network-map",
+                "dmrc-network-map",
+                "mapimg",
+            ),
         ),
         _MapPattern(
             family=MapFamily.AIRPORT_EXPRESS,
@@ -67,20 +72,18 @@ class MapService:
     def _stable_rank(path: str) -> int:
         lowered = path.lower()
         rank = 0
+        if "dmrc-nmrc-ncrtc-map" in lowered:
+            rank -= 100
         if "dmrc-network-map" in lowered:
-            rank -= 40
-        if lowered.endswith(".pdf"):
-            rank -= 20
-        if lowered.endswith((".jpeg", ".jpg", ".png")):
-            rank -= 10
+            rank -= 80
         if "mapimg" in lowered:
-            rank += 50
+            rank += 100
         return rank
 
     async def list_map_assets(self) -> MapAssetListResponse:
-        """Return all discovered map assets from the current manifest."""
+        """Return all map assets discovered from the current frontend build."""
 
-        files = await self._frontend_client.get_manifest_files()
+        files = await self._frontend_client.get_asset_files()
         assets: list[MapAsset] = []
         seen_paths: set[str] = set()
 
@@ -124,6 +127,7 @@ class MapService:
                 item.family.value,
                 item.file_type.value,
                 self._stable_rank(item.source_path),
+                -(item.content_length or 0),
                 item.source_path,
             )
         )
@@ -220,6 +224,14 @@ class MapService:
         """Download a map asset and return metadata + raw bytes."""
 
         asset = await self.get_asset_by_id(asset_id)
+        return await self.download_asset(asset)
+
+    async def download_asset(
+        self,
+        asset: MapAsset,
+    ) -> tuple[MapAsset, bytes, dict[str, str], str]:
+        """Download a resolved map asset without repeating asset discovery."""
+
         content, headers, url, _ = await self._frontend_client.get_bytes(
             asset.source_path
         )
