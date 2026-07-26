@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { ActivityIndicator, Button, Divider, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, {
@@ -22,20 +22,85 @@ interface Props {
   notification: PassengerNotification;
 }
 
-const CORPORATE_PAGE_PATTERN =
-  /\/pages\/(?:[a-z]{2}\/)?([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\/?(?:[?#].*)?$/;
+/** Path segments that are wrappers, not the corporate page slug itself. */
+const NON_SLUG_SEGMENTS = new Set([
+  'pages',
+  'en',
+  'hi',
+  'pressrelease_details',
+  'press-release',
+  'press_release',
+]);
 
+const SLUG_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
+
+/**
+ * Resolve the DMRC corporate-page slug used by
+ * `GET /api/v1/dmrc/notifications/{page_slug}`.
+ *
+ * Feeds use several shapes:
+ * - bare slug: `service-update-3`
+ * - site path: `/pages/en/service-update-3`
+ * - nested: `/pages/en/pressrelease_details/some-long-title`
+ * - full URL: `https://delhimetrorail.com/pages/en/...`
+ */
 function getDetailSlug(notification: PassengerNotification): string | null {
-  const target = notification.link_to_outside_url ?? notification.link_to_internal_page;
+  const target =
+    notification.link_to_outside_url ??
+    notification.link_to_internal_page ??
+    notification.link_to;
   if (!target) {
     return null;
   }
 
-  if (/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(target)) {
-    return target;
+  const trimmed = target.trim();
+  if (SLUG_PATTERN.test(trimmed)) {
+    return trimmed;
   }
 
-  return target.match(CORPORATE_PAGE_PATTERN)?.[1] ?? null;
+  try {
+    const url = trimmed.includes('://')
+      ? new URL(trimmed)
+      : new URL(trimmed, 'https://delhimetrorail.com');
+    const parts = url.pathname.split('/').filter(Boolean);
+    // Prefer the last segment that looks like a page slug, skipping lang codes
+    // and known intermediate folders such as pressrelease_details.
+    for (let i = parts.length - 1; i >= 0; i -= 1) {
+      const part = parts[i];
+      if (NON_SLUG_SEGMENTS.has(part.toLowerCase())) {
+        continue;
+      }
+      if (SLUG_PATTERN.test(part)) {
+        return part;
+      }
+    }
+  } catch {
+    // Fall through to regex for non-URL strings.
+  }
+
+  // `/pages/en/slug` or `/pages/en/pressrelease_details/slug`
+  const nested = trimmed.match(
+    /\/pages\/(?:[a-z]{2}\/)?(?:pressrelease_details\/)?([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\/?(?:[?#].*)?$/i,
+  );
+  return nested?.[1] ?? null;
+}
+
+function getExternalUrl(notification: PassengerNotification): string | null {
+  const target =
+    notification.link_to_outside_url ??
+    notification.link_to_internal_page ??
+    notification.link_to;
+  if (!target) {
+    return null;
+  }
+  const trimmed = target.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/')) {
+    return `https://delhimetrorail.com${trimmed}`;
+  }
+  return null;
 }
 
 function prepareNotificationHtml(content: string): string {
@@ -52,6 +117,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
   const { width } = useWindowDimensions();
   const [isExpanded, setIsExpanded] = useState(false);
   const pageSlug = useMemo(() => getDetailSlug(notification), [notification]);
+  const externalUrl = useMemo(() => getExternalUrl(notification), [notification]);
   const detailQuery = useNotificationDetailQuery(pageSlug, isExpanded);
   const chevronProgress = useSharedValue(0);
 
@@ -69,6 +135,12 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
     setIsExpanded((current) => !current);
   }, []);
 
+  const handleOpenExternal = useCallback(() => {
+    if (externalUrl) {
+      void Linking.openURL(externalUrl);
+    }
+  }, [externalUrl]);
+
   const htmlSource = useMemo(
     () =>
       detailQuery.data
@@ -77,7 +149,8 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
     [detailQuery.data],
   );
 
-  const canExpand = pageSlug !== null;
+  // Expand when we have a corporate slug (in-app HTML) or any external URL fallback.
+  const canExpand = pageSlug !== null || externalUrl !== null;
   const contentWidth = Math.max(0, width - spacing.base * 4 - spacing.md * 2);
 
   return (
@@ -148,7 +221,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
             style={styles.detail}
           >
             <Divider />
-            {detailQuery.isPending ? (
+            {pageSlug && detailQuery.isPending ? (
               <View style={styles.detailState}>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
                 <Text
@@ -159,7 +232,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                 </Text>
               </View>
             ) : null}
-            {detailQuery.isError ? (
+            {pageSlug && detailQuery.isError ? (
               <View style={styles.detailState}>
                 <Text
                   variant="bodySmall"
@@ -168,8 +241,29 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                 >
                   Could not load this notice.
                 </Text>
-                <Button compact mode="text" icon="refresh" onPress={() => detailQuery.refetch()}>
-                  Try again
+                <View style={styles.errorActions}>
+                  <Button compact mode="text" icon="refresh" onPress={() => detailQuery.refetch()}>
+                    Try again
+                  </Button>
+                  {externalUrl ? (
+                    <Button compact mode="text" icon="open-in-new" onPress={handleOpenExternal}>
+                      Open on DMRC site
+                    </Button>
+                  ) : null}
+                </View>
+              </View>
+            ) : null}
+            {!pageSlug && externalUrl ? (
+              <View style={styles.detailState}>
+                <Text
+                  variant="bodySmall"
+                  selectable
+                  style={[styles.stateText, { color: theme.colors.onSurfaceVariant }]}
+                >
+                  Full text isn&apos;t available in the app for this notice.
+                </Text>
+                <Button compact mode="text" icon="open-in-new" onPress={handleOpenExternal}>
+                  Open on DMRC site
                 </Button>
               </View>
             ) : null}
@@ -260,6 +354,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+  },
+  errorActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
   stateText: {
     textAlign: 'center',
