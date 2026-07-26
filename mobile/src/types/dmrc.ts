@@ -44,6 +44,16 @@ export interface PassengerNotification {
   date: string;
 }
 
+export interface PassengerNotificationDetail {
+  page_id: number;
+  title: string;
+  content: string;
+  page_slug: string;
+  cover_photo: NotificationImage | null;
+  seo_title: string | null;
+  search_description: string | null;
+}
+
 export interface StationFacilityImage {
   title: string;
   file: string;

@@ -7,6 +7,7 @@ import type {
   JourneyPlan,
   MetroLine,
   PassengerNotification,
+  PassengerNotificationDetail,
   RouteStrategy,
   StationByLineItem,
   StationDetail,
@@ -29,6 +30,12 @@ export class DmrcService {
 
   getNotifications(): Promise<PassengerNotification[]> {
     return this.apiClient.get<PassengerNotification[]>('/dmrc/notifications');
+  }
+
+  getNotificationDetail(pageSlug: string): Promise<PassengerNotificationDetail> {
+    return this.apiClient.get<PassengerNotificationDetail>(
+      `/dmrc/notifications/${encodeURIComponent(pageSlug)}`,
+    );
   }
 
   searchStations(query: string): Promise<StationSearchResult[]> {

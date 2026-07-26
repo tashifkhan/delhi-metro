@@ -1,47 +1,229 @@
-import { StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Button, Divider, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import RenderHtml from 'react-native-render-html';
 import { Card } from './Card';
+import { Touchable } from './Touchable';
+import { useNotificationDetailQuery } from '../hooks';
 import type { PassengerNotification } from '../types';
 import { spacing, radius, emphasis } from '../theme';
+import { duration } from '../theme/motion';
 
 interface Props {
   notification: PassengerNotification;
 }
 
-export function NotificationCard({ notification }: Props) {
+const CORPORATE_PAGE_PATTERN =
+  /\/pages\/(?:[a-z]{2}\/)?([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\/?(?:[?#].*)?$/;
+
+function getDetailSlug(notification: PassengerNotification): string | null {
+  const target = notification.link_to_outside_url ?? notification.link_to_internal_page;
+  if (!target) {
+    return null;
+  }
+
+  if (/^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/.test(target)) {
+    return target;
+  }
+
+  return target.match(CORPORATE_PAGE_PATTERN)?.[1] ?? null;
+}
+
+function prepareNotificationHtml(content: string): string {
+  return content
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<a\b[^>]*>/gi, '')
+    .replace(/<\/a>/gi, '')
+    .replace(/<button\b[^>]*>[\s\S]*?<\/button>/gi, '');
+}
+
+export const NotificationCard = memo(function NotificationCard({ notification }: Props) {
   const theme = useTheme();
+  const { width } = useWindowDimensions();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const pageSlug = useMemo(() => getDetailSlug(notification), [notification]);
+  const detailQuery = useNotificationDetailQuery(pageSlug, isExpanded);
+  const chevronProgress = useSharedValue(0);
+
+  useEffect(() => {
+    chevronProgress.value = withTiming(isExpanded ? 1 : 0, {
+      duration: duration.short4,
+    });
+  }, [chevronProgress, isExpanded]);
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${chevronProgress.value * 180}deg` }],
+  }));
+
+  const handleToggle = useCallback(() => {
+    setIsExpanded((current) => !current);
+  }, []);
+
+  const htmlSource = useMemo(
+    () =>
+      detailQuery.data
+        ? { html: prepareNotificationHtml(detailQuery.data.content) }
+        : undefined,
+    [detailQuery.data],
+  );
+
+  const canExpand = pageSlug !== null;
+  const contentWidth = Math.max(0, width - spacing.base * 4 - spacing.md * 2);
 
   return (
-    <Card style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-        <Ionicons name="megaphone-outline" size={18} color={theme.colors.onPrimaryContainer} />
-      </View>
-      <View style={styles.content}>
-        <Text
-          variant="bodyMedium"
-          numberOfLines={3}
-          style={[emphasis.medium, styles.title, { color: theme.colors.onSurface }]}
+    <Animated.View layout={LinearTransition.duration(duration.medium2)}>
+      <Card style={styles.container}>
+        <Touchable
+          onPress={canExpand ? handleToggle : undefined}
+          radius={radius.card}
+          haptic="select"
+          accessibilityLabel={notification.title}
+          accessibilityHint={
+            canExpand
+              ? isExpanded
+                ? 'Collapses notification details'
+                : 'Expands notification details'
+              : 'Notification details are unavailable'
+          }
+          accessibilityState={{ expanded: canExpand ? isExpanded : undefined }}
         >
-          {notification.title}
-        </Text>
-        <View style={styles.metaRow}>
-          <Ionicons name="calendar-outline" size={12} color={theme.colors.onSurfaceVariant} />
-          <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            {notification.date}
-          </Text>
-        </View>
-      </View>
-    </Card>
+          <View style={styles.header}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Ionicons
+                name="megaphone-outline"
+                size={18}
+                color={theme.colors.onPrimaryContainer}
+              />
+            </View>
+            <View style={styles.summary}>
+              <Text
+                variant="bodyMedium"
+                numberOfLines={isExpanded ? undefined : 3}
+                selectable
+                style={[emphasis.medium, styles.title, { color: theme.colors.onSurface }]}
+              >
+                {notification.title}
+              </Text>
+              <View style={styles.metaRow}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={12}
+                  color={theme.colors.onSurfaceVariant}
+                />
+                <Text
+                  variant="labelSmall"
+                  selectable
+                  style={{ color: theme.colors.onSurfaceVariant }}
+                >
+                  {notification.date}
+                </Text>
+              </View>
+            </View>
+            {canExpand ? (
+              <Animated.View style={[styles.chevron, chevronStyle]}>
+                <Ionicons
+                  name="chevron-down"
+                  size={20}
+                  color={theme.colors.onSurfaceVariant}
+                />
+              </Animated.View>
+            ) : null}
+          </View>
+        </Touchable>
+
+        {isExpanded ? (
+          <Animated.View
+            entering={FadeIn.duration(duration.short4)}
+            exiting={FadeOut.duration(duration.short3)}
+            style={styles.detail}
+          >
+            <Divider />
+            {detailQuery.isPending ? (
+              <View style={styles.detailState}>
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+                <Text
+                  variant="bodySmall"
+                  style={{ color: theme.colors.onSurfaceVariant }}
+                >
+                  Loading notice…
+                </Text>
+              </View>
+            ) : null}
+            {detailQuery.isError ? (
+              <View style={styles.detailState}>
+                <Text
+                  variant="bodySmall"
+                  selectable
+                  style={[styles.stateText, { color: theme.colors.error }]}
+                >
+                  Could not load this notice.
+                </Text>
+                <Button compact mode="text" icon="refresh" onPress={() => detailQuery.refetch()}>
+                  Try again
+                </Button>
+              </View>
+            ) : null}
+            {htmlSource ? (
+              <RenderHtml
+                contentWidth={contentWidth}
+                source={htmlSource}
+                baseStyle={{
+                  color: theme.colors.onSurfaceVariant,
+                  fontSize: 14,
+                  lineHeight: 21,
+                }}
+                classesStyles={{
+                  'd-none': { display: 'none' },
+                }}
+                tagsStyles={{
+                  body: { margin: 0 },
+                  h2: {
+                    color: theme.colors.onSurface,
+                    fontSize: 18,
+                    lineHeight: 24,
+                    marginTop: 0,
+                    marginBottom: spacing.sm,
+                  },
+                  h3: {
+                    color: theme.colors.onSurface,
+                    fontSize: 16,
+                    lineHeight: 22,
+                    marginTop: 0,
+                    marginBottom: spacing.sm,
+                  },
+                  p: {
+                    marginTop: 0,
+                    marginBottom: spacing.sm,
+                  },
+                }}
+              />
+            ) : null}
+          </Animated.View>
+        ) : null}
+      </Card>
+    </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
+    overflow: 'hidden',
+  },
+  header: {
     flexDirection: 'row',
     padding: spacing.base,
     gap: spacing.md,
-    borderRadius: radius.card,
+    alignItems: 'flex-start',
   },
   iconWrap: {
     width: 40,
@@ -50,7 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
+  summary: {
     flex: 1,
     gap: spacing.xs,
   },
@@ -61,5 +243,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  chevron: {
+    width: 28,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  detail: {
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.base,
+    gap: spacing.md,
+  },
+  detailState: {
+    minHeight: 72,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  stateText: {
+    textAlign: 'center',
   },
 });

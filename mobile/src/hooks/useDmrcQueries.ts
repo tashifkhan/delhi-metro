@@ -237,6 +237,25 @@ export function useNotificationsQuery() {
   });
 }
 
+export function useNotificationDetailQuery(
+  pageSlug: string | null,
+  enabled: boolean,
+) {
+  const { dmrcService } = useDI();
+
+  return useQuery({
+    queryKey: queryKeys.notificationDetail(pageSlug ?? ''),
+    queryFn: () => {
+      if (pageSlug === null) {
+        throw new Error('Notification detail slug is unavailable');
+      }
+      return dmrcService.getNotificationDetail(pageSlug);
+    },
+    enabled: enabled && pageSlug !== null,
+    staleTime: 30 * 60_000,
+  });
+}
+
 export function useStationSearchQuery(query: string) {
   const normalizedQuery = query.trim();
   const allStationsQuery = useAllStationsQuery();
