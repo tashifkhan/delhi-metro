@@ -108,18 +108,19 @@ Top-level fields:
 - `link_to_outside_url`
 - `date`
 
-## `GET /corporate/{page_slug}/`
+## Notification detail endpoints
 
-Purpose: detailed page content for corporate-page notifications.
+DMRC uses two upstream resources for notification details:
 
-Example:
+- `GET /corporate/{page_slug}/` for standard corporate pages
+- `GET /pressrelease_details/{page_slug}` for press releases
 
-- `/corporate/service-update-3/`
+The corporate response is a one-item array, while the press-release response is
+an object with `english_title` and `body_english` fields. The wrapper endpoint
+`GET /api/v1/dmrc/notifications/{page_slug}` checks both resources and normalizes
+them into an object with:
 
-The upstream response is a one-item array. The wrapper endpoint
-`GET /api/v1/dmrc/notifications/{page_slug}` returns that item as an object with:
-
-- `page_id`
+- `page_id` (nullable for press releases)
 - `title`
 - `content` (raw HTML)
 - `page_slug`

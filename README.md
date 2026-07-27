@@ -10,6 +10,8 @@ Monorepo for a Delhi Metro journey platform:
 
 - `api/`
   - Backend service with typed schemas, service layer, and DMRC/map endpoints
+  - `/api/v1` wraps the legacy DMRC website API; `/api/v2` plans journeys
+    through the Delhi Metro Sarthi API with `/api/v1`'s planner as fallback
 - `mobile/`
   - Cross-platform app for journey planning, station search, lines, maps, and alerts
 - `docs/`
@@ -22,7 +24,7 @@ Monorepo for a Delhi Metro journey platform:
 ```bash
 cd api
 uv sync
-uv run uvicorn app.main:app --reload
+uv run uvicorn main:app --reload
 ```
 
 API docs will be available at:
@@ -49,6 +51,8 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 - Expo app guide: `docs/expo-app-guide.md`
 - Material 3 & Dynamic Theming: `docs/material-theming-guide.md`
 - DMRC API flow notes: `docs/dmrc-api-flow.md`
+- Delhi Metro Sarthi route/API research: `docs/dmrc-sarthi-api-research.md`
+- Legacy/Sarthi station ID and slug crosswalk: `docs/station-identifiers.md`
 - Expo APK release guide: `docs/expo-apk-release-guide.md`
 - API package README: `api/README.md`
 - Mobile package README: `mobile/README.md`
