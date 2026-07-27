@@ -8,8 +8,8 @@ from typing import Any
 
 import httpx
 
-from app.core.config import settings
-from app.core.errors import UpstreamApiError
+from core.config import settings
+from core.errors import UpstreamApiError
 
 
 class DmrcApiClient:
@@ -134,3 +134,8 @@ class DmrcApiClient:
         if not isinstance(payload, list):
             raise UpstreamApiError(f"Expected list payload for path '{path}'")
         return payload
+
+
+# Application-wide client instance. DMRC upstream is stateless, so a single
+# connection-pooled client is shared by every service.
+dmrc_client = DmrcApiClient()

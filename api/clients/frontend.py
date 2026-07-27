@@ -10,8 +10,8 @@ from pathlib import PurePosixPath
 
 import httpx
 
-from app.core.config import settings
-from app.core.errors import UpstreamApiError
+from core.config import settings
+from core.errors import UpstreamApiError
 
 
 class DmrcFrontendClient:
@@ -216,3 +216,7 @@ class DmrcFrontendClient:
             str(response.url),
             response.status_code,
         )
+
+
+# Application-wide client instance, shared by the map asset service.
+frontend_client = DmrcFrontendClient()

@@ -4,8 +4,12 @@ This module centralizes all runtime settings using pydantic-settings so values
 can be safely loaded from environment variables or `.env` files.
 """
 
+from pathlib import Path
+
 from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+API_ROOT = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
@@ -32,6 +36,26 @@ class Settings(BaseSettings):
         description="Base URL for DMRC frontend/static assets.",
     )
     dmrc_frontend_timeout_seconds: float = Field(default=20.0, ge=1.0, le=60.0)
+
+    sarthi_base_url: AnyHttpUrl = Field(
+        default="https://dmrc.autope.in/metro/v4/",
+        description="Base URL for the Delhi Metro Sarthi journey API.",
+    )
+    # Sarthi is the preferred planner but never the only one: keep the timeout
+    # short so a slow upstream falls back to DMRC quickly.
+    sarthi_timeout_seconds: float = Field(default=8.0, ge=1.0, le=60.0)
+    sarthi_enabled: bool = Field(
+        default=True,
+        description=(
+            "When false, the v2 planner skips Sarthi and serves every request "
+            "from the legacy DMRC API."
+        ),
+    )
+
+    station_catalog_path: Path = Field(
+        default=API_ROOT / "data" / "stations.normalized.json",
+        description="Generated legacy/Sarthi station crosswalk.",
+    )
 
     model_config = SettingsConfigDict(
         env_prefix="DMRC_",
