@@ -22,20 +22,20 @@ interface Props {
   notification: PassengerNotification;
 }
 
-/** Path segments that are wrappers, not the corporate page slug itself. */
-const NON_SLUG_SEGMENTS = new Set([
-  'pages',
-  'en',
-  'hi',
-  'pressrelease_details',
-  'press-release',
-  'press_release',
-]);
-
 const SLUG_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
+const LANGUAGE_SEGMENT_PATTERN = /^[a-z]{2}$/i;
+
+function getNotificationTarget(notification: PassengerNotification): string | null {
+  return (
+    notification.link_to_outside_url ??
+    notification.link_to_internal_page ??
+    notification.link_to_file ??
+    notification.link_to
+  );
+}
 
 /**
- * Resolve the DMRC corporate-page slug used by
+ * Resolve the DMRC corporate-page or press-release slug used by
  * `GET /api/v1/dmrc/notifications/{page_slug}`.
  *
  * Feeds use several shapes:
@@ -45,10 +45,7 @@ const SLUG_PATTERN = /^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$/;
  * - full URL: `https://delhimetrorail.com/pages/en/...`
  */
 function getDetailSlug(notification: PassengerNotification): string | null {
-  const target =
-    notification.link_to_outside_url ??
-    notification.link_to_internal_page ??
-    notification.link_to;
+  const target = getNotificationTarget(notification);
   if (!target) {
     return null;
   }
@@ -62,34 +59,34 @@ function getDetailSlug(notification: PassengerNotification): string | null {
     const url = trimmed.includes('://')
       ? new URL(trimmed)
       : new URL(trimmed, 'https://delhimetrorail.com');
-    const parts = url.pathname.split('/').filter(Boolean);
-    // Prefer the last segment that looks like a page slug, skipping lang codes
-    // and known intermediate folders such as pressrelease_details.
-    for (let i = parts.length - 1; i >= 0; i -= 1) {
-      const part = parts[i];
-      if (NON_SLUG_SEGMENTS.has(part.toLowerCase())) {
-        continue;
-      }
-      if (SLUG_PATTERN.test(part)) {
-        return part;
-      }
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname !== 'delhimetrorail.com' &&
+      !hostname.endsWith('.delhimetrorail.com')
+    ) {
+      return null;
     }
-  } catch {
-    // Fall through to regex for non-URL strings.
-  }
 
-  // `/pages/en/slug` or `/pages/en/pressrelease_details/slug`
-  const nested = trimmed.match(
-    /\/pages\/(?:[a-z]{2}\/)?(?:pressrelease_details\/)?([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)\/?(?:[?#].*)?$/i,
-  );
-  return nested?.[1] ?? null;
+    const parts = url.pathname.split('/').filter(Boolean);
+    const pagesIndex = parts.findIndex((part) => part.toLowerCase() === 'pages');
+    if (pagesIndex < 0) {
+      return null;
+    }
+
+    const routeParts = parts.slice(pagesIndex + 1);
+    if (routeParts[0] && LANGUAGE_SEGMENT_PATTERN.test(routeParts[0])) {
+      routeParts.shift();
+    }
+
+    const slug = routeParts.at(-1);
+    return slug && SLUG_PATTERN.test(slug) ? slug : null;
+  } catch {
+    return null;
+  }
 }
 
 function getExternalUrl(notification: PassengerNotification): string | null {
-  const target =
-    notification.link_to_outside_url ??
-    notification.link_to_internal_page ??
-    notification.link_to;
+  const target = getNotificationTarget(notification);
   if (!target) {
     return null;
   }
@@ -97,8 +94,18 @@ function getExternalUrl(notification: PassengerNotification): string | null {
   if (/^https?:\/\//i.test(trimmed)) {
     return trimmed;
   }
+  if (target === notification.link_to_file) {
+    try {
+      return new URL(trimmed, 'https://backend.delhimetrorail.com/').toString();
+    } catch {
+      return null;
+    }
+  }
   if (trimmed.startsWith('/')) {
     return `https://delhimetrorail.com${trimmed}`;
+  }
+  if (trimmed.startsWith('pages/')) {
+    return `https://delhimetrorail.com/${trimmed}`;
   }
   return null;
 }

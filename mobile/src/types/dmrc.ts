@@ -45,7 +45,7 @@ export interface PassengerNotification {
 }
 
 export interface PassengerNotificationDetail {
-  page_id: number;
+  page_id: number | null;
   title: string;
   content: string;
   page_slug: string;
