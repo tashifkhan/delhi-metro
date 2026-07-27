@@ -12,14 +12,32 @@ export const queryKeys = {
     ['dmrc', 'fare-route', fromStationCode, toStationCode, strategy] as const,
   firstLastTrain: (fromStationCode: string, toStationCode: string, strategy: RouteStrategy) =>
     ['dmrc', 'first-last-train', fromStationCode, toStationCode, strategy] as const,
-  journeyPlan: (fromStationCode: string, toStationCode: string, journeyTime?: string) =>
-    ['dmrc', 'journey-plan', fromStationCode, toStationCode, journeyTime ?? 'now'] as const,
-  journeyPlanCached: (fromStationCode: string, toStationCode: string, journeyTime?: string) =>
+  journeyPlan: (
+    fromStationCode: string,
+    toStationCode: string,
+    strategy: RouteStrategy,
+    journeyTime?: string,
+  ) =>
+    [
+      'dmrc',
+      'journey-plan',
+      fromStationCode,
+      toStationCode,
+      strategy,
+      journeyTime ?? 'now',
+    ] as const,
+  journeyPlanCached: (
+    fromStationCode: string,
+    toStationCode: string,
+    strategy: RouteStrategy,
+    journeyTime?: string,
+  ) =>
     [
       'dmrc',
       'journey-plan-cached',
       fromStationCode,
       toStationCode,
+      strategy,
       journeyTime ?? 'now',
     ] as const,
   popularRoutes: (limit: number) => ['dmrc', 'popular-routes', limit] as const,

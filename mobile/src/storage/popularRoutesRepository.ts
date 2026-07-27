@@ -1,8 +1,12 @@
 import { getDb } from './database';
-import type { JourneyPlan, PopularRouteEntry, PopularRouteRecord } from '../types';
+import type { PlannedJourney, PopularRouteEntry, PopularRouteRecord, RouteStrategy } from '../types';
 
-function buildRouteKey(fromStationCode: string, toStationCode: string): string {
-  return `${fromStationCode.trim().toUpperCase()}_${toStationCode.trim().toUpperCase()}`;
+function buildRouteKey(
+  fromStationCode: string,
+  toStationCode: string,
+  strategy: RouteStrategy,
+): string {
+  return `${fromStationCode.trim().toUpperCase()}_${toStationCode.trim().toUpperCase()}_${strategy}`;
 }
 
 function toEntry(record: PopularRouteRecord): PopularRouteEntry {
@@ -15,16 +19,33 @@ function toEntry(record: PopularRouteRecord): PopularRouteEntry {
   };
 }
 
+function isPlannedJourney(value: unknown): value is PlannedJourney {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+  const candidate = value as Partial<PlannedJourney>;
+  return (
+    typeof candidate.source === 'string' &&
+    typeof candidate.strategy === 'string' &&
+    typeof candidate.station_count === 'number' &&
+    typeof candidate.total_time === 'string' &&
+    Array.isArray(candidate.legs) &&
+    typeof candidate.fare === 'object' &&
+    candidate.fare !== null
+  );
+}
+
 export const popularRoutesRepository = {
   buildRouteKey,
 
-  async saveJourneyPlan(
+  async savePlannedJourney(
     fromStationCode: string,
     toStationCode: string,
-    plan: JourneyPlan,
+    strategy: RouteStrategy,
+    plan: PlannedJourney,
   ): Promise<void> {
     const db = await getDb();
-    const routeKey = buildRouteKey(fromStationCode, toStationCode);
+    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy);
     const fromCode = fromStationCode.trim().toUpperCase();
     const toCode = toStationCode.trim().toUpperCase();
     const payloadJson = JSON.stringify(plan);
@@ -51,12 +72,13 @@ export const popularRoutesRepository = {
     );
   },
 
-  async getJourneyPlan(
+  async getPlannedJourney(
     fromStationCode: string,
     toStationCode: string,
-  ): Promise<JourneyPlan | null> {
+    strategy: RouteStrategy,
+  ): Promise<PlannedJourney | null> {
     const db = await getDb();
-    const routeKey = buildRouteKey(fromStationCode, toStationCode);
+    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy);
 
     const row = await db.getFirstAsync<PopularRouteRecord>(
       'SELECT * FROM popular_routes WHERE route_key = ? LIMIT 1',
@@ -67,15 +89,29 @@ export const popularRoutesRepository = {
       return null;
     }
 
-    return JSON.parse(row.payload_json) as JourneyPlan;
+    try {
+      const parsed: unknown = JSON.parse(row.payload_json);
+      return isPlannedJourney(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
   },
 
   async getPopularRoutes(limit = 5): Promise<PopularRouteEntry[]> {
     const db = await getDb();
+    // Collapse strategy variants of the same OD pair so the home list shows
+    // unique routes, ordered by total hits across strategies.
     const rows = await db.getAllAsync<PopularRouteRecord>(
       `
-      SELECT *
+      SELECT
+        MIN(route_key) AS route_key,
+        from_station_code,
+        to_station_code,
+        '' AS payload_json,
+        SUM(hit_count) AS hit_count,
+        MAX(last_fetched_at) AS last_fetched_at
       FROM popular_routes
+      GROUP BY from_station_code, to_station_code
       ORDER BY hit_count DESC, last_fetched_at DESC
       LIMIT ?
       `,

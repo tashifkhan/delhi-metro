@@ -4,15 +4,18 @@ import { stationSearchCacheRepository } from '../storage/stationSearchCacheRepos
 import type {
   FirstLastTrainResponse,
   JourneyFareWithRoute,
-  JourneyPlan,
   MetroLine,
   PassengerNotification,
   PassengerNotificationDetail,
+  PlannedJourney,
   RouteStrategy,
   StationByLineItem,
   StationDetail,
   StationSearchResult,
 } from '../types';
+
+const API_V1 = '/api/v1';
+const API_V2 = '/api/v2';
 
 export interface JourneyRequest {
   fromStationCode: string;
@@ -21,25 +24,35 @@ export interface JourneyRequest {
   journeyTime?: string;
 }
 
+export interface PlanJourneyRequest {
+  fromStationCode: string;
+  toStationCode: string;
+  strategy: RouteStrategy;
+  journeyTime?: string;
+  excludeAirportLine?: boolean;
+  /** Pin to one upstream instead of the Sarthi → DMRC fallback chain. */
+  source?: 'sarthi' | 'dmrc';
+}
+
 export class DmrcService {
   constructor(private readonly apiClient: ApiClient) {}
 
   getLines(): Promise<MetroLine[]> {
-    return this.apiClient.get<MetroLine[]>('/dmrc/lines');
+    return this.apiClient.get<MetroLine[]>(`${API_V1}/dmrc/lines`);
   }
 
   getNotifications(): Promise<PassengerNotification[]> {
-    return this.apiClient.get<PassengerNotification[]>('/dmrc/notifications');
+    return this.apiClient.get<PassengerNotification[]>(`${API_V1}/dmrc/notifications`);
   }
 
   getNotificationDetail(pageSlug: string): Promise<PassengerNotificationDetail> {
     return this.apiClient.get<PassengerNotificationDetail>(
-      `/dmrc/notifications/${encodeURIComponent(pageSlug)}`,
+      `${API_V1}/dmrc/notifications/${encodeURIComponent(pageSlug)}`,
     );
   }
 
   searchStations(query: string): Promise<StationSearchResult[]> {
-    return this.apiClient.get<StationSearchResult[]>('/dmrc/stations/search', {
+    return this.apiClient.get<StationSearchResult[]>(`${API_V1}/dmrc/stations/search`, {
       query: {
         query,
         filter: 'all',
@@ -67,7 +80,7 @@ export class DmrcService {
   }
 
   getFareRoute(request: JourneyRequest): Promise<JourneyFareWithRoute> {
-    return this.apiClient.get<JourneyFareWithRoute>('/dmrc/journeys/fare-route', {
+    return this.apiClient.get<JourneyFareWithRoute>(`${API_V1}/dmrc/journeys/fare-route`, {
       query: {
         from_station_code: request.fromStationCode,
         to_station_code: request.toStationCode,
@@ -78,44 +91,55 @@ export class DmrcService {
   }
 
   getFirstLastTrain(request: JourneyRequest): Promise<FirstLastTrainResponse> {
-    return this.apiClient.get<FirstLastTrainResponse>('/dmrc/journeys/first-last-train', {
+    return this.apiClient.get<FirstLastTrainResponse>(
+      `${API_V1}/dmrc/journeys/first-last-train`,
+      {
+        query: {
+          from_station_code: request.fromStationCode,
+          to_station_code: request.toStationCode,
+          strategy: request.strategy,
+        },
+      },
+    );
+  }
+
+  /**
+   * Plan one journey via the v2 planner (Sarthi first, DMRC fallback).
+   * Station codes may be in either upstream's vocabulary.
+   */
+  planJourney(request: PlanJourneyRequest): Promise<PlannedJourney> {
+    return this.apiClient.get<PlannedJourney>(`${API_V2}/journeys/plan`, {
       query: {
         from_station_code: request.fromStationCode,
         to_station_code: request.toStationCode,
         strategy: request.strategy,
+        journey_time: request.journeyTime,
+        exclude_airport_line: request.excludeAirportLine ?? false,
+        source: request.source,
       },
     });
   }
 
-  getJourneyPlan(
-    fromStationCode: string,
-    toStationCode: string,
-    journeyTime?: string,
-  ): Promise<JourneyPlan> {
-    return this.apiClient.get<JourneyPlan>('/dmrc/journeys/complete', {
-      query: {
-        from_station_code: fromStationCode,
-        to_station_code: toStationCode,
-        journey_time: journeyTime,
-      },
-    });
-  }
-
-  async getJourneyPlanWithLocalCache(
-    fromStationCode: string,
-    toStationCode: string,
-    journeyTime?: string,
-  ): Promise<JourneyPlan> {
-    if (journeyTime) {
-      return this.getJourneyPlan(fromStationCode, toStationCode, journeyTime);
+  async planJourneyWithLocalCache(request: PlanJourneyRequest): Promise<PlannedJourney> {
+    if (request.journeyTime) {
+      return this.planJourney(request);
     }
 
     try {
-      const plan = await this.getJourneyPlan(fromStationCode, toStationCode);
-      await popularRoutesRepository.saveJourneyPlan(fromStationCode, toStationCode, plan);
+      const plan = await this.planJourney(request);
+      await popularRoutesRepository.savePlannedJourney(
+        request.fromStationCode,
+        request.toStationCode,
+        request.strategy,
+        plan,
+      );
       return plan;
     } catch (error) {
-      const cached = await popularRoutesRepository.getJourneyPlan(fromStationCode, toStationCode);
+      const cached = await popularRoutesRepository.getPlannedJourney(
+        request.fromStationCode,
+        request.toStationCode,
+        request.strategy,
+      );
       if (cached) {
         return cached;
       }
@@ -128,10 +152,12 @@ export class DmrcService {
   }
 
   getStationsByLine(lineCode: string): Promise<StationByLineItem[]> {
-    return this.apiClient.get<StationByLineItem[]>(`/dmrc/lines/${lineCode}/stations`);
+    return this.apiClient.get<StationByLineItem[]>(
+      `${API_V1}/dmrc/lines/${lineCode}/stations`,
+    );
   }
 
   getStationDetail(stationCode: string): Promise<StationDetail> {
-    return this.apiClient.get<StationDetail>(`/dmrc/stations/${stationCode}`);
+    return this.apiClient.get<StationDetail>(`${API_V1}/dmrc/stations/${stationCode}`);
   }
 }

@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { useDI } from '../di/DIContext';
@@ -310,12 +310,19 @@ export function useFirstLastTrainQuery(
 export function useJourneyPlanQuery(
   fromStationCode: string,
   toStationCode: string,
+  strategy: RouteStrategy,
   journeyTime?: string,
 ) {
   const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode, journeyTime),
-    queryFn: () => dmrcService.getJourneyPlan(fromStationCode, toStationCode, journeyTime),
+    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode, strategy, journeyTime),
+    queryFn: () =>
+      dmrcService.planJourney({
+        fromStationCode,
+        toStationCode,
+        strategy,
+        journeyTime,
+      }),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
   });
 }
@@ -323,15 +330,28 @@ export function useJourneyPlanQuery(
 export function useJourneyPlanCachedQuery(
   fromStationCode: string,
   toStationCode: string,
+  strategy: RouteStrategy,
   journeyTime?: string,
 ) {
   const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.journeyPlanCached(fromStationCode, toStationCode, journeyTime),
+    queryKey: queryKeys.journeyPlanCached(
+      fromStationCode,
+      toStationCode,
+      strategy,
+      journeyTime,
+    ),
     queryFn: () =>
-      dmrcService.getJourneyPlanWithLocalCache(fromStationCode, toStationCode, journeyTime),
+      dmrcService.planJourneyWithLocalCache({
+        fromStationCode,
+        toStationCode,
+        strategy,
+        journeyTime,
+      }),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
     staleTime: 2 * 60_000,
+    // Keep the last strategy's plan on screen while the other strategy loads.
+    placeholderData: keepPreviousData,
   });
 }
 

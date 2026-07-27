@@ -132,11 +132,85 @@ export interface FirstLastTrainResponse {
   last_train: LastTrainInfo | null;
 }
 
+/** @deprecated Prefer PlannedJourney from the v2 planner. */
 export interface JourneyPlan {
   least_distance_fare: JourneyFareWithRoute;
   minimum_interchange_fare: JourneyFareWithRoute;
   least_distance_train: FirstLastTrainResponse;
   minimum_interchange_train: FirstLastTrainResponse;
+}
+
+/** Upstream that produced a v2 journey plan. */
+export type JourneySource = 'sarthi' | 'dmrc';
+
+export interface PlannedStation {
+  name: string;
+  code: string;
+  slug: string | null;
+  legacy_code: string | null;
+  sarthi_code: string | null;
+  status: string | null;
+}
+
+export interface PlannedFare {
+  normal: number;
+  special: number | null;
+  applicable: number | null;
+}
+
+export interface PlannedStop {
+  name: string;
+  status: string | null;
+}
+
+export interface PlannedLeg {
+  line_name: string;
+  line_number: number | null;
+  line_color: string | null;
+  from_station: string;
+  from_station_code: string | null;
+  to_station: string;
+  to_station_code: string | null;
+  station_count: number | null;
+  stops: PlannedStop[];
+  map_path: string[];
+  duration: string | null;
+  distance_km: number | null;
+  direction: string | null;
+  platform_name: string | null;
+  towards_station: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  interchange_minutes: number | null;
+}
+
+export interface PlannedInterchange {
+  station: string;
+  minutes: number | null;
+}
+
+export interface ServiceTimes {
+  first: string | null;
+  last: string | null;
+}
+
+/** Normalized journey plan from GET /api/v2/journeys/plan. */
+export interface PlannedJourney {
+  source: JourneySource;
+  fallback_reason: string | null;
+  strategy: RouteStrategy;
+  exclude_airport_line: boolean;
+  origin: PlannedStation;
+  destination: PlannedStation;
+  station_count: number;
+  total_time: string;
+  total_distance_km: number | null;
+  fare: PlannedFare;
+  legs: PlannedLeg[];
+  interchanges: PlannedInterchange[];
+  metro_service: ServiceTimes | null;
+  service_available: boolean | null;
+  ticket_available: boolean | null;
 }
 
 export interface StationByLineItem {

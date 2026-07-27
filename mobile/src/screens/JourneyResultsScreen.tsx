@@ -72,9 +72,10 @@ export function JourneyResultsScreen() {
     [editing, navigation, fromCode, toCode, handleSwapStations],
   );
 
-  const { data: plan, isLoading, isError, refetch } = useJourneyPlanCachedQuery(
+  const { data: plan, isPending, isError, refetch } = useJourneyPlanCachedQuery(
     fromCode,
     toCode,
+    strategy,
     journeyTime,
   );
   const { data: lines } = useMetroLinesQuery();
@@ -131,15 +132,18 @@ export function JourneyResultsScreen() {
     return map;
   }, [lines]);
 
-  if (isLoading) return <LoadingState message="Planning your journey..." />;
-  if (isError) return <ErrorState message="Could not plan this journey" onRetry={refetch} />;
+  // Only block the whole screen on the first load for this OD pair.
+  if (isPending && !plan) return <LoadingState message="Planning your journey..." />;
+  if (isError && !plan) {
+    return <ErrorState message="Could not plan this journey" onRetry={refetch} />;
+  }
   if (!plan) return <ErrorState message="No route data available" />;
 
-  const fare =
-    strategy === 'least-distance' ? plan.least_distance_fare : plan.minimum_interchange_fare;
-  const trainTimes =
-    strategy === 'least-distance' ? plan.least_distance_train : plan.minimum_interchange_train;
-  const interchanges = Math.max(0, fare.route.length - 1);
+  const interchanges = Math.max(
+    plan.interchanges.length,
+    Math.max(0, plan.legs.length - 1),
+  );
+  const sourceLabel = plan.source === 'sarthi' ? 'Sarthi' : 'DMRC';
 
   const heroIconColor = isDark ? theme.colors.primary : theme.colors.onPrimaryContainer;
 
@@ -250,8 +254,12 @@ export function JourneyResultsScreen() {
           {/* Journey stats */}
           <View style={styles.heroStats}>
             {[
-              { key: 'stops', icon: 'git-commit-outline' as const, text: `${fare.stations} stops` },
-              { key: 'time', icon: 'time-outline' as const, text: fare.total_time },
+              {
+                key: 'stops',
+                icon: 'git-commit-outline' as const,
+                text: `${plan.station_count} stops`,
+              },
+              { key: 'time', icon: 'time-outline' as const, text: plan.total_time },
               {
                 key: 'changes',
                 icon: 'swap-horizontal-outline' as const,
@@ -317,7 +325,7 @@ export function JourneyResultsScreen() {
         </Reveal>
 
         <Reveal index={3} replayOnFocus={false}>
-          <JourneyFareSummary fare={fare} />
+          <JourneyFareSummary fare={plan.fare} />
         </Reveal>
 
         {/* Route visualization */}
@@ -334,16 +342,20 @@ export function JourneyResultsScreen() {
               Route
             </Text>
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {fare.route.length} {fare.route.length === 1 ? 'line' : 'lines'}
+              {plan.legs.length} {plan.legs.length === 1 ? 'line' : 'lines'}
             </Text>
           </View>
           <View style={styles.routeSegments}>
-            {fare.route.map((segment, index) => (
+            {plan.legs.map((leg, index) => (
               <RouteSegmentView
-                key={`${segment.line}-${index}`}
-                segment={segment}
-                lineColor={lineColorMap.get(normalizeLineKey(segment.line)) ?? theme.colors.primary}
-                isLast={index === fare.route.length - 1}
+                key={`${leg.line_name}-${leg.from_station}-${index}`}
+                leg={leg}
+                lineColor={
+                  leg.line_color ??
+                  lineColorMap.get(normalizeLineKey(leg.line_name)) ??
+                  theme.colors.primary
+                }
+                isLast={index === plan.legs.length - 1}
                 stationCodeMap={stationCodeMap}
                 onStationPress={(code, name) =>
                   navigation.navigate('StationDetail', { stationCode: code, stationName: name })
@@ -351,11 +363,19 @@ export function JourneyResultsScreen() {
               />
             ))}
           </View>
+          <View style={styles.sourceRow}>
+            <Ionicons name="cloud-outline" size={12} color={theme.colors.onSurfaceVariant} />
+            <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {plan.fallback_reason
+                ? `Planned via ${sourceLabel} (fallback)`
+                : `Planned via ${sourceLabel}`}
+            </Text>
+          </View>
         </Card>
         </Reveal>
 
         <Reveal index={5} replayOnFocus={false}>
-          <FirstLastTrainCard data={trainTimes} />
+          <FirstLastTrainCard data={plan.metro_service} />
         </Reveal>
       </ScrollView>
 
@@ -519,5 +539,11 @@ const styles = StyleSheet.create({
   },
   routeSegments: {
     gap: spacing.base,
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
   },
 });

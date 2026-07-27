@@ -2,12 +2,12 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Touchable } from './Touchable';
-import type { JourneyRouteSegment } from '../types';
+import type { PlannedLeg } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, shape, emphasis, onColor } from '../theme';
 
 interface Props {
-  segment: JourneyRouteSegment;
+  leg: PlannedLeg;
   lineColor: string;
   isLast?: boolean;
   stationCodeMap?: Map<string, string>;
@@ -18,7 +18,7 @@ const RAIL_WIDTH = 28;
 const RAIL_THICKNESS = 3;
 
 export function RouteSegmentView({
-  segment,
+  leg,
   lineColor,
   isLast,
   stationCodeMap,
@@ -28,6 +28,25 @@ export function RouteSegmentView({
   const { semantic } = useAppTheme();
   const pillText = onColor(lineColor);
 
+  const stops =
+    leg.stops.length > 0
+      ? leg.stops
+      : [
+          { name: leg.from_station, status: null },
+          { name: leg.to_station, status: null },
+        ];
+
+  const metaBits: string[] = [];
+  if (leg.platform_name) {
+    metaBits.push(leg.platform_name);
+  }
+  if (leg.towards_station) {
+    metaBits.push(`towards ${leg.towards_station}`);
+  }
+  if (leg.distance_km != null && leg.distance_km > 0) {
+    metaBits.push(`${leg.distance_km.toFixed(1)} km`);
+  }
+
   return (
     <View style={styles.container}>
       {/* Line header */}
@@ -35,26 +54,36 @@ export function RouteSegmentView({
         <View style={[styles.linePill, { backgroundColor: lineColor }]}>
           <Ionicons name="train" size={12} color={pillText} />
           <Text variant="labelMedium" style={[emphasis.heavy, { color: pillText }]}>
-            {segment.line}
+            {leg.line_name}
           </Text>
         </View>
-        {segment.path_time ? (
+        {leg.duration ? (
           <View style={styles.durationRow}>
             <Ionicons name="time-outline" size={12} color={theme.colors.onSurfaceVariant} />
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {segment.path_time}
+              {leg.duration}
             </Text>
           </View>
         ) : null}
       </View>
 
+      {metaBits.length > 0 ? (
+        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          {metaBits.join(' · ')}
+        </Text>
+      ) : null}
+
       {/* Station timeline — dots ride on the rail rather than sitting beside it */}
       <View style={styles.stations}>
-        {segment.path.map((point, index) => {
+        {stops.map((point, index) => {
           const isFirst = index === 0;
-          const isTerminus = isFirst || index === segment.path.length - 1;
-          const code = stationCodeMap?.get(point.name.trim().toLowerCase());
-          const isLastRow = index === segment.path.length - 1;
+          const isTerminus = isFirst || index === stops.length - 1;
+          const code =
+            stationCodeMap?.get(point.name.trim().toLowerCase()) ??
+            (isFirst ? leg.from_station_code : null) ??
+            (index === stops.length - 1 ? leg.to_station_code : null) ??
+            undefined;
+          const isLastRow = index === stops.length - 1;
 
           const row = (
             <View style={styles.stationRow}>
@@ -119,8 +148,8 @@ export function RouteSegmentView({
         })}
       </View>
 
-      {/* Interchange callout */}
-      {!isLast && segment.station_interchange_time > 0 ? (
+      {/* Interchange callout after this leg (except the final leg). */}
+      {!isLast && (leg.interchange_minutes ?? 0) > 0 ? (
         <View
           style={[
             styles.interchange,
@@ -132,7 +161,7 @@ export function RouteSegmentView({
             variant="labelMedium"
             style={[emphasis.strong, { color: semantic.onInterchangeContainer }]}
           >
-            Change here · {segment.station_interchange_time} min
+            Change here · {leg.interchange_minutes} min
           </Text>
         </View>
       ) : null}

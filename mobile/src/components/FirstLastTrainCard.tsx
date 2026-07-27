@@ -2,12 +2,12 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from './Card';
-import type { FirstLastTrainResponse } from '../types';
+import type { ServiceTimes } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis, tabular } from '../theme';
 
 interface Props {
-  data: FirstLastTrainResponse;
+  data: ServiceTimes | null | undefined;
 }
 
 function TrainRow({
@@ -45,8 +45,12 @@ export function FirstLastTrainCard({ data }: Props) {
   const theme = useTheme();
   const { fills } = useAppTheme();
 
-  const firstTime = data.first_train?.endstation_from_first_train_estimated_time ?? '—';
-  const lastTime = data.last_train?.endstation_from_last_train_estimated_time ?? '—';
+  const firstTime = data?.first?.trim() || '—';
+  const lastTime = data?.last?.trim() || '—';
+
+  if (firstTime === '—' && lastTime === '—') {
+    return null;
+  }
 
   return (
     <Card radius={radius.hero} style={styles.container}>
