@@ -3,7 +3,7 @@ import { Animated, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { Card } from './Card';
-import { useMetroLinesQuery } from '../hooks';
+import { useNetworkLinesQuery } from '../hooks';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
 import type { MetroLine } from '../types';
@@ -89,7 +89,7 @@ function LineCard({ line }: { line: MetroLine }) {
 export function LineStatusCarousel() {
   const theme = useTheme();
   const { semantic } = useAppTheme();
-  const { data: lines } = useMetroLinesQuery();
+  const { data: lines } = useNetworkLinesQuery();
 
   if (!lines?.length) return null;
 

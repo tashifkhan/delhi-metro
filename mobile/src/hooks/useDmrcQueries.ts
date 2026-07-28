@@ -2,8 +2,14 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { useDI } from '../di/DIContext';
-import type { RouteStrategy, StationSearchResult } from '../types';
+import type {
+  JourneyScope,
+  MetroNetwork,
+  RouteStrategy,
+  StationSearchResult,
+} from '../types';
 import { queryKeys } from './queryKeys';
+import { useMetroNetwork } from '../network';
 
 const NON_ALPHANUMERIC_REGEX = /[^A-Z0-9]/g;
 
@@ -203,37 +209,135 @@ function filterStations(
     .map((entry) => entry.station);
 }
 
+/**
+ * Every station on both networks.
+ *
+ * Station search and journey planning are network-agnostic: a journey can run
+ * from a Delhi Metro station to a Noida Metro one, and the API stitches those
+ * together through the Sector 52/51 interchange. This query is therefore
+ * deliberately independent of the selected network, which only scopes alerts
+ * and the map.
+ */
 function useAllStationsQuery() {
   const { dmrcService } = useDI();
 
+  // Seeded from the DMRC cache because it is the larger catalog and the one
+  // most likely to be present offline; NMRC stations join when the fetch lands.
   const cachedStationsQuery = useQuery({
-    queryKey: queryKeys.stationsCache,
-    queryFn: () => dmrcService.getCachedStations(),
+    queryKey: queryKeys.stationsCache('dmrc'),
+    queryFn: () => dmrcService.getCachedStations('dmrc'),
     staleTime: Infinity,
   });
 
   return useQuery({
-    queryKey: queryKeys.stationsAll,
-    queryFn: () => dmrcService.getAllStationsAndRefreshCache(),
+    queryKey: queryKeys.stationsUnified(),
+    queryFn: () => dmrcService.getAllStationsAcrossNetworks(),
     enabled: !cachedStationsQuery.isPending,
-    initialData: () => cachedStationsQuery.data ?? undefined,
+    initialData: () =>
+      cachedStationsQuery.data?.map((station) => ({
+        ...station,
+        network: 'dmrc' as const,
+      })) ?? undefined,
+    // The seed is only the DMRC half, so it must count as stale from the
+    // start. Without this, `staleTime` would treat the partial list as fresh
+    // and the NMRC catalog would never be fetched.
+    initialDataUpdatedAt: 0,
     staleTime: 5 * 60_000,
   });
 }
 
+/**
+ * Resolve a station code to the network that publishes it.
+ *
+ * Journeys are keyed and cached by the networks they touch, and the API needs
+ * a network hint for codes it cannot resolve, so both come from the catalog
+ * rather than from pattern-matching the code.
+ */
+export function useStationNetworkLookup() {
+  const { data: stations } = useAllStationsQuery();
+
+  return useMemo(() => {
+    const byCode = new Map<string, MetroNetwork>();
+    for (const station of stations ?? []) {
+      if (station.network) {
+        byCode.set(station.station_code.trim().toUpperCase(), station.network);
+      }
+    }
+    return (code: string): MetroNetwork | undefined =>
+      byCode.get(code.trim().toUpperCase());
+  }, [stations]);
+}
+
+/**
+ * Which network(s) a journey runs on, used for cache keys and for the API's
+ * network hint. Derived only from the stations themselves, so planning never
+ * depends on a selected network.
+ */
+export function useJourneyNetworks(fromStationCode: string, toStationCode: string) {
+  const networkOf = useStationNetworkLookup();
+
+  return useMemo(() => {
+    const from = networkOf(fromStationCode);
+    const to = networkOf(toStationCode);
+    const scope: JourneyScope =
+      from && to && from !== to ? 'combined' : (from ?? to ?? 'dmrc');
+
+    return {
+      scope,
+      // The API detects the network from resolvable codes; this only matters
+      // when a code is absent from both catalogs.
+      hint: from ?? to ?? 'dmrc',
+      isCrossNetwork: scope === 'combined',
+    };
+  }, [fromStationCode, toStationCode, networkOf]);
+}
+
+/**
+ * Every line on both networks.
+ *
+ * Browsing lines is network-agnostic for the same reason search is: the Aqua
+ * Line is part of the network a rider actually uses, not a separate app mode.
+ */
 export function useMetroLinesQuery() {
   const { dmrcService } = useDI();
   return useQuery({
-    queryKey: queryKeys.lines,
-    queryFn: () => dmrcService.getLines(),
+    queryKey: queryKeys.linesUnified(),
+    queryFn: () => dmrcService.getAllLinesAcrossNetworks(),
   });
+}
+
+/** Lines for one operator, for the network-scoped alerts page. */
+export function useNetworkLinesQuery() {
+  const { dmrcService } = useDI();
+  const { network } = useMetroNetwork();
+  return useQuery({
+    queryKey: queryKeys.lines(network),
+    queryFn: () => dmrcService.getLines(network),
+  });
+}
+
+/** Resolve a line code to the network that runs it. */
+export function useLineNetworkLookup() {
+  const { data: lines } = useMetroLinesQuery();
+
+  return useMemo(() => {
+    const byCode = new Map<string, MetroNetwork>();
+    for (const line of lines ?? []) {
+      if (line.network) {
+        byCode.set(line.line_code.trim().toUpperCase(), line.network);
+      }
+    }
+    return (code: string): MetroNetwork | undefined =>
+      byCode.get(code.trim().toUpperCase());
+  }, [lines]);
 }
 
 export function useNotificationsQuery() {
   const { dmrcService } = useDI();
+  const { network } = useMetroNetwork();
   return useQuery({
-    queryKey: queryKeys.notifications,
-    queryFn: () => dmrcService.getNotifications(),
+    queryKey: queryKeys.notifications(network),
+    queryFn: () => dmrcService.getNotifications(network),
   });
 }
 
@@ -242,9 +346,10 @@ export function useNotificationDetailQuery(
   enabled: boolean,
 ) {
   const { dmrcService } = useDI();
+  const { network } = useMetroNetwork();
 
   return useQuery({
-    queryKey: queryKeys.notificationDetail(pageSlug ?? ''),
+    queryKey: queryKeys.notificationDetail(network, pageSlug ?? ''),
     queryFn: () => {
       if (pageSlug === null) {
         throw new Error('Notification detail slug is unavailable');
@@ -277,8 +382,9 @@ export function useFareRouteQuery(
   strategy: RouteStrategy,
 ) {
   const { dmrcService } = useDI();
+  const { network } = useMetroNetwork();
   return useQuery({
-    queryKey: queryKeys.fareRoute(fromStationCode, toStationCode, strategy),
+    queryKey: queryKeys.fareRoute(network, fromStationCode, toStationCode, strategy),
     queryFn: () =>
       dmrcService.getFareRoute({
         fromStationCode,
@@ -295,8 +401,9 @@ export function useFirstLastTrainQuery(
   strategy: RouteStrategy,
 ) {
   const { dmrcService } = useDI();
+  const { network } = useMetroNetwork();
   return useQuery({
-    queryKey: queryKeys.firstLastTrain(fromStationCode, toStationCode, strategy),
+    queryKey: queryKeys.firstLastTrain(network, fromStationCode, toStationCode, strategy),
     queryFn: () =>
       dmrcService.getFirstLastTrain({
         fromStationCode,
@@ -314,14 +421,22 @@ export function useJourneyPlanQuery(
   journeyTime?: string,
 ) {
   const { dmrcService } = useDI();
+  const { scope, hint } = useJourneyNetworks(fromStationCode, toStationCode);
   return useQuery({
-    queryKey: queryKeys.journeyPlan(fromStationCode, toStationCode, strategy, journeyTime),
+    queryKey: queryKeys.journeyPlan(
+      scope,
+      fromStationCode,
+      toStationCode,
+      strategy,
+      journeyTime,
+    ),
     queryFn: () =>
       dmrcService.planJourney({
         fromStationCode,
         toStationCode,
         strategy,
         journeyTime,
+        network: hint,
       }),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
   });
@@ -334,8 +449,10 @@ export function useJourneyPlanCachedQuery(
   journeyTime?: string,
 ) {
   const { dmrcService } = useDI();
+  const { scope, hint } = useJourneyNetworks(fromStationCode, toStationCode);
   return useQuery({
     queryKey: queryKeys.journeyPlanCached(
+      scope,
       fromStationCode,
       toStationCode,
       strategy,
@@ -347,6 +464,8 @@ export function useJourneyPlanCachedQuery(
         toStationCode,
         strategy,
         journeyTime,
+        network: hint,
+        scope,
       }),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
     staleTime: 2 * 60_000,
@@ -365,18 +484,32 @@ export function usePopularRoutesQuery(limit = 5) {
 
 export function useStationsByLineQuery(lineCode: string) {
   const { dmrcService } = useDI();
+  const { network: selectedNetwork } = useMetroNetwork();
+  const networkOf = useLineNetworkLookup();
+
+  // The line list spans operators, so the line itself decides where its
+  // stations are fetched from.
+  const network = networkOf(lineCode) ?? selectedNetwork;
+
   return useQuery({
-    queryKey: queryKeys.stationsByLine(lineCode),
-    queryFn: () => dmrcService.getStationsByLine(lineCode),
+    queryKey: queryKeys.stationsByLine(network, lineCode),
+    queryFn: () => dmrcService.getStationsByLine(lineCode, network),
     enabled: lineCode.trim().length > 0,
   });
 }
 
 export function useStationDetailQuery(stationCode: string) {
   const { dmrcService } = useDI();
+  const { network: selectedNetwork } = useMetroNetwork();
+  const networkOf = useStationNetworkLookup();
+
+  // Search spans both operators, so the station's own network decides where
+  // its detail is fetched from — not whichever network happens to be selected.
+  const network = networkOf(stationCode) ?? selectedNetwork;
+
   return useQuery({
-    queryKey: queryKeys.stationDetail(stationCode),
-    queryFn: () => dmrcService.getStationDetail(stationCode),
+    queryKey: queryKeys.stationDetail(network, stationCode),
+    queryFn: () => dmrcService.getStationDetail(stationCode, network),
     enabled: stationCode.trim().length > 0,
   });
 }

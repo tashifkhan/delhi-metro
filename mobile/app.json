@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Delhi Metro",
+    "name": "Delhi NCR Metro",
     "slug": "delhi-metro",
     "version": "1.3.0",
     "orientation": "portrait",
@@ -31,7 +31,15 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": "Allow $(PRODUCT_NAME) to save metro maps.",
+          "granularPermissions": []
+        }
+      ]
     ],
     "extra": {
       "eas": {

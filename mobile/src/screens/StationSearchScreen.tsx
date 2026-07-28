@@ -45,7 +45,7 @@ export function StationSearchScreen() {
       ) : (
         <FlatList
           data={results ?? []}
-          keyExtractor={(item) => String(item.id)}
+          keyExtractor={(item) => `${item.network ?? 'dmrc'}:${item.station_code}`}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.list}
           ListHeaderComponent={
@@ -64,6 +64,7 @@ export function StationSearchScreen() {
             <Reveal index={index < STAGGER_LIMIT ? index : 0} replayOnFocus={false}>
               <StationCard
                 station={item}
+                network={item.network}
                 onPress={() =>
                   navigation.navigate('StationDetail', {
                     stationCode: item.station_code,

@@ -9,6 +9,7 @@ import { useJourneyPlanCachedQuery, useMetroLinesQuery, useStationSearchQuery } 
 import { StrategyToggle } from '../components/StrategyToggle';
 import { JourneyFareSummary } from '../components/JourneyFareSummary';
 import { RouteSegmentView } from '../components/RouteSegmentView';
+import { TransferSegmentView } from '../components/TransferSegmentView';
 import { FirstLastTrainCard } from '../components/FirstLastTrainCard';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
@@ -139,11 +140,23 @@ export function JourneyResultsScreen() {
   }
   if (!plan) return <ErrorState message="No route data available" />;
 
+  const rideLegs = plan.legs.filter((leg) => leg.kind !== 'transfer');
+  // Optimization strategies only differ where the network has alternate paths;
+  // the Aqua Line has one, so an NMRC-only journey has a single route.
+  const hasStrategyChoice = plan.networks.length === 0 || plan.networks.includes('dmrc');
+  const rideCount = rideLegs.length;
   const interchanges = Math.max(
     plan.interchanges.length,
-    Math.max(0, plan.legs.length - 1),
+    Math.max(0, rideCount - 1),
   );
-  const sourceLabel = plan.source === 'sarthi' ? 'Sarthi' : 'DMRC';
+  const sourceLabel =
+    plan.source === 'combined'
+      ? 'Delhi Metro and Noida Metro'
+      : plan.source === 'sarthi'
+        ? 'Sarthi'
+        : plan.source === 'nmrc'
+          ? 'NMRC website'
+          : 'DMRC';
 
   const heroIconColor = isDark ? theme.colors.primary : theme.colors.onPrimaryContainer;
 
@@ -219,7 +232,10 @@ export function JourneyResultsScreen() {
   };
 
   return (
-    <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+    <View
+      style={{ flex: 1 }}
+      {...(hasStrategyChoice ? panResponder.panHandlers : {})}
+    >
       <ScrollView
         style={{ flex: 1, backgroundColor: theme.colors.background }}
         contentContainerStyle={styles.content}
@@ -281,27 +297,30 @@ export function JourneyResultsScreen() {
         </View>
         </Reveal>
 
-        {/* Strategy toggle */}
-        <Reveal index={1} replayOnFocus={false}>
-        <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
-          <StrategyToggle active={strategy} onChange={setStrategy} />
-          <View style={styles.swipeDots}>
-            {STRATEGIES.map((s) => (
-              <View
-                key={s}
-                style={[
-                  styles.swipeDot,
-                  {
-                    backgroundColor:
-                      strategy === s ? theme.colors.primary : theme.colors.outlineVariant,
-                    width: strategy === s ? 20 : 6,
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </Animated.View>
-        </Reveal>
+        {hasStrategyChoice && (
+          <Reveal index={1} replayOnFocus={false}>
+            <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
+              <StrategyToggle active={strategy} onChange={setStrategy} />
+              <View style={styles.swipeDots}>
+                {STRATEGIES.map((s) => (
+                  <View
+                    key={s}
+                    style={[
+                      styles.swipeDot,
+                      {
+                        backgroundColor:
+                          strategy === s
+                            ? theme.colors.primary
+                            : theme.colors.outlineVariant,
+                        width: strategy === s ? 20 : 6,
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </Animated.View>
+          </Reveal>
+        )}
 
         {/* Departure time */}
         <Reveal index={2} replayOnFocus={false}>
@@ -325,7 +344,7 @@ export function JourneyResultsScreen() {
         </Reveal>
 
         <Reveal index={3} replayOnFocus={false}>
-          <JourneyFareSummary fare={plan.fare} />
+          <JourneyFareSummary fare={plan.fare} separateTickets={plan.separate_tickets} />
         </Reveal>
 
         {/* Route visualization */}
@@ -342,26 +361,33 @@ export function JourneyResultsScreen() {
               Route
             </Text>
             <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {plan.legs.length} {plan.legs.length === 1 ? 'line' : 'lines'}
+              {rideCount} {rideCount === 1 ? 'line' : 'lines'}
             </Text>
           </View>
           <View style={styles.routeSegments}>
-            {plan.legs.map((leg, index) => (
-              <RouteSegmentView
-                key={`${leg.line_name}-${leg.from_station}-${index}`}
-                leg={leg}
-                lineColor={
-                  leg.line_color ??
-                  lineColorMap.get(normalizeLineKey(leg.line_name)) ??
-                  theme.colors.primary
-                }
-                isLast={index === plan.legs.length - 1}
-                stationCodeMap={stationCodeMap}
-                onStationPress={(code, name) =>
-                  navigation.navigate('StationDetail', { stationCode: code, stationName: name })
-                }
-              />
-            ))}
+            {plan.legs.map((leg, index) =>
+              leg.kind === 'transfer' ? (
+                <TransferSegmentView
+                  key={`transfer-${leg.from_station}-${index}`}
+                  leg={leg}
+                />
+              ) : (
+                <RouteSegmentView
+                  key={`${leg.line_name}-${leg.from_station}-${index}`}
+                  leg={leg}
+                  lineColor={
+                    leg.line_color ??
+                    lineColorMap.get(normalizeLineKey(leg.line_name)) ??
+                    theme.colors.primary
+                  }
+                  isLast={index === plan.legs.length - 1}
+                  stationCodeMap={stationCodeMap}
+                  onStationPress={(code, name) =>
+                    navigation.navigate('StationDetail', { stationCode: code, stationName: name })
+                  }
+                />
+              ),
+            )}
           </View>
           <View style={styles.sourceRow}>
             <Ionicons name="cloud-outline" size={12} color={theme.colors.onSurfaceVariant} />

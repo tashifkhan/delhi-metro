@@ -2,11 +2,13 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { LineBadge } from './LineBadge';
+import { OperatorMark } from './OperatorMark';
 import { Touchable } from './Touchable';
 import { Card } from './Card';
 import { useAppTheme } from '../theme/ThemeContext';
+import { NETWORK_NAMES } from '../network';
 import { spacing, radius, emphasis, tabular, tint } from '../theme';
-import type { StationLineBadge } from '../types';
+import type { MetroNetwork, StationLineBadge } from '../types';
 
 interface StationLike {
   station_name: string;
@@ -19,9 +21,19 @@ interface Props {
   station: StationLike;
   onPress?: () => void;
   showChevron?: boolean;
+  /**
+   * Operator that runs this station. Shown as its roundel when a list mixes
+   * networks, so a Noida Metro station is not mistaken for a Delhi Metro one.
+   */
+  network?: MetroNetwork;
 }
 
-export function StationCard({ station, onPress, showChevron = true }: Props) {
+export function StationCard({
+  station,
+  onPress,
+  showChevron = true,
+  network,
+}: Props) {
   const theme = useTheme();
   const { isDark, semantic, fills } = useAppTheme();
 
@@ -38,8 +50,8 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
           haptic="select"
           onPress={onPress}
           accessibilityLabel={`${station.station_name}, code ${station.station_code}${
-            station.interchange ? ', interchange station' : ''
-          }`}
+            network ? `, ${NETWORK_NAMES[network]}` : ''
+          }${station.interchange ? ', interchange station' : ''}`}
         >
           <View style={styles.container}>
             <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
@@ -73,9 +85,10 @@ export function StationCard({ station, onPress, showChevron = true }: Props) {
                 </View>
               </View>
 
-              {!!station.metro_lines?.length && (
+              {(!!station.metro_lines?.length || !!network) && (
                 <View style={styles.badgesRow}>
-                  {station.metro_lines.map((line) => (
+                  {network ? <OperatorMark network={network} /> : null}
+                  {station.metro_lines?.map((line) => (
                     <LineBadge
                       key={`${station.station_code}-${line.line_code}`}
                       name={line.line_color}

@@ -254,7 +254,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                   </Button>
                   {externalUrl ? (
                     <Button compact mode="text" icon="open-in-new" onPress={handleOpenExternal}>
-                      Open on DMRC site
+                      Open source
                     </Button>
                   ) : null}
                 </View>
@@ -267,10 +267,10 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                   selectable
                   style={[styles.stateText, { color: theme.colors.onSurfaceVariant }]}
                 >
-                  Full text isn&apos;t available in the app for this notice.
+                  This notice is published as an external document.
                 </Text>
                 <Button compact mode="text" icon="open-in-new" onPress={handleOpenExternal}>
-                  Open on DMRC site
+                  Open source
                 </Button>
               </View>
             ) : null}

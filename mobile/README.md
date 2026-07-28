@@ -1,6 +1,7 @@
-# Delhi Metro Mobile App
+# Delhi + Noida Metro Mobile App
 
-Expo + React Native app for planning Delhi Metro journeys, browsing lines/stations, viewing network maps, and checking alerts.
+Expo + React Native app for planning journeys on Delhi Metro and Noida Metro
+from one persistent network selector.
 
 ## Features
 
@@ -10,9 +11,12 @@ Expo + React Native app for planning Delhi Metro journeys, browsing lines/statio
 - First/last train timing details
 - Station search and station detail screens
 - Metro lines explorer with line station lists
-- Interactive network map view with zoom and PDF share
+- High-resolution interactive network maps with zoom and direct Photos/Gallery saving
 - Notifications feed
 - Local SQLite-backed popular route cache
+- Noida Aqua Line route/fare/distance planning and first/last trains
+- NMRC stations, line view, network map, and press-release archive
+- Separate offline station and route caches for each network
 
 ## Tech Stack
 
@@ -22,7 +26,7 @@ Expo + React Native app for planning Delhi Metro journeys, browsing lines/statio
 - React Navigation
 - TanStack React Query
 - react-native-paper
-- expo-sqlite, expo-file-system, expo-sharing
+- expo-sqlite, expo-file-system, expo-media-library
 
 ## Prerequisites
 

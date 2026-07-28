@@ -1,12 +1,19 @@
 import { getDb } from './database';
-import type { PlannedJourney, PopularRouteEntry, PopularRouteRecord, RouteStrategy } from '../types';
+import type {
+  JourneyScope,
+  PlannedJourney,
+  PopularRouteEntry,
+  PopularRouteRecord,
+  RouteStrategy,
+} from '../types';
 
 function buildRouteKey(
   fromStationCode: string,
   toStationCode: string,
   strategy: RouteStrategy,
+  scope: JourneyScope = 'dmrc',
 ): string {
-  return `${fromStationCode.trim().toUpperCase()}_${toStationCode.trim().toUpperCase()}_${strategy}`;
+  return `${scope}:${fromStationCode.trim().toUpperCase()}_${toStationCode.trim().toUpperCase()}_${strategy}`;
 }
 
 function toEntry(record: PopularRouteRecord): PopularRouteEntry {
@@ -43,9 +50,10 @@ export const popularRoutesRepository = {
     toStationCode: string,
     strategy: RouteStrategy,
     plan: PlannedJourney,
+    scope: JourneyScope = 'dmrc',
   ): Promise<void> {
     const db = await getDb();
-    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy);
+    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy, scope);
     const fromCode = fromStationCode.trim().toUpperCase();
     const toCode = toStationCode.trim().toUpperCase();
     const payloadJson = JSON.stringify(plan);
@@ -76,14 +84,26 @@ export const popularRoutesRepository = {
     fromStationCode: string,
     toStationCode: string,
     strategy: RouteStrategy,
+    scope: JourneyScope = 'dmrc',
   ): Promise<PlannedJourney | null> {
     const db = await getDb();
-    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy);
+    const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy, scope);
 
-    const row = await db.getFirstAsync<PopularRouteRecord>(
+    let row = await db.getFirstAsync<PopularRouteRecord>(
       'SELECT * FROM popular_routes WHERE route_key = ? LIMIT 1',
       [routeKey],
     );
+
+    // Keep pre-multi-network DMRC cache entries readable.
+    if (!row && scope === 'dmrc') {
+      const legacyKey = `${fromStationCode.trim().toUpperCase()}_${toStationCode
+        .trim()
+        .toUpperCase()}_${strategy}`;
+      row = await db.getFirstAsync<PopularRouteRecord>(
+        'SELECT * FROM popular_routes WHERE route_key = ? LIMIT 1',
+        [legacyKey],
+      );
+    }
 
     if (!row) {
       return null;
@@ -97,6 +117,12 @@ export const popularRoutesRepository = {
     }
   },
 
+  /**
+   * Most-planned routes across every network.
+   *
+   * The planner is network-agnostic, so the routes it suggests are too — a
+   * Delhi-to-Noida commute belongs in the same list as a Delhi-only one.
+   */
   async getPopularRoutes(limit = 5): Promise<PopularRouteEntry[]> {
     const db = await getDb();
     // Collapse strategy variants of the same OD pair so the home list shows

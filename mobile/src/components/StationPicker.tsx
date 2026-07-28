@@ -68,7 +68,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
         </View>
 
         <Searchbar
-          placeholder="Search by name or code"
+          placeholder="Search both metro networks"
           value={searchText}
           onChangeText={setSearchText}
           autoFocus
@@ -84,7 +84,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
         ) : (
           <FlatList
             data={results ?? []}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={(item) => `${item.network ?? 'dmrc'}:${item.station_code}`}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.list}
             renderItem={({ item }) => (
@@ -92,6 +92,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
                 station={item}
                 onPress={() => handleSelect(item)}
                 showChevron={false}
+                network={item.network}
               />
             )}
             ListEmptyComponent={

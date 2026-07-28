@@ -1,7 +1,10 @@
 import { getDb } from './database';
 import type { StationSearchResult } from '../types';
+import type { MetroNetwork } from '../network';
 
-const STATIONS_CACHE_KEY = 'stations-all-v1';
+function stationsCacheKey(network: MetroNetwork): string {
+  return `stations-all-v2-${network}`;
+}
 
 interface StationSearchCacheRow {
   cache_key: string;
@@ -10,7 +13,10 @@ interface StationSearchCacheRow {
 }
 
 export const stationSearchCacheRepository = {
-  async saveStations(stations: StationSearchResult[]): Promise<void> {
+  async saveStations(
+    stations: StationSearchResult[],
+    network: MetroNetwork = 'dmrc',
+  ): Promise<void> {
     const db = await getDb();
     const payloadJson = JSON.stringify(stations);
     const timestamp = Date.now();
@@ -24,15 +30,15 @@ export const stationSearchCacheRepository = {
         payload_json = excluded.payload_json,
         last_updated_at = excluded.last_updated_at
       `,
-      [STATIONS_CACHE_KEY, payloadJson, timestamp],
+      [stationsCacheKey(network), payloadJson, timestamp],
     );
   },
 
-  async getStations(): Promise<StationSearchResult[] | null> {
+  async getStations(network: MetroNetwork = 'dmrc'): Promise<StationSearchResult[] | null> {
     const db = await getDb();
     const row = await db.getFirstAsync<StationSearchCacheRow>(
       'SELECT * FROM station_search_cache WHERE cache_key = ? LIMIT 1',
-      [STATIONS_CACHE_KEY],
+      [stationsCacheKey(network)],
     );
 
     if (!row) {

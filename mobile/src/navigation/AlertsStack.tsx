@@ -7,7 +7,7 @@ import type { AlertsStackParamList } from './types';
 const Stack = createNativeStackNavigator<AlertsStackParamList>();
 
 export function AlertsStack() {
-  const screenOptions = useStackScreenOptions();
+  const screenOptions = useStackScreenOptions({ networkSwitcher: true });
 
   return (
     <Stack.Navigator

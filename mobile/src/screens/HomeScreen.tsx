@@ -199,7 +199,7 @@ export function HomeScreen() {
               variant="displaySmall"
               style={[emphasis.heavy, styles.heroTitle, { color: theme.colors.onSurface }]}
             >
-              Delhi Metro
+              NCR Metro
             </Text>
           </View>
           <Touchable
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   },
   heroText: {
     flex: 1,
-    gap: 2,
+    gap: spacing.xs,
   },
   heroTitle: {
     letterSpacing: -0.8,

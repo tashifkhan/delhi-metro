@@ -2,11 +2,14 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import type { PlannedFare } from '../types';
+import { NETWORK_NAMES } from '../network';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis, tabular } from '../theme';
 
 interface Props {
   fare: PlannedFare;
+  /** True when the journey crosses networks and needs a ticket on each. */
+  separateTickets?: boolean;
 }
 
 function formatInr(value: number): string {
@@ -43,7 +46,7 @@ function FareCard({
   );
 }
 
-export function JourneyFareSummary({ fare }: Props) {
+export function JourneyFareSummary({ fare, separateTickets = false }: Props) {
   const theme = useTheme();
   const { fills } = useAppTheme();
 
@@ -71,6 +74,36 @@ export function JourneyFareSummary({ fare }: Props) {
           foreground={theme.colors.onSurface}
         />
       </View>
+      {separateTickets && fare.breakdown.length > 1 ? (
+        <View style={[styles.breakdown, { backgroundColor: fills.subtle }]}>
+          <View style={styles.breakdownHeader}>
+            <Ionicons
+              name="ticket-outline"
+              size={14}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Text
+              variant="labelMedium"
+              style={[emphasis.strong, { color: theme.colors.onSurfaceVariant }]}
+            >
+              Two tickets — the networks are priced separately
+            </Text>
+          </View>
+          {fare.breakdown.map((item) => (
+            <View key={item.network} style={styles.breakdownRow}>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {NETWORK_NAMES[item.network]}
+              </Text>
+              <Text
+                variant="bodySmall"
+                style={[emphasis.strong, tabular, { color: theme.colors.onSurface }]}
+              >
+                {formatInr(item.normal)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
       {showApplicable ? (
         <View
           style={[
@@ -116,6 +149,22 @@ const styles = StyleSheet.create({
   },
   fareLabel: {
     opacity: 0.8,
+  },
+  breakdown: {
+    borderRadius: radius.card,
+    padding: spacing.base,
+    gap: spacing.xs,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   applicablePill: {
     flexDirection: 'row',

@@ -11,8 +11,22 @@ import { DIProvider } from './src/di/DIContext';
 import { createServiceContainer } from './src/di/container';
 import { ThemeProvider, useAppTheme } from './src/theme';
 import { RootTabs } from './src/navigation/RootTabs';
+import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
 const container = createServiceContainer(apiClient);
+
+function AppNavigation() {
+  const { network, isLoaded } = useMetroNetwork();
+
+  if (!isLoaded) {
+    return null;
+  }
+
+  // Remounting on a network change also returns every tab to its root. That
+  // prevents a Delhi station-detail route from lingering after switching to
+  // Noida (and vice versa).
+  return <RootTabs key={network} />;
+}
 
 function AppInner() {
   const { paperTheme, navTheme, isDark, settingsLoaded } = useAppTheme();
@@ -26,7 +40,7 @@ function AppInner() {
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {settingsLoaded ? (
         <NavigationContainer theme={navTheme}>
-          <RootTabs />
+          <AppNavigation />
         </NavigationContainer>
       ) : (
         // Hold on the themed background for the one frame the stored palette
@@ -41,11 +55,13 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <DIProvider container={container}>
-          <QueryClientProvider client={queryClient}>
-            <AppInner />
-          </QueryClientProvider>
-        </DIProvider>
+        <MetroNetworkProvider>
+          <DIProvider container={container}>
+            <QueryClientProvider client={queryClient}>
+              <AppInner />
+            </QueryClientProvider>
+          </DIProvider>
+        </MetroNetworkProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

@@ -8,9 +8,11 @@ import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
 import { SectionHeader } from '../components/SectionHeader';
 import { spacing } from '../theme';
+import { useMetroNetwork } from '../network';
 
 export function NotificationsScreen() {
   const theme = useTheme();
+  const { network } = useMetroNetwork();
   const { data, isLoading, isError, refetch, isRefetching } = useNotificationsQuery();
 
   if (isLoading) return <LoadingState message="Loading alerts..." />;
@@ -20,7 +22,7 @@ export function NotificationsScreen() {
     <View>
       <LineStatusCarousel />
       <SectionHeader
-        title="Passenger Notices"
+        title={network === 'nmrc' ? 'NMRC Press Releases' : 'Passenger Notices'}
         icon="megaphone-outline"
         count={data?.length}
         inset
@@ -45,8 +47,12 @@ export function NotificationsScreen() {
       onRefresh={refetch}
       ListEmptyComponent={
         <EmptyState
-          title="No Notices"
-          subtitle="There are no active passenger notices"
+          title={network === 'nmrc' ? 'No Press Releases' : 'No Notices'}
+          subtitle={
+            network === 'nmrc'
+              ? 'No NMRC press releases are available'
+              : 'There are no active passenger notices'
+          }
           icon="notifications-off-outline"
         />
       }

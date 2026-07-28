@@ -2,17 +2,17 @@ import { useRef, useState } from 'react';
 import {
   Alert,
   Animated,
-  Dimensions,
   LayoutChangeEvent,
   PanResponder,
   Pressable,
   StyleSheet,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useMapFamilyPrimaryQuery } from '../hooks';
@@ -22,11 +22,13 @@ import { EmptyState } from '../components/EmptyState';
 import { Touchable } from '../components/Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius } from '../theme';
+import { useMetroNetwork } from '../network';
+import { mapService } from '../services/mapService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
+const DELHI_NETWORK_MAP_SOURCE = require('../../assets/delhi-metro-network-map-2026-07.jpg');
 
 function getDistance(touches: { pageX: number; pageY: number }[]) {
   const dx = touches[0].pageX - touches[1].pageX;
@@ -47,15 +49,94 @@ function clampTranslation(tx: number, ty: number, s: number, w: number, h: numbe
   };
 }
 
+type HighResolutionMapImageProps = {
+  canvasSize: { width: number; height: number };
+  scale: Animated.Value;
+  source: number | { uri: string };
+  sourceKey: string;
+  translateX: Animated.Value;
+  translateY: Animated.Value;
+};
+
+function HighResolutionMapImage({
+  canvasSize,
+  scale,
+  source,
+  sourceKey,
+  translateX,
+  translateY,
+}: HighResolutionMapImageProps) {
+  const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
+
+  if (failed) {
+    return (
+      <ErrorState
+        message="The complete network map could not be loaded"
+        onRetry={() => {
+          setFailed(false);
+          setLoading(true);
+          setRetryKey((value) => value + 1);
+        }}
+      />
+    );
+  }
+
+  const imageWidth = Animated.multiply(scale, canvasSize.width);
+  const imageHeight = Animated.multiply(scale, canvasSize.height);
+
+  return (
+    <>
+      {loading && (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            styles.loader,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Loading high-resolution map...
+          </Text>
+        </View>
+      )}
+      <Animated.View
+        style={{
+          width: imageWidth,
+          height: imageHeight,
+          transform: [{ translateX }, { translateY }],
+        }}
+      >
+        <Image
+          key={`${sourceKey}:${retryKey}`}
+          source={source}
+          style={StyleSheet.absoluteFill}
+          contentFit="contain"
+          allowDownscaling={false}
+          cachePolicy="disk"
+          onLoadEnd={() => setLoading(false)}
+          onError={() => {
+            setLoading(false);
+            setFailed(true);
+          }}
+        />
+      </Animated.View>
+    </>
+  );
+}
+
 export function MetroMapScreen() {
   const theme = useTheme();
   const { fills } = useAppTheme();
+  const { width } = useWindowDimensions();
+  const { network, networkName } = useMetroNetwork();
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, refetch } = useMapFamilyPrimaryQuery('network');
-  const [imageLoading, setImageLoading] = useState(true);
-  const [imageFailed, setImageFailed] = useState(false);
   const [downloading, setDownloading] = useState(false);
-  const [canvasSize, setCanvasSize] = useState({ width: SCREEN_WIDTH, height: SCREEN_WIDTH });
+  const [canvasSize, setCanvasSize] = useState({ width, height: width });
 
   const scale = useRef(new Animated.Value(1)).current;
   const translateX = useRef(new Animated.Value(0)).current;
@@ -82,7 +163,7 @@ export function MetroMapScreen() {
     tyv.current = y;
     if (animated) {
       Animated.parallel([
-        Animated.spring(scale, { toValue: s, useNativeDriver: true, speed: 20, bounciness: 2 }),
+        Animated.spring(scale, { toValue: s, useNativeDriver: false, speed: 20, bounciness: 2 }),
         Animated.spring(translateX, { toValue: x, useNativeDriver: true, speed: 20, bounciness: 2 }),
         Animated.spring(translateY, { toValue: y, useNativeDriver: true, speed: 20, bounciness: 2 }),
       ]).start();
@@ -140,18 +221,39 @@ export function MetroMapScreen() {
   const handleZoomIn = () => applyTransform(sv.current + ZOOM_STEP, txv.current, tyv.current, true);
   const handleZoomOut = () => applyTransform(sv.current - ZOOM_STEP, txv.current, tyv.current, true);
 
-  const handleDownloadPdf = async () => {
-    if (!data?.pdf?.url) {
-      Alert.alert('Unavailable', 'PDF map is not available at the moment.');
+  const handleDownloadMap = async () => {
+    const asset = data?.image;
+    if (!asset?.url) {
+      Alert.alert('Unavailable', 'The network map is not available at the moment.');
       return;
     }
     try {
       setDownloading(true);
-      const fileUri = (FileSystem.cacheDirectory ?? '') + 'delhi-metro-map.pdf';
-      const { uri } = await FileSystem.downloadAsync(data.pdf.url, fileUri);
-      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Delhi Metro Network Map' });
+      const permission = await MediaLibrary.requestPermissionsAsync(true, []);
+      if (!permission.granted) {
+        Alert.alert(
+          'Permission needed',
+          'Allow photo saving to store the network map on your device.',
+        );
+        return;
+      }
+
+      const extension =
+        asset.content_type?.toLowerCase().includes('png') ||
+        asset.source_path.toLowerCase().endsWith('.png')
+          ? 'png'
+          : 'jpg';
+      const fileUri =
+        (FileSystem.cacheDirectory ?? '') + `${network}-metro-map.${extension}`;
+      const downloadUrl = mapService.getProxyFileUrl('network', 'image', network);
+      const { uri } = await FileSystem.downloadAsync(downloadUrl, fileUri);
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert(
+        'Map saved',
+        `${networkName} network map was saved to your ${process.env.EXPO_OS === 'ios' ? 'Photos' : 'Gallery'}.`,
+      );
     } catch {
-      Alert.alert('Error', 'Failed to download the map. Please try again.');
+      Alert.alert('Error', 'Failed to save the map. Please try again.');
     } finally {
       setDownloading(false);
     }
@@ -160,7 +262,18 @@ export function MetroMapScreen() {
   if (isLoading) return <LoadingState message="Loading map..." />;
   if (isError) return <ErrorState message="Could not load map data" onRetry={refetch} />;
 
-  const imageUrl = data?.image?.url;
+  const remoteImageUrl =
+    network === 'nmrc' && data?.image
+      ? mapService.getProxyFileUrl('network', 'image', network)
+      : data?.image?.url;
+  const imageSource =
+    network === 'dmrc'
+      ? DELHI_NETWORK_MAP_SOURCE
+      : remoteImageUrl
+        ? { uri: remoteImageUrl }
+        : null;
+  const imageSourceKey =
+    network === 'dmrc' ? 'delhi-network-map-2026-07' : remoteImageUrl;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -171,49 +284,22 @@ export function MetroMapScreen() {
         {...panResponder.panHandlers}
       >
         <Pressable onPress={handleDoubleTap} style={styles.canvasFill}>
-          {imageUrl && !imageFailed ? (
-            <>
-              {imageLoading && (
-                <View style={[StyleSheet.absoluteFill, styles.loader, { backgroundColor: theme.colors.background }]}>
-                  <ActivityIndicator size="large" color={theme.colors.primary} />
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                    Loading network map...
-                  </Text>
-                </View>
-              )}
-              <Animated.View
-                style={{ transform: [{ scale }, { translateX }, { translateY }] }}
-              >
-                <Image
-                  source={{ uri: imageUrl }}
-                  style={{ width: canvasSize.width, height: canvasSize.height }}
-                  contentFit="contain"
-                  cachePolicy="disk"
-                  enforceEarlyResizing
-                  onLoadEnd={() => setImageLoading(false)}
-                  onError={() => {
-                    setImageLoading(false);
-                    setImageFailed(true);
-                  }}
-                />
-              </Animated.View>
-            </>
+          {imageSource && imageSourceKey ? (
+            <HighResolutionMapImage
+              key={imageSourceKey}
+              source={imageSource}
+              sourceKey={imageSourceKey}
+              canvasSize={canvasSize}
+              scale={scale}
+              translateX={translateX}
+              translateY={translateY}
+            />
           ) : (
-            imageFailed ? (
-              <ErrorState
-                message="The complete network map could not be loaded"
-                onRetry={() => {
-                  setImageFailed(false);
-                  setImageLoading(true);
-                }}
-              />
-            ) : (
-              <EmptyState
-                title="Map unavailable"
-                subtitle="The complete network map is not available right now"
-                icon="map-outline"
-              />
-            )
+            <EmptyState
+              title="Map unavailable"
+              subtitle="The complete network map is not available right now"
+              icon="map-outline"
+            />
           )}
         </Pressable>
       </View>
@@ -249,11 +335,11 @@ export function MetroMapScreen() {
       {/* Download FAB — sibling of canvas, outside PanResponder */}
       <FAB
         icon={downloading ? 'progress-download' : 'download'}
-        label="PDF"
+        label="Save map"
         loading={downloading}
         disabled={downloading}
-        onPress={handleDownloadPdf}
-        accessibilityLabel="Download the network map as a PDF"
+        onPress={handleDownloadMap}
+        accessibilityLabel={`Save the ${networkName} network map to the device`}
         style={[styles.fab, { bottom: insets.bottom + spacing['2xl'] }]}
       />
     </View>

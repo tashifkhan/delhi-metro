@@ -4,6 +4,7 @@ import { stationSearchCacheRepository } from '../storage/stationSearchCacheRepos
 import type {
   FirstLastTrainResponse,
   JourneyFareWithRoute,
+  JourneyScope,
   MetroLine,
   PassengerNotification,
   PassengerNotificationDetail,
@@ -13,6 +14,7 @@ import type {
   StationDetail,
   StationSearchResult,
 } from '../types';
+import type { MetroNetwork } from '../network';
 
 const API_V1 = '/api/v1';
 const API_V2 = '/api/v2';
@@ -31,18 +33,56 @@ export interface PlanJourneyRequest {
   journeyTime?: string;
   excludeAirportLine?: boolean;
   /** Pin to one upstream instead of the Sarthi → DMRC fallback chain. */
-  source?: 'sarthi' | 'dmrc';
+  source?: 'sarthi' | 'dmrc' | 'nmrc';
+  /**
+   * Network hint. The API resolves the network from the station codes, so
+   * this only decides journeys whose codes it cannot resolve.
+   */
+  network?: MetroNetwork;
+  /** Local-cache scope, which is `combined` for a cross-network journey. */
+  scope?: JourneyScope;
 }
 
 export class DmrcService {
   constructor(private readonly apiClient: ApiClient) {}
 
-  getLines(): Promise<MetroLine[]> {
-    return this.apiClient.get<MetroLine[]>(`${API_V1}/dmrc/lines`);
+  private networkPath(network: MetroNetwork): string {
+    return `${API_V1}/${network}`;
   }
 
-  getNotifications(): Promise<PassengerNotification[]> {
-    return this.apiClient.get<PassengerNotification[]>(`${API_V1}/dmrc/notifications`);
+  getLines(network: MetroNetwork = 'dmrc'): Promise<MetroLine[]> {
+    return this.apiClient.get<MetroLine[]>(`${this.networkPath(network)}/lines`);
+  }
+
+  /**
+   * Every line on both networks, tagged with its operator.
+   *
+   * Fetched independently so one operator being down still lists the other's
+   * lines, matching how station search behaves.
+   */
+  async getAllLinesAcrossNetworks(): Promise<MetroLine[]> {
+    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const results = await Promise.allSettled(
+      order.map((network) => this.getLines(network)),
+    );
+
+    const lines: MetroLine[] = [];
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'fulfilled') {
+        lines.push(...result.value.map((line) => ({ ...line, network: order[index] })));
+      }
+    }
+
+    if (lines.length === 0 && results[0].status === 'rejected') {
+      throw results[0].reason;
+    }
+    return lines;
+  }
+
+  getNotifications(network: MetroNetwork = 'dmrc'): Promise<PassengerNotification[]> {
+    return this.apiClient.get<PassengerNotification[]>(
+      `${this.networkPath(network)}/notifications`,
+    );
   }
 
   getNotificationDetail(pageSlug: string): Promise<PassengerNotificationDetail> {
@@ -51,25 +91,33 @@ export class DmrcService {
     );
   }
 
-  searchStations(query: string): Promise<StationSearchResult[]> {
-    return this.apiClient.get<StationSearchResult[]>(`${API_V1}/dmrc/stations/search`, {
+  searchStations(
+    query: string,
+    network: MetroNetwork = 'dmrc',
+  ): Promise<StationSearchResult[]> {
+    return this.apiClient.get<StationSearchResult[]>(
+      `${this.networkPath(network)}/stations/search`,
+      {
       query: {
         query,
         filter: 'all',
       },
-    });
+      },
+    );
   }
 
-  getCachedStations(): Promise<StationSearchResult[] | null> {
-    return stationSearchCacheRepository.getStations();
+  getCachedStations(network: MetroNetwork = 'dmrc'): Promise<StationSearchResult[] | null> {
+    return stationSearchCacheRepository.getStations(network);
   }
 
-  async getAllStationsAndRefreshCache(): Promise<StationSearchResult[]> {
-    const cachedStations = await stationSearchCacheRepository.getStations();
+  async getAllStationsAndRefreshCache(
+    network: MetroNetwork = 'dmrc',
+  ): Promise<StationSearchResult[]> {
+    const cachedStations = await stationSearchCacheRepository.getStations(network);
 
     try {
-      const stations = await this.searchStations('');
-      await stationSearchCacheRepository.saveStations(stations);
+      const stations = await this.searchStations('', network);
+      await stationSearchCacheRepository.saveStations(stations, network);
       return stations;
     } catch (error) {
       if (cachedStations) {
@@ -77,6 +125,35 @@ export class DmrcService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Every station on both networks, tagged with the operator that publishes it.
+   *
+   * Search is network-agnostic, so the order is fixed rather than following a
+   * selected network. The two catalogs are fetched independently, so one
+   * operator being down still leaves the other searchable.
+   */
+  async getAllStationsAcrossNetworks(): Promise<StationSearchResult[]> {
+    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+
+    const results = await Promise.allSettled(
+      order.map((network) => this.getAllStationsAndRefreshCache(network)),
+    );
+
+    const stations: StationSearchResult[] = [];
+    for (const [index, result] of results.entries()) {
+      if (result.status === 'fulfilled') {
+        stations.push(
+          ...result.value.map((station) => ({ ...station, network: order[index] })),
+        );
+      }
+    }
+
+    if (stations.length === 0 && results[0].status === 'rejected') {
+      throw results[0].reason;
+    }
+    return stations;
   }
 
   getFareRoute(request: JourneyRequest): Promise<JourneyFareWithRoute> {
@@ -116,6 +193,7 @@ export class DmrcService {
         journey_time: request.journeyTime,
         exclude_airport_line: request.excludeAirportLine ?? false,
         source: request.source,
+        network: request.network ?? 'dmrc',
       },
     });
   }
@@ -132,6 +210,7 @@ export class DmrcService {
         request.toStationCode,
         request.strategy,
         plan,
+        request.scope ?? request.network ?? 'dmrc',
       );
       return plan;
     } catch (error) {
@@ -139,6 +218,7 @@ export class DmrcService {
         request.fromStationCode,
         request.toStationCode,
         request.strategy,
+        request.scope ?? request.network ?? 'dmrc',
       );
       if (cached) {
         return cached;
@@ -151,13 +231,21 @@ export class DmrcService {
     return popularRoutesRepository.getPopularRoutes(limit);
   }
 
-  getStationsByLine(lineCode: string): Promise<StationByLineItem[]> {
+  getStationsByLine(
+    lineCode: string,
+    network: MetroNetwork = 'dmrc',
+  ): Promise<StationByLineItem[]> {
     return this.apiClient.get<StationByLineItem[]>(
-      `${API_V1}/dmrc/lines/${lineCode}/stations`,
+      `${this.networkPath(network)}/lines/${lineCode}/stations`,
     );
   }
 
-  getStationDetail(stationCode: string): Promise<StationDetail> {
-    return this.apiClient.get<StationDetail>(`${API_V1}/dmrc/stations/${stationCode}`);
+  getStationDetail(
+    stationCode: string,
+    network: MetroNetwork = 'dmrc',
+  ): Promise<StationDetail> {
+    return this.apiClient.get<StationDetail>(
+      `${this.networkPath(network)}/stations/${stationCode}`,
+    );
   }
 }
