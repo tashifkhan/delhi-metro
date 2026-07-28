@@ -1,15 +1,15 @@
-# Delhi Metro
+# Delhi NCR Metro
 
 Monorepo for a Delhi Metro journey platform:
 
-- `api/`: FastAPI backend wrapper over DMRC upstream APIs
-- `mobile/`: Expo React Native mobile app
+- `api/`: FastAPI backend wrapper over DMRC APIs and NMRC public pages
+- `mobile/`: Expo React Native app with a persistent Delhi/Noida selector
 - `docs/`: project documentation, flows, and release guides
 
 ## Repository Layout
 
 - `api/`
-  - Backend service with typed schemas, service layer, and DMRC/map endpoints
+  - Backend service with typed schemas, DMRC API clients, and an NMRC HTML scraper
   - `/api/v1` wraps the legacy DMRC website API; `/api/v2` plans journeys
     through the Delhi Metro Sarthi API with `/api/v1`'s planner as fallback
 - `mobile/`
@@ -64,11 +64,15 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 - Fare + route planning across two strategies
 - First/last train timing lookup
 - DMRC map asset discovery and delivery
+- NMRC Aqua Line stations, fare/time/distance planning, map, and press releases
+- Persistent network selection with per-network route and station caches
 - Mobile route caching and offline fallback for popular routes
 
 ## Notes
 
-- Backend depends on upstream DMRC services and frontend assets.
+- Backend depends on upstream DMRC services and NMRC's public passenger pages.
+- NMRC's planner is server-rendered HTML; the backend normalizes it into the
+  same journey model used by the Delhi planner and has published-data fallbacks.
 - Map PDFs may be unavailable for some map families based on upstream publication.
 - Prefer environment variables for deployment-specific configuration.
 
