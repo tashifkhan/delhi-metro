@@ -15,12 +15,12 @@ API_ROOT = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     """Runtime settings for the API process."""
 
-    app_name: str = Field(default="DMRC Wrapper API")
-    app_version: str = Field(default="0.1.0")
+    app_name: str = Field(default="Delhi and Noida Metro API")
+    app_version: str = Field(default="0.2.0")
     app_description: str = Field(
         default=(
-            "Typed FastAPI wrapper around selected Delhi Metro Rail Corporation "
-            "passenger APIs."
+            "Typed FastAPI wrapper for Delhi Metro APIs and normalized Noida "
+            "Metro passenger information."
         )
     )
     debug: bool = Field(default=False)
@@ -36,6 +36,18 @@ class Settings(BaseSettings):
         description="Base URL for DMRC frontend/static assets.",
     )
     dmrc_frontend_timeout_seconds: float = Field(default=20.0, ge=1.0, le=60.0)
+    map_download_max_bytes: int = Field(
+        default=25 * 1024 * 1024,
+        ge=1024,
+        le=100 * 1024 * 1024,
+        description="Maximum map file size buffered by the proxy.",
+    )
+
+    nmrc_base_url: AnyHttpUrl = Field(
+        default="https://www.nmrcnoida.com/",
+        description="Base URL for the public NMRC website and planner pages.",
+    )
+    nmrc_timeout_seconds: float = Field(default=20.0, ge=1.0, le=60.0)
 
     sarthi_base_url: AnyHttpUrl = Field(
         default="https://dmrc.autope.in/metro/v4/",

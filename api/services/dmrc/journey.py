@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from clients.dmrc import dmrc_client
 from core.catalog import resolve_station, to_legacy_code
-from core.validation import validate_model
+from core.errors import UpstreamApiError
+from core.validation import normalize_dmrc_identifier, validate_model
 from schemas.journey import (
     FirstLastTrainResponse,
     JourneyFareWithRoute,
@@ -25,7 +28,10 @@ from schemas.planner import (
     PlannedStop,
     ServiceTimes,
 )
-from services.station import normalize_station_code
+from services.dmrc.station import normalize_station_code
+
+logger = logging.getLogger(__name__)
+DELHI_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
 
 def _format_journey_time(journey_time: datetime) -> str:
@@ -33,7 +39,7 @@ def _format_journey_time(journey_time: datetime) -> str:
 
     local_time = journey_time
     if journey_time.tzinfo is not None:
-        local_time = journey_time.astimezone().replace(tzinfo=None)
+        local_time = journey_time.astimezone(DELHI_TIMEZONE).replace(tzinfo=None)
 
     return local_time.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
 
@@ -233,10 +239,16 @@ async def plan_journey(
     translated to legacy codes through the station crosswalk.
     """
 
-    from_code = to_legacy_code(from_station_code) or from_station_code
-    to_code = to_legacy_code(to_station_code) or to_station_code
+    from_code = normalize_dmrc_identifier(
+        to_legacy_code(from_station_code) or from_station_code,
+        label="Origin station code",
+    )
+    to_code = normalize_dmrc_identifier(
+        to_legacy_code(to_station_code) or to_station_code,
+        label="Destination station code",
+    )
 
-    fare_route, trains = await asyncio.gather(
+    fare_result, trains_result = await asyncio.gather(
         fare_with_route(
             from_station_code=from_code,
             to_station_code=to_code,
@@ -248,10 +260,25 @@ async def plan_journey(
             to_station_code=to_code,
             strategy=strategy,
         ),
+        return_exceptions=True,
     )
 
+    if isinstance(fare_result, BaseException):
+        raise fare_result
+
+    if isinstance(trains_result, UpstreamApiError):
+        logger.warning(
+            "DMRC first/last-train lookup failed; serving route without timings: %s",
+            trains_result,
+        )
+        trains = None
+    elif isinstance(trains_result, BaseException):
+        raise trains_result
+    else:
+        trains = trains_result
+
     return normalize(
-        fare_route,
+        fare_result,
         trains,
         strategy=strategy,
         from_station_code=normalize_station_code(from_code),

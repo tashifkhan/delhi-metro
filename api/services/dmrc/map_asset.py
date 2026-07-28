@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import time
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 
 from clients.frontend import frontend_client
-from core.errors import UpstreamApiError
+from core.errors import ApiRequestError, UpstreamApiError
 from schemas.map_asset import (
     MapAsset,
     MapAssetByFormatResponse,
@@ -49,6 +51,36 @@ _PATTERNS: tuple[_MapPattern, ...] = (
     ),
 )
 
+_CACHE_TTL_SECONDS = 15 * 60
+_asset_cache: tuple[float, MapAssetListResponse] | None = None
+_download_cache: dict[str, tuple[float, bytes, dict[str, str]]] = {}
+_cache_lock: asyncio.Lock | None = None
+_cache_lock_loop_id: int | None = None
+
+_ALLOWED_CONTENT_TYPES: dict[MapAssetType, frozenset[str]] = {
+    MapAssetType.IMAGE: frozenset(
+        {
+            "image/jpeg",
+            "image/jpg",
+            "image/png",
+            "image/svg+xml",
+        }
+    ),
+    MapAssetType.PDF: frozenset({"application/pdf"}),
+}
+
+
+def _get_cache_lock() -> asyncio.Lock:
+    """Return a map-cache lock bound to the current event loop."""
+
+    global _cache_lock, _cache_lock_loop_id
+
+    loop_id = id(asyncio.get_running_loop())
+    if _cache_lock is None or _cache_lock_loop_id != loop_id:
+        _cache_lock = asyncio.Lock()
+        _cache_lock_loop_id = loop_id
+    return _cache_lock
+
 
 def _pick_file_type(path: str) -> MapAssetType | None:
     ext = PurePosixPath(path).suffix.lower()
@@ -79,9 +111,7 @@ def _stable_rank(path: str) -> int:
     return rank
 
 
-async def list_map_assets() -> MapAssetListResponse:
-    """Return all map assets discovered from the current frontend build."""
-
+async def _discover_map_assets() -> MapAssetListResponse:
     files = await frontend_client.get_asset_files()
     assets: list[MapAsset] = []
     seen_paths: set[str] = set()
@@ -136,6 +166,32 @@ async def list_map_assets() -> MapAssetListResponse:
     return MapAssetListResponse(assets=assets)
 
 
+async def list_map_assets() -> MapAssetListResponse:
+    """Return cached map assets, refreshing metadata at most once per TTL."""
+
+    global _asset_cache
+
+    now = time.monotonic()
+    if _asset_cache and now - _asset_cache[0] < _CACHE_TTL_SECONDS:
+        return _asset_cache[1].model_copy(deep=True)
+
+    async with _get_cache_lock():
+        now = time.monotonic()
+        if _asset_cache and now - _asset_cache[0] < _CACHE_TTL_SECONDS:
+            return _asset_cache[1].model_copy(deep=True)
+
+        stale = _asset_cache
+        try:
+            result = await _discover_map_assets()
+        except UpstreamApiError:
+            if stale is not None:
+                return stale[1].model_copy(deep=True)
+            raise
+
+        _asset_cache = (now, result)
+        return result.model_copy(deep=True)
+
+
 async def list_map_assets_by_family(
     *,
     family: MapFamily,
@@ -178,7 +234,7 @@ async def resolve_asset_for_family(
         )
         if assets.assets:
             return assets.assets[0]
-        raise UpstreamApiError(
+        raise ApiRequestError(
             message=f"No map assets found for family '{family.value}'",
             status_code=404,
         )
@@ -194,7 +250,7 @@ async def resolve_asset_for_family(
         if asset.file_type == expected_file_type:
             return asset
 
-    raise UpstreamApiError(
+    raise ApiRequestError(
         message=(
             f"No {format_filter.value} map asset found for family '{family.value}'"
         ),
@@ -209,16 +265,37 @@ async def get_asset_by_id(asset_id: str) -> MapAsset:
     for asset in assets.assets:
         if asset.id == asset_id:
             return asset
-    raise UpstreamApiError(message=f"Map asset not found: {asset_id}", status_code=404)
+    raise ApiRequestError(message=f"Map asset not found: {asset_id}", status_code=404)
 
 
 async def download_asset(asset: MapAsset) -> tuple[bytes, dict[str, str]]:
-    """Download a resolved map asset's bytes and response headers."""
+    """Download, validate, and briefly cache one bounded map asset."""
 
-    content, headers, _url, _status = await frontend_client.get_bytes(
-        asset.source_path
-    )
-    return content, headers
+    now = time.monotonic()
+    cached = _download_cache.get(asset.source_path)
+    if cached and now - cached[0] < _CACHE_TTL_SECONDS:
+        return cached[1], dict(cached[2])
+
+    async with _get_cache_lock():
+        now = time.monotonic()
+        for path, item in list(_download_cache.items()):
+            if now - item[0] >= _CACHE_TTL_SECONDS:
+                _download_cache.pop(path, None)
+        cached = _download_cache.get(asset.source_path)
+        if cached and now - cached[0] < _CACHE_TTL_SECONDS:
+            return cached[1], dict(cached[2])
+
+        content, headers, _url, _status = await frontend_client.get_bytes(
+            asset.source_path
+        )
+        content_type = headers.get("content-type", "").split(";", maxsplit=1)[0].lower()
+        if content_type not in _ALLOWED_CONTENT_TYPES[asset.file_type]:
+            raise UpstreamApiError(
+                f"Unexpected map asset content-type '{content_type or 'missing'}'"
+            )
+
+        _download_cache[asset.source_path] = (now, content, dict(headers))
+        return content, headers
 
 
 async def download_asset_by_id(asset_id: str) -> tuple[MapAsset, bytes, dict[str, str]]:

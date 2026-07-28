@@ -7,7 +7,7 @@ from urllib.parse import quote
 from pydantic import TypeAdapter
 
 from clients.dmrc import dmrc_client
-from core.errors import UpstreamApiError
+from core.errors import ApiRequestError
 from core.validation import validate_model, validate_with_adapter
 from schemas.notification import (
     PassengerNotification,
@@ -50,7 +50,7 @@ async def get_notification_detail(page_slug: str) -> PassengerNotificationDetail
     content = press_release.body_english or press_release.body_hindi
 
     if not title or not content:
-        raise UpstreamApiError(
+        raise ApiRequestError(
             message=f"Notification detail '{normalized_slug}' was not found",
             status_code=404,
         )

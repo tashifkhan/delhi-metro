@@ -35,6 +35,8 @@ idna==3.11
     # via
     #   anyio
     #   httpx
+lxml==6.1.1
+    # via api
 pydantic==2.12.5
     # via
     #   fastapi

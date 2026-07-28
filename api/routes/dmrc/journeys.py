@@ -11,17 +11,31 @@ from schemas.journey import (
     JourneyPlan,
     RouteStrategy,
 )
-from services.journey import complete_journey_plan, fare_with_route, first_last_train
+from services.dmrc.journey import (
+    complete_journey_plan,
+    fare_with_route,
+    first_last_train,
+)
 
-router = APIRouter(prefix="/dmrc/journeys", tags=["journeys"])
+router = APIRouter(prefix="/journeys", tags=["journeys"])
 
 FromStation = Annotated[
     str,
-    Query(min_length=2, description="Source station code, e.g. RG."),
+    Query(
+        min_length=2,
+        max_length=16,
+        pattern=r"^[A-Za-z0-9]+$",
+        description="Source station code, e.g. RG.",
+    ),
 ]
 ToStation = Annotated[
     str,
-    Query(min_length=2, description="Destination station code, e.g. VASI."),
+    Query(
+        min_length=2,
+        max_length=16,
+        pattern=r"^[A-Za-z0-9]+$",
+        description="Destination station code, e.g. VASI.",
+    ),
 ]
 JourneyTime = Annotated[
     datetime | None,

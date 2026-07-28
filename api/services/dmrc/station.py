@@ -9,7 +9,12 @@ from urllib.parse import quote
 from pydantic import TypeAdapter
 
 from clients.dmrc import dmrc_client
-from core.validation import validate_model, validate_with_adapter
+from core.errors import UpstreamApiError
+from core.validation import (
+    normalize_dmrc_identifier,
+    validate_model,
+    validate_with_adapter,
+)
 from schemas.line import StationLineBadge
 from schemas.station import (
     StationByLineItem,
@@ -17,7 +22,7 @@ from schemas.station import (
     StationSearchFilter,
     StationSearchResult,
 )
-from services.line import line_badge, list_lines
+from services.dmrc.line import line_badge, list_lines
 
 _station_search_adapter = TypeAdapter(list[StationSearchResult])
 _station_by_line_adapter = TypeAdapter(list[StationByLineItem])
@@ -27,19 +32,35 @@ _station_by_line_adapter = TypeAdapter(list[StationByLineItem])
 _BADGE_CACHE_TTL_SECONDS = 300.0
 _badge_cache: dict[str, list[StationLineBadge]] | None = None
 _badge_cache_expiry = 0.0
+_station_catalog_cache: list[StationSearchResult] | None = None
+_station_catalog_cache_expiry = 0.0
+_station_catalog_lock: asyncio.Lock | None = None
+_station_catalog_lock_loop_id: int | None = None
+
+
+def _get_station_catalog_lock() -> asyncio.Lock:
+    """Return a refresh lock bound to the current event loop."""
+
+    global _station_catalog_lock, _station_catalog_lock_loop_id
+
+    loop_id = id(asyncio.get_running_loop())
+    if _station_catalog_lock is None or _station_catalog_lock_loop_id != loop_id:
+        _station_catalog_lock = asyncio.Lock()
+        _station_catalog_lock_loop_id = loop_id
+    return _station_catalog_lock
 
 
 def normalize_station_code(code: str) -> str:
     """Normalize station codes to DMRC expected format (uppercase, trimmed)."""
 
-    return code.strip().upper()
+    return normalize_dmrc_identifier(code, label="Station code")
 
 
 async def stations_by_line(line_code: str) -> list[StationByLineItem]:
     """Return the ordered station sequence for one line."""
 
     payload = await dmrc_client.get_json_list(
-        f"station_by_line/{line_code.strip().upper()}"
+        f"station_by_line/{normalize_dmrc_identifier(line_code, label='Line code')}"
     )
     return validate_with_adapter(_station_by_line_adapter, payload)
 
@@ -64,7 +85,9 @@ async def search_stations(
     if not normalized_query:
         return await list_all_stations()
 
-    encoded_query = quote(normalized_query)
+    # Encode the entire value as one path segment. Leaving `/` unescaped would
+    # allow a search term containing `../` to change the upstream request path.
+    encoded_query = quote(normalized_query, safe="")
     payload = await dmrc_client.get_json_list(
         f"station_by_keyword/{search_filter.value}/{encoded_query}"
     )
@@ -73,7 +96,40 @@ async def search_stations(
 
 
 async def list_all_stations() -> list[StationSearchResult]:
-    """Return a de-duplicated station catalog across all DMRC lines."""
+    """Return a cached catalog and coalesce concurrent upstream refreshes."""
+
+    global _badge_cache, _badge_cache_expiry
+    global _station_catalog_cache, _station_catalog_cache_expiry
+
+    now = monotonic()
+    if _station_catalog_cache is not None and now < _station_catalog_cache_expiry:
+        return [station.model_copy(deep=True) for station in _station_catalog_cache]
+
+    async with _get_station_catalog_lock():
+        now = monotonic()
+        if _station_catalog_cache is not None and now < _station_catalog_cache_expiry:
+            return [station.model_copy(deep=True) for station in _station_catalog_cache]
+
+        stale = _station_catalog_cache
+        try:
+            stations = await _refresh_all_stations()
+        except UpstreamApiError:
+            if stale is not None:
+                return [station.model_copy(deep=True) for station in stale]
+            raise
+
+        _station_catalog_cache = stations
+        _station_catalog_cache_expiry = now + _BADGE_CACHE_TTL_SECONDS
+        _badge_cache = {
+            normalize_station_code(station.station_code): list(station.metro_lines)
+            for station in stations
+        }
+        _badge_cache_expiry = _station_catalog_cache_expiry
+        return [station.model_copy(deep=True) for station in stations]
+
+
+async def _refresh_all_stations() -> list[StationSearchResult]:
+    """Fetch and de-duplicate the station catalog across all DMRC lines."""
 
     lines = await list_lines()
     stations_per_line = await asyncio.gather(
@@ -123,37 +179,14 @@ async def list_all_stations() -> list[StationSearchResult]:
 async def _get_badge_map() -> dict[str, list[StationLineBadge]]:
     """Return (and cache) the station-code to line-badge mapping."""
 
-    global _badge_cache, _badge_cache_expiry
-
     now = monotonic()
     if _badge_cache is not None and now < _badge_cache_expiry:
-        return _badge_cache
+        return {code: list(badges) for code, badges in _badge_cache.items()}
 
-    lines = await list_lines()
-    stations_per_line = await asyncio.gather(
-        *(stations_by_line(line.line_code) for line in lines)
-    )
-
-    badges_by_code: dict[str, list[StationLineBadge]] = {}
-    seen_pairs: set[tuple[str, str]] = set()
-
-    for line, line_stations in zip(lines, stations_per_line):
-        badge = line_badge(line)
-        for station in line_stations:
-            normalized_code = normalize_station_code(station.station_code)
-            pair = (normalized_code, badge.line_code)
-            if pair in seen_pairs:
-                continue
-
-            badges_by_code.setdefault(normalized_code, []).append(badge)
-            seen_pairs.add(pair)
-
-    for badges in badges_by_code.values():
-        badges.sort(key=lambda item: (item.line_id, item.line_code))
-
-    _badge_cache = badges_by_code
-    _badge_cache_expiry = now + _BADGE_CACHE_TTL_SECONDS
-    return badges_by_code
+    # The full-catalog refresh builds the same badge map and is protected by a
+    # single-flight lock, so concurrent searches cannot each fan out per line.
+    await list_all_stations()
+    return {code: list(badges) for code, badges in (_badge_cache or {}).items()}
 
 
 async def _with_line_badges(

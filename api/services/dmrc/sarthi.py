@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 
 from clients.sarthi import sarthi_client
 from core.catalog import resolve_station, to_sarthi_code
-from core.errors import UpstreamApiError
+from core.errors import ApiRequestError, UpstreamApiError
 from core.validation import validate_model
 from schemas.journey import RouteStrategy
 from schemas.planner import (
@@ -73,8 +73,7 @@ def _leg(raw: SarthiRouteLeg) -> PlannedLeg:
         to_station_code=raw.end_code,
         station_count=raw.station_count,
         stops=[
-            PlannedStop(name=stop.name, status=stop.status or None)
-            for stop in raw.path
+            PlannedStop(name=stop.name, status=stop.status or None) for stop in raw.path
         ],
         map_path=list(raw.map_path),
         duration=raw.path_time,
@@ -154,8 +153,9 @@ async def plan_journey(
     translated to Sarthi's codes through the station crosswalk.
 
     Raises:
-        UpstreamApiError: If a station is not in Sarthi's catalog, or the
-            upstream request fails or returns an unexpected payload.
+        ApiRequestError: If a station code is unknown to the shared catalog.
+        UpstreamApiError: If a known station is unavailable in Sarthi, or the
+            request fails or returns an unexpected payload.
     """
 
     from_code = to_sarthi_code(from_station_code)
@@ -165,7 +165,14 @@ async def plan_journey(
     # a known-unplannable journey out of the upstream's generic 500 path.
     if from_code is None or to_code is None:
         missing = from_station_code if from_code is None else to_station_code
-        raise UpstreamApiError(
+        if resolve_station(missing) is not None:
+            raise UpstreamApiError(
+                message=(
+                    f"Station '{missing.strip().upper()}' is unavailable in the "
+                    "Sarthi catalog"
+                )
+            )
+        raise ApiRequestError(
             message=f"Station '{missing.strip().upper()}' is not in the Sarthi catalog",
             status_code=404,
         )

@@ -15,10 +15,12 @@ from fastapi.responses import JSONResponse
 
 from clients.dmrc import dmrc_client
 from clients.frontend import frontend_client
+from clients.nmrc import nmrc_client
 from clients.sarthi import sarthi_client
 from core.config import settings
-from core.errors import UpstreamApiError
-from routes import health, journeys, lines, maps, notifications, planner, stations
+from core.errors import ApiRequestError, UpstreamApiError
+from routes import dmrc, health, nmrc, planner
+from schemas.common import ApiErrorResponse
 
 API_V1_PREFIX = "/api/v1"
 API_V2_PREFIX = "/api/v2"
@@ -31,6 +33,7 @@ async def lifespan(_: FastAPI):
     yield
     await dmrc_client.close()
     await frontend_client.close()
+    await nmrc_client.close()
     await sarthi_client.close()
 
 
@@ -40,6 +43,11 @@ app = FastAPI(
     description=settings.app_description,
     debug=settings.debug,
     lifespan=lifespan,
+    responses={
+        400: {"model": ApiErrorResponse, "description": "Invalid request."},
+        404: {"model": ApiErrorResponse, "description": "Resource not found."},
+        502: {"model": ApiErrorResponse, "description": "Upstream service failure."},
+    },
     openapi_tags=[
         {
             "name": "health",
@@ -66,10 +74,18 @@ app = FastAPI(
             "description": "Network map asset discovery and file delivery.",
         },
         {
+            "name": "nmrc",
+            "description": (
+                "Noida Metro passenger data normalized from public HTML pages "
+                "into the same schemas as the DMRC endpoints."
+            ),
+        },
+        {
             "name": "planner",
             "description": (
-                "v2 journey planning. Served by the Delhi Metro Sarthi API with "
-                "the legacy DMRC planner as fallback."
+                "v2 journey planning. DMRC journeys are served by the Delhi "
+                "Metro Sarthi API with the legacy DMRC planner as fallback; "
+                "`network=nmrc` plans on the Noida Metro Aqua Line."
             ),
         },
     ],
@@ -83,12 +99,8 @@ async def handle_upstream_error(
 ) -> JSONResponse:
     """Translate upstream failures to API-friendly 502 responses."""
 
-    status_code = 502
-    if exc.status_code is not None and 400 <= exc.status_code < 500:
-        status_code = exc.status_code
-
     return JSONResponse(
-        status_code=status_code,
+        status_code=502,
         content={
             "detail": exc.message,
             "upstream_status_code": exc.status_code,
@@ -96,12 +108,25 @@ async def handle_upstream_error(
     )
 
 
+@app.exception_handler(ApiRequestError)
+async def handle_request_error(
+    _: Request,
+    exc: ApiRequestError,
+) -> JSONResponse:
+    """Return locally determined request/resource errors without gateway metadata."""
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": exc.message,
+            "upstream_status_code": None,
+        },
+    )
+
+
 app.include_router(health.router, prefix=API_V1_PREFIX)
-app.include_router(lines.router, prefix=API_V1_PREFIX)
-app.include_router(stations.router, prefix=API_V1_PREFIX)
-app.include_router(journeys.router, prefix=API_V1_PREFIX)
-app.include_router(notifications.router, prefix=API_V1_PREFIX)
-app.include_router(maps.router, prefix=API_V1_PREFIX)
+app.include_router(dmrc.router, prefix=API_V1_PREFIX)
+app.include_router(nmrc.router, prefix=API_V1_PREFIX)
 
 app.include_router(planner.router, prefix=API_V2_PREFIX)
 

@@ -5,9 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, Path
 
 from schemas.notification import PassengerNotification, PassengerNotificationDetail
-from services.notification import get_notification_detail, list_notifications
+from services.dmrc.notification import get_notification_detail, list_notifications
 
-router = APIRouter(prefix="/dmrc/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 @router.get(

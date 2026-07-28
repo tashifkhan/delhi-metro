@@ -5,9 +5,9 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query
 
 from schemas.station import StationDetail, StationSearchFilter, StationSearchResult
-from services.station import get_station_detail, search_stations
+from services.dmrc.station import get_station_detail, search_stations
 
-router = APIRouter(prefix="/dmrc/stations", tags=["stations"])
+router = APIRouter(prefix="/stations", tags=["stations"])
 
 
 @router.get(
@@ -24,6 +24,7 @@ async def search_stations_route(
         str,
         Query(
             min_length=0,
+            max_length=100,
             description=(
                 "Station name keyword to search. Empty query returns full station list."
             ),
@@ -54,7 +55,12 @@ async def search_stations_route(
 async def get_station_detail_route(
     station_code: Annotated[
         str,
-        Path(min_length=2, description="DMRC station code, e.g. RG."),
+        Path(
+            min_length=2,
+            max_length=16,
+            pattern=r"^[A-Za-z0-9]+$",
+            description="DMRC station code, e.g. RG.",
+        ),
     ],
 ) -> StationDetail:
     """Fetch the detailed station payload for a station code."""

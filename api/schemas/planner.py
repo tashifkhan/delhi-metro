@@ -1,8 +1,8 @@
 """Unified journey planner models served by the v2 API.
 
-Both planner services (Sarthi and legacy DMRC) normalize into these models, so
-a client sees one contract regardless of which upstream answered. Fields that
-only one upstream can supply are optional and documented as such.
+Every planner service (Sarthi, legacy DMRC, and NMRC) normalizes into these
+models, so a client sees one contract regardless of which upstream answered.
+Fields that only one upstream can supply are optional and documented as such.
 """
 
 from __future__ import annotations
@@ -19,6 +19,22 @@ class JourneySource(str, Enum):
 
     SARTHI = "sarthi"
     DMRC = "dmrc"
+    NMRC = "nmrc"
+    COMBINED = "combined"
+
+
+class MetroNetwork(str, Enum):
+    """Passenger network selected by the client."""
+
+    DMRC = "dmrc"
+    NMRC = "nmrc"
+
+
+class LegKind(str, Enum):
+    """What a traveller does during one leg."""
+
+    METRO = "metro"
+    TRANSFER = "transfer"
 
 
 class PlannedStation(BaseModel):
@@ -44,6 +60,15 @@ class PlannedStation(BaseModel):
     )
 
 
+class NetworkFare(BaseModel):
+    """One network's share of a journey fare."""
+
+    network: MetroNetwork
+    normal: float
+    special: float | None = None
+    applicable: float | None = None
+
+
 class PlannedFare(BaseModel):
     """Fare for the journey in INR."""
 
@@ -55,6 +80,14 @@ class PlannedFare(BaseModel):
     applicable: float | None = Field(
         default=None,
         description="Fare that applies at the requested time. Sarthi only.",
+    )
+    breakdown: list[NetworkFare] = Field(
+        default_factory=list,
+        description=(
+            "Per-network split, set only on a journey spanning both networks. "
+            "Delhi Metro and Noida Metro fares are not integrated, so the "
+            "totals above are the sum of two separate tickets."
+        ),
     )
 
 
@@ -68,6 +101,29 @@ class PlannedStop(BaseModel):
 class PlannedLeg(BaseModel):
     """One continuous leg of the journey on a single line."""
 
+    kind: LegKind = Field(
+        default=LegKind.METRO,
+        description=(
+            "`metro` for a ride, `transfer` for the walk between networks. A "
+            "transfer leg has no line colour, platform, or fare."
+        ),
+    )
+    network: MetroNetwork | None = Field(
+        default=None,
+        description="Network this leg runs on. Null on a transfer leg.",
+    )
+    source: JourneySource | None = Field(
+        default=None,
+        description="Upstream that produced this leg, on a combined journey.",
+    )
+    walk_metres: int | None = Field(
+        default=None,
+        description="Approximate walking distance. Transfer legs only.",
+    )
+    note: str | None = Field(
+        default=None,
+        description="Traveller-facing guidance, e.g. how the transfer works.",
+    )
     line_name: str = Field(..., description="Line display name, e.g. Yellow Line.")
     line_number: int | None = None
     line_color: str | None = Field(
@@ -138,7 +194,24 @@ class ServiceTimes(BaseModel):
 class PlannedJourney(BaseModel):
     """A journey plan normalized across both upstreams."""
 
-    source: JourneySource = Field(..., description="Upstream that answered.")
+    source: JourneySource = Field(
+        ...,
+        description=(
+            "Upstream that answered, or `combined` when the journey spans both "
+            "networks and each leg carries its own `source`."
+        ),
+    )
+    networks: list[MetroNetwork] = Field(
+        default_factory=list,
+        description="Networks used, in travel order.",
+    )
+    separate_tickets: bool = Field(
+        default=False,
+        description=(
+            "True when the journey crosses networks, which requires buying a "
+            "ticket on each. See `fare.breakdown` for the split."
+        ),
+    )
     fallback_reason: str | None = Field(
         default=None,
         description=(

@@ -1,4 +1,4 @@
-"""Metro line routes."""
+"""NMRC metro line routes."""
 
 from typing import Annotated
 
@@ -6,23 +6,23 @@ from fastapi import APIRouter, Path
 
 from schemas.line import MetroLine
 from schemas.station import StationByLineItem
-from services.line import list_lines
-from services.station import stations_by_line
+from services.nmrc.catalog import list_lines
+from services.nmrc.station import stations_by_line
 
-router = APIRouter(prefix="/dmrc/lines", tags=["lines"])
+router = APIRouter(prefix="/lines", tags=["nmrc"])
 
 
 @router.get(
     "",
     response_model=list[MetroLine],
-    summary="List metro lines",
+    summary="List NMRC lines",
     description=(
-        "Returns Delhi Metro line metadata including line code, colors, terminal "
-        "stations, and operational status."
+        "Returns NMRC line metadata in the same shape as the DMRC line "
+        "catalog. NMRC currently operates the Aqua Line alone."
     ),
 )
 async def list_lines_route() -> list[MetroLine]:
-    """Fetch the line catalog from DMRC upstream."""
+    """Fetch the NMRC line catalog."""
 
     return await list_lines()
 
@@ -30,16 +30,13 @@ async def list_lines_route() -> list[MetroLine]:
 @router.get(
     "/{line_code}/stations",
     response_model=list[StationByLineItem],
-    summary="List stations for a line",
-    description=(
-        "Returns station sequence for a given line code such as `LN3`, `LN10`, "
-        "or `LN11`."
-    ),
+    summary="List stations on an NMRC line",
+    description="Returns the ordered station sequence for a line code, e.g. `AQUA`.",
 )
 async def list_line_stations_route(
     line_code: Annotated[
         str,
-        Path(min_length=2, description="DMRC line code, e.g. LN10."),
+        Path(min_length=2, description="NMRC line code, e.g. AQUA."),
     ],
 ) -> list[StationByLineItem]:
     """Fetch ordered line stations by line code."""

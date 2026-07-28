@@ -7,6 +7,7 @@ import re
 import time
 from collections.abc import Mapping
 from pathlib import PurePosixPath
+from urllib.parse import unquote, urlsplit
 
 import httpx
 
@@ -44,6 +45,33 @@ class DmrcFrontendClient:
                 "Referer": "https://delhimetrorail.com/",
             },
         )
+
+    @staticmethod
+    def _normalize_relative_path(path: str) -> str:
+        """Return a safe same-origin path and reject absolute/traversing URLs."""
+
+        candidate = path.strip()
+        parsed = urlsplit(candidate)
+        if (
+            not candidate
+            or parsed.scheme
+            or parsed.netloc
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise UpstreamApiError("DMRC frontend supplied an unsafe asset URL")
+
+        decoded_path = unquote(parsed.path).replace("\\", "/")
+        if decoded_path.startswith("//"):
+            raise UpstreamApiError("DMRC frontend supplied an unsafe asset path")
+        segments = decoded_path.split("/")
+        if any(segment in {".", ".."} for segment in segments):
+            raise UpstreamApiError("DMRC frontend supplied a traversing asset path")
+
+        clean_path = parsed.path.lstrip("/")
+        if not clean_path:
+            raise UpstreamApiError("DMRC frontend supplied an empty asset path")
+        return clean_path
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Return a client bound to current running event loop."""
@@ -105,6 +133,10 @@ class DmrcFrontendClient:
         normalized: dict[str, str] = {}
         for key, value in files.items():
             if isinstance(key, str) and isinstance(value, str):
+                try:
+                    self._normalize_relative_path(value)
+                except UpstreamApiError:
+                    continue
                 normalized[key] = value
         return normalized
 
@@ -112,8 +144,9 @@ class DmrcFrontendClient:
         """Download a frontend text asset."""
 
         client = await self._get_client()
+        clean_path = self._normalize_relative_path(path)
         try:
-            response = await client.get(path.lstrip("/"))
+            response = await client.get(clean_path)
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC frontend bundle request timed out") from exc
         except httpx.HTTPError as exc:
@@ -178,7 +211,7 @@ class DmrcFrontendClient:
         """Run a HEAD request against a static asset path."""
 
         client = await self._get_client()
-        clean_path = path.lstrip("/")
+        clean_path = self._normalize_relative_path(path)
         try:
             response = await client.head(clean_path)
         except httpx.TimeoutException as exc:
@@ -196,26 +229,39 @@ class DmrcFrontendClient:
         """Download static file bytes from DMRC frontend host."""
 
         client = await self._get_client()
-        clean_path = path.lstrip("/")
+        clean_path = self._normalize_relative_path(path)
         try:
-            response = await client.get(clean_path)
+            async with client.stream("GET", clean_path) as response:
+                if response.status_code >= 400:
+                    raise UpstreamApiError(
+                        message="DMRC frontend static asset request failed",
+                        status_code=response.status_code,
+                    )
+
+                declared_size = response.headers.get("content-length")
+                if (
+                    declared_size
+                    and declared_size.isdigit()
+                    and int(declared_size) > settings.map_download_max_bytes
+                ):
+                    raise UpstreamApiError("DMRC frontend map asset is too large")
+
+                content = bytearray()
+                async for chunk in response.aiter_bytes():
+                    content.extend(chunk)
+                    if len(content) > settings.map_download_max_bytes:
+                        raise UpstreamApiError("DMRC frontend map asset is too large")
+
+                return (
+                    bytes(content),
+                    dict(response.headers),
+                    str(response.url),
+                    response.status_code,
+                )
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC frontend download timed out") from exc
         except httpx.HTTPError as exc:
             raise UpstreamApiError("DMRC frontend download failed") from exc
-
-        if response.status_code >= 400:
-            raise UpstreamApiError(
-                message="DMRC frontend static asset request failed",
-                status_code=response.status_code,
-            )
-
-        return (
-            response.content,
-            dict(response.headers),
-            str(response.url),
-            response.status_code,
-        )
 
 
 # Application-wide client instance, shared by the map asset service.

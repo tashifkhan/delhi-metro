@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 
 from schemas.journey import RouteStrategy
-from schemas.planner import JourneySource, PlannedJourney
+from schemas.planner import JourneySource, MetroNetwork, PlannedJourney
 from services.planner import plan_journey
 
 router = APIRouter(prefix="/journeys", tags=["planner"])
@@ -30,11 +30,25 @@ router = APIRouter(prefix="/journeys", tags=["planner"])
 async def plan_journey_route(
     from_station_code: Annotated[
         str,
-        Query(min_length=2, description="Origin station code, e.g. AIIMS."),
+        Query(
+            min_length=1,
+            max_length=64,
+            pattern=r"^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$",
+            description=(
+                "Origin station code. NMRC also accepts an exact station name."
+            ),
+        ),
     ],
     to_station_code: Annotated[
         str,
-        Query(min_length=2, description="Destination station code, e.g. ASDM."),
+        Query(
+            min_length=1,
+            max_length=64,
+            pattern=r"^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$",
+            description=(
+                "Destination station code. NMRC also accepts an exact station name."
+            ),
+        ),
     ],
     strategy: Annotated[
         RouteStrategy,
@@ -67,6 +81,15 @@ async def plan_journey_route(
             )
         ),
     ] = None,
+    network: Annotated[
+        MetroNetwork,
+        Query(
+            description=(
+                "Metro network to plan on. NMRC journeys are scraped from the "
+                "public Noida Metro journey planner."
+            )
+        ),
+    ] = MetroNetwork.DMRC,
 ) -> PlannedJourney:
     """Plan one journey through the preferred available upstream."""
 
@@ -77,4 +100,5 @@ async def plan_journey_route(
         journey_time=journey_time,
         exclude_airport_line=exclude_airport_line,
         source=source,
+        network=network,
     )

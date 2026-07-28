@@ -16,3 +16,10 @@ class StationFacility(BaseModel):
     name: str
     class_name: str
     image: AssetImage
+
+
+class ApiErrorResponse(BaseModel):
+    """Stable error envelope returned by API and upstream exception handlers."""
+
+    detail: str
+    upstream_status_code: int | None = None

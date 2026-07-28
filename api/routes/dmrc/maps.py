@@ -1,5 +1,6 @@
 """Map asset routes: discovery, metadata, and file delivery."""
 
+import re
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query
@@ -12,9 +13,9 @@ from schemas.map_asset import (
     MapFamily,
     MapFormat,
 )
-from services import map_asset as map_service
+from services.dmrc import map_asset as map_service
 
-router = APIRouter(prefix="/dmrc/maps", tags=["maps"])
+router = APIRouter(prefix="/maps", tags=["maps"])
 
 FamilyPath = Annotated[
     MapFamily,
@@ -93,6 +94,8 @@ async def get_primary_maps_route(family: FamilyPath) -> MapAssetByFormatResponse
 
 @router.get(
     "/{family}/download",
+    response_class=RedirectResponse,
+    status_code=307,
     summary="Redirect to map file URL",
     description=(
         "Resolves a map asset by family+format and issues an HTTP redirect to "
@@ -114,6 +117,7 @@ async def download_map_redirect_route(
 
 @router.get(
     "/{family}/file",
+    response_class=Response,
     summary="Proxy map file bytes",
     description=(
         "Downloads a resolved map file from DMRC and returns raw bytes from this "
@@ -132,12 +136,21 @@ async def download_map_file_route(
     )
     content, headers = await map_service.download_asset(asset)
     media_type = headers.get("content-type", "application/octet-stream")
-    filename = asset.source_path.rsplit("/", maxsplit=1)[-1]
+    raw_filename = asset.source_path.rsplit("/", maxsplit=1)[-1]
+    filename = re.sub(r"[^A-Za-z0-9._-]", "_", raw_filename) or "metro-map"
+    disposition = (
+        "inline"
+        if asset.file_type.value == "image"
+        and media_type.split(";", maxsplit=1)[0].lower() != "image/svg+xml"
+        else "attachment"
+    )
 
     return Response(
         content=content,
         media_type=media_type,
         headers={
-            "Content-Disposition": f'inline; filename="{filename}"',
+            "Content-Disposition": f'{disposition}; filename="{filename}"',
+            "Cache-Control": "public, max-age=86400",
+            "X-Content-Type-Options": "nosniff",
         },
     )
