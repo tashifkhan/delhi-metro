@@ -1,0 +1,136 @@
+# Changelog
+
+All notable changes to **Delhi NCR Metro** are documented in this file.
+
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.4.1] — 2026-07-29
+
+### Fixed
+
+- Centre stack titles correctly on iOS when the network switcher is shown, without clipping or overflowing the switcher.
+- Allow long header titles to shrink slightly before ellipsising when space is tight.
+- Tighten compact network switcher spacing so the control fits cleanly in the app bar.
+- Restore the default home tab (journey planner) instead of opening on the map.
+
+### Changed
+
+- Clarify that the network switcher only appears on operator-scoped screens (alerts and map), not on cross-network journey planning.
+
+## [1.4.0] — 2026-07-28
+
+### Added
+
+- **Noida Metro (NMRC)** as a first-class network: stations, line info, map, and service notices scraped from the public NMRC site.
+- **Network switcher** to move between Delhi Metro and Noida Metro, with the choice persisted locally.
+- **Cross-network journeys** that stitch DMRC and NMRC at the Sector 52 / Sector 51 footbridge, including a transfer walk leg.
+- Per-network **fare breakdown** and a clear **separate tickets** flag when a trip needs two operators.
+- Operator marks on station and line UI, plus a refreshed network map asset.
+- Save the metro map to the photo library via `expo-media-library`.
+- API domain packages for DMRC and NMRC, plus interchange and multi-network planner coverage tests.
+
+### Changed
+
+- Renamed the app shell to **Delhi NCR Metro**.
+- Nest DMRC routes and services under operator packages; extend the v2 planner for `network` selection and combined plans.
+- Scope station search, popular routes, and query caches by network where appropriate.
+
+### Documentation
+
+- Research notes for the NMRC HTML planner flow.
+- Backend guide and READMEs updated for dual-network endpoints and transfer behaviour.
+
+## [1.3.0] — 2026-07-28
+
+### Added
+
+- Journey planning through the **v2 Sarthi-backed planner**, with richer legs (platform, direction, distance, applicable fare).
+- Automatic fallback to the legacy DMRC planner when Sarthi is unavailable, kept transparent in the UI.
+- Station crosswalk so either upstream’s codes can resolve.
+- Flattened API layout (domain routes, services, schemas, shared clients).
+
+### Fixed
+
+- Corporate-page notice slug resolution limited to real DMRC `/pages` (and `link_to_file`) targets so expand only opens genuine detail pages.
+
+### Changed
+
+- Mobile plans call `GET /api/v2/journeys/plan` per strategy instead of the dual v1 complete payload.
+- Normalize the API origin so v1 notices/maps and the v2 planner share one base.
+
+## [1.2.1] — 2026-07-26
+
+### Fixed
+
+- Notice slug extraction for nested DMRC corporate URLs.
+- Open-on-site fallback when notification detail HTML is unavailable.
+- Production API packaging for Vercel (ignore/requirements) so deploys only ship the API.
+
+## [1.2.0] — 2026-07-26
+
+### Added
+
+- Full **network map discovery** from the DMRC frontend JS bundle.
+- Expandable **notification detail** with sanitized corporate-page HTML.
+- Material 3 **motion tokens**, tab focus animation, and intent-based **haptics**.
+- Shared stack headers with slide push transitions.
+
+### Fixed
+
+- Pin Reanimated / Expo packages to SDK 54–compatible ranges.
+- Load maps with `expo-image`, clearer errors, and retry.
+- Keep Material You dark tonal surfaces; pure black only when AMOLED is on.
+
+### Changed
+
+- Motion and haptic polish across home, search, journey results, and station detail.
+
+## [1.1.1] — 2026-07-25
+
+### Added
+
+- Appearance settings: theme mode, palettes, AMOLED, contrast.
+- Card, Reveal, and Material 3 Switch primitives.
+- Persistent appearance preferences in SQLite.
+
+### Changed
+
+- Screen and card polish against the appearance design system.
+
+## [1.1.0] — 2026-07-25
+
+### Added
+
+- Editable journey endpoints on results.
+- New themed app icon.
+- Design tokens (fills, contrast, shape) and shared Touchable / StationListSkeleton primitives.
+
+### Changed
+
+- Shared components and tabs restyled with the design system.
+
+## [1.0.1] — 2026-04-16
+
+### Fixed
+
+- Patch release for early production install and backend connectivity issues.
+
+## [1.0.0] — 2026-04-16
+
+### Added
+
+- Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
+
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.0...v1.4.1
+[1.4.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.2.1...v1.3.0
+[1.2.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.1.1...v1.2.0
+[1.1.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.1.0...v1.1.1
+[1.1.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.0.1...v1.1.0
+[1.0.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/tashifkhan/delhi-metro/releases/tag/v1.0.0

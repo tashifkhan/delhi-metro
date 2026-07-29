@@ -64,26 +64,57 @@ jobs:
       - name: Download APK
         run: curl -L "${{ steps.apk.outputs.apk_url }}" -o "DelhiMetro-${{ github.ref_name }}.apk"
 
+      - name: Build release notes from CHANGELOG
+        id: notes
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          {
+            echo "## Delhi NCR Metro ${TAG}"
+            echo ""
+            echo "Production Android APK built with EAS (\`github-release\` profile)."
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| **Package** | \`codes.tashif.delhimetro\` |"
+            echo "| **Tag** | \`${TAG}\` |"
+            echo ""
+            if [[ -f CHANGELOG.md ]]; then
+              # Extract the matching ## [x.y.z] section (Keep a Changelog).
+              python3 - "$VERSION" CHANGELOG.md <<'PY'
+          import re, sys
+          version, path = sys.argv[1], sys.argv[2]
+          text = open(path, encoding="utf-8").read()
+          pattern = rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## |\Z)"
+          match = re.search(pattern, text, flags=re.M | re.S)
+          if not match:
+              sys.exit(0)
+          body = match.group(1).strip()
+          if body:
+              print("### Release notes")
+              print()
+              print(body)
+              print()
+          PY
+            fi
+            echo "### Install"
+            echo ""
+            echo "- **F-Droid (recommended):** add \`https://tashif.codes/fdroid/repo\` in F-Droid → Settings → Repositories, then install **Delhi NCR Metro**."
+            echo "- **Direct APK:** download the \`.apk\` attached below (enable “Install unknown apps” if prompted)."
+            echo "- **Website:** https://tashif.codes/fdroid"
+            echo "- **Full changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md"
+          } > "$NOTES_FILE"
+          echo "path=$NOTES_FILE" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: DelhiMetro-${{ github.ref_name }}.apk
           generate_release_notes: true
-          body: |
-            ## Delhi Metro ${{ github.ref_name }}
-
-            Production Android APK built with EAS (`github-release` profile).
-
-            | | |
-            |---|---|
-            | **Package** | `codes.tashif.delhimetro` |
-            | **Tag** | `${{ github.ref_name }}` |
-
-            ### Install
-
-            - **F-Droid (recommended):** add `https://tashif.codes/fdroid/repo` in F-Droid → Settings → Repositories, then install **Delhi Metro**.
-            - **Direct APK:** download the `.apk` attached below (enable “Install unknown apps” if prompted).
-            - **Website:** https://tashif.codes/fdroid
+          body_path: ${{ steps.notes.outputs.path }}
+          name: Delhi NCR Metro ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
