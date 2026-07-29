@@ -20,6 +20,7 @@ from clients.sarthi import sarthi_client
 from core.config import settings
 from core.errors import ApiRequestError, UpstreamApiError
 from routes import dmrc, health, nmrc, planner
+from routes.docs import docs_router
 from schemas.common import ApiErrorResponse
 
 API_V1_PREFIX = "/api/v1"
@@ -123,6 +124,10 @@ async def handle_request_error(
         },
     )
 
+
+# Custom docs landing at `/` and playground at `/playground`.
+# FastAPI Swagger / ReDoc remain at `/docs` and `/redoc`.
+app.include_router(docs_router)
 
 app.include_router(health.router, prefix=API_V1_PREFIX)
 app.include_router(dmrc.router, prefix=API_V1_PREFIX)
