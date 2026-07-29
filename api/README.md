@@ -14,6 +14,7 @@ Typed, modular FastAPI wrapper over DMRC passenger APIs and NMRC public pages.
 ```
 main.py        FastAPI app, router registration, error mapping
 routes/
+  docs.py      custom docs landing + playground (Stat APIs style)
   health.py    liveness probe
   planner.py   v2 journey planner, spans both networks
   dmrc/        lines, stations, journeys, notifications, maps
@@ -52,6 +53,8 @@ uv run uvicorn main:app --reload
 
 Open docs:
 
+- Landing page: `http://127.0.0.1:8000/`
+- Live playground: `http://127.0.0.1:8000/playground`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`

@@ -94,8 +94,10 @@ uv run uvicorn main:app --reload
 
 API will be available at `http://127.0.0.1:8000`.
 
-OpenAPI endpoints:
+Documentation endpoints:
 
+- Landing page (custom HTML docs): `http://127.0.0.1:8000/`
+- Live playground: `http://127.0.0.1:8000/playground`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - ReDoc: `http://127.0.0.1:8000/redoc`
 - OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
