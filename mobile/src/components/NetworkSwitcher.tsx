@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   },
   compactOption: {
     minHeight: 28,
-    paddingHorizontal: spacing.xs,
-    gap: 4,
+    paddingHorizontal: 6,
+    gap: 3,
   },
 });

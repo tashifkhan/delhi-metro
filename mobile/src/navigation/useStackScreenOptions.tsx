@@ -10,47 +10,30 @@ type OptionsFactory = (props: {
 }) => NativeStackNavigationOptions;
 
 /**
- * The shared app bar.
+ * Shared options for every stack in the app.
  *
- * iOS centres its title, so a switcher in the same flex row pushed the title
- * off the bar's centre. Centring it again needs the space on the left of the
- * title to match the switcher on the right — and the switcher is a third of
- * the bar, so guessing that width either clipped the title or overflowed the
- * switcher off screen.
+ * All five stacks previously repeated this header verbatim. Keeping it in one
+ * place means the app bar and the push transition stay in step — and gives the
+ * navigation animation a single home.
  *
- * Rather than measure it, the left side renders the same switcher with zero
- * opacity. The two sides are then identical by construction, the title centres
- * between them, and it ellipsises before it can reach either.
+ * The push uses a horizontal slide, Material's "shared axis X" for forward and
+ * backward movement within a hierarchy.
  *
- * Android keeps its left-aligned title, which the switcher never disturbed.
+ * `networkSwitcher` is opt-in: journey planning and station search work across
+ * both operators, so a network toggle there would suggest a scope that no
+ * longer exists. Only the screens that genuinely show one operator's content
+ * at a time — alerts and the network map — ask for it.
+ *
+ * Every element below is a *direct* child of `Appbar.Header`. It inspects its
+ * children to decide alignment and spacing, so grouping them in a fragment
+ * hides them from that check and silently left-aligns every title on iOS.
+ *
+ * On the two screens that do carry the switcher, iOS needs the space left of
+ * the title to match it, or the centred title lands off-centre. Rather than
+ * measure the switcher, the left side renders it again at zero opacity: the
+ * sides are then identical by construction, and the title ellipsises before it
+ * can reach either. Android left-aligns throughout, so it never needs this.
  */
-function CentredSwitcherHeader({ title }: { title: string }) {
-  const theme = useTheme();
-
-  return (
-    <>
-      <View
-        style={styles.mirror}
-        pointerEvents="none"
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        <NetworkSwitcher compact />
-      </View>
-
-      <Text
-        variant="titleLarge"
-        numberOfLines={1}
-        style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
-      >
-        {title}
-      </Text>
-
-      <NetworkSwitcher compact />
-    </>
-  );
-}
-
 export function useStackScreenOptions({ networkSwitcher = false } = {}): OptionsFactory {
   const theme = useTheme();
 
@@ -60,28 +43,49 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
     header: ({ options, back }) => {
       const title = options.title ?? '';
       const showSwitcher = !back && networkSwitcher;
+      const centreAroundSwitcher = showSwitcher && Platform.OS === 'ios';
 
       return (
         <Appbar.Header
           style={{ backgroundColor: theme.colors.elevation.level2 }}
           elevated={false}
         >
-          {back && (
+          {back ? (
             <Appbar.BackAction onPress={navigation.goBack} color={theme.colors.onSurface} />
+          ) : null}
+
+          {centreAroundSwitcher ? (
+            <View
+              style={styles.mirror}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <NetworkSwitcher compact />
+            </View>
+          ) : null}
+
+          {centreAroundSwitcher ? (
+            <Text
+              variant="titleLarge"
+              numberOfLines={1}
+              // A title that only just overruns should shrink rather than lose
+              // characters; anything genuinely long still ellipsises.
+              adjustsFontSizeToFit
+              minimumFontScale={0.85}
+              style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
+            >
+              {title}
+            </Text>
+          ) : (
+            <Appbar.Content
+              title={title}
+              color={theme.colors.onSurface}
+              titleStyle={{ fontWeight: '700' }}
+            />
           )}
 
-          {showSwitcher && Platform.OS === 'ios' ? (
-            <CentredSwitcherHeader title={title} />
-          ) : (
-            <>
-              <Appbar.Content
-                title={title}
-                color={theme.colors.onSurface}
-                titleStyle={{ fontWeight: '700' }}
-              />
-              {showSwitcher && <NetworkSwitcher compact />}
-            </>
-          )}
+          {showSwitcher ? <NetworkSwitcher compact /> : null}
         </Appbar.Header>
       );
     },

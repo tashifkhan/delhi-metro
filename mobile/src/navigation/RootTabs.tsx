@@ -114,7 +114,6 @@ export function RootTabs() {
 
   return (
     <Tab.Navigator
-      initialRouteName="MapTab"
       screenListeners={({ navigation, route }) => ({
         tabPress: () => {
           const state = navigation.getState();
