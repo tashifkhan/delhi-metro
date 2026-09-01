@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] — 2026-09-01
+
 ### Added
 
 - **Web target.** The Expo app now builds for the browser and is live at
@@ -20,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Renamed `mobile/` to `app/` and updated all path references, workflows, and docs.
+- Rebranded docs landing to **Delhi NCR Metro** and refreshed README with a build-on API guide.
 - The web build resolves its API base from the page origin when
   `EXPO_PUBLIC_API_BASE_URL` is unset; native still falls back to the deployed
   API.
@@ -35,6 +39,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edge.
 - Replace the browser's default focus ring on web with a themed one shown only
   for keyboard focus.
+
+### Documentation
+
+- Unslopped and rewrote `docs/` with sentence case and human voice, removed non-project guides.
 
 ## [1.4.1] — 2026-07-29
 
@@ -153,7 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.2.1...v1.3.0
