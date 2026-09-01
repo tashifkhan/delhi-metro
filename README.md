@@ -8,6 +8,18 @@ It is a monorepo for the whole NCR network, Delhi Metro and Noida Metro together
 - `app/`: Expo app with a Delhi and Noida switch that sticks, running on iOS, Android, and the web at [ncr-metro.tashif.codes](https://ncr-metro.tashif.codes)
 - `docs/`: the research and guides I wish I had at the start, flows, station crosswalks, and API details
 
+
+## What it can do
+
+- List lines and discover stations
+- Search stations and show station detail, gates, lifts, platforms, and facilities
+- Plan routes with fare and timing across two strategies, least distance and minimum interchange
+- Look up first and last train times
+- Find and serve DMRC map assets, including the tricky hashed network map
+- Cover the NMRC Aqua Line too, stations, fare, time, distance, map, and press releases, from one shared schema
+- Remember your network choice and keep separate caches per network so switching feels instant
+- Cache popular routes locally and fall back offline when the network drops
+
 ## Repository layout
 
 - `api/`
@@ -68,6 +80,7 @@ It is JSON, REST, no auth. Same schemas for Delhi and Noida, so switching `dmrc`
 
 - live docs and playground when you run locally at `http://127.0.0.1:8000/` and `http://127.0.0.1:8000/playground`
 - production at `https://dmrc-rest-api.vercel.app/` and `https://dmrc-rest-api.vercel.app/playground`, Swagger at `/docs`, OpenAPI JSON at `/openapi.json`
+- same API via the website at `https://ncr-metro.tashif.codes/api` through the Worker proxy, same origin so browsers do not hit CORS, same paths like `https://ncr-metro.tashif.codes/api/v1/dmrc/lines`
 - deep dive at `docs/api-backend-guide.md`, and the raw upstream notes at `docs/dmrc-api-flow.md` and `docs/dmrc-sarthi-api-research.md`
 
 Quick try, no setup:
@@ -75,6 +88,8 @@ Quick try, no setup:
 ```bash
 # list Delhi Metro lines
 curl https://dmrc-rest-api.vercel.app/api/v1/dmrc/lines | jq
+# same via the website proxy, no CORS
+curl https://ncr-metro.tashif.codes/api/v1/dmrc/lines | jq
 
 # plan a journey on the unified planner, works with either operator's codes
 curl "https://dmrc-rest-api.vercel.app/api/v2/journeys/plan?from_station_code=AIIMS&to_station_code=ASDM&strategy=least-distance" | jq
@@ -98,17 +113,6 @@ If you are building a bot, a widget, or a different frontend, start from the pla
 - NMRC HTML research: `docs/nmrc-html-research.md`
 - API package README: `api/README.md`
 - App package README: `app/README.md`
-
-## What it can do
-
-- List lines and discover stations
-- Search stations and show station detail, gates, lifts, platforms, and facilities
-- Plan routes with fare and timing across two strategies, least distance and minimum interchange
-- Look up first and last train times
-- Find and serve DMRC map assets, including the tricky hashed network map
-- Cover the NMRC Aqua Line too, stations, fare, time, distance, map, and press releases, from one shared schema
-- Remember your network choice and keep separate caches per network so switching feels instant
-- Cache popular routes locally and fall back offline when the network drops
 
 ## Notes
 
