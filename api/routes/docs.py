@@ -19,12 +19,12 @@ from routes._docs_assets import _BASE_CSS, _JS, _PLAYGROUND_CSS
 router = APIRouter(tags=["Documentation"])
 docs_router = router
 
-PLATFORM = "Delhi Metro"
+PLATFORM = "Delhi NCR Metro"
 ACCENT = "#E53935"
 DESCRIPTION = (
-    "Typed REST API for Delhi NCR metro passenger data — lines, stations, "
-    "fares, routes, first/last trains, network maps, and notifications for "
-    "DMRC and NMRC, plus a unified v2 journey planner."
+    "A typed REST API for Delhi NCR. Lines, stations, fares, routes, "
+    "first and last trains, maps, and notifications for DMRC and NMRC, "
+    "plus a unified v2 planner that stitches both networks when you cross from Delhi into Noida."
 )
 REPO = "tashifkhan/delhi-metro"
 PLATFORM_KEY = "delhi-metro"
@@ -542,7 +542,7 @@ ALL_ENDPOINTS = (
     HEALTH_ENDPOINTS + DMRC_ENDPOINTS + NMRC_ENDPOINTS + PLANNER_ENDPOINTS
 )
 
-# Playground "run all" subset — stable, useful demos.
+# Playground "run all" subset, stable, useful demos.
 PLAYGROUND_CORE: list[Endpoint] = [
     HEALTH_ENDPOINTS[0],
     DMRC_ENDPOINTS[0],  # lines
@@ -1188,9 +1188,9 @@ def _playground_html() -> str:
     body = f"""
 {_topbar(show_menu_btn=False)}
 <main class="pg-main">
-  <div class="pg-eyebrow">Live Playground &middot; {PLATFORM}</div>
-  <h1 class="pg-h1">Try the NCR Metro API</h1>
-  <p class="pg-sub">Set station codes once, then run any endpoint below against the live API from your browser. Journey routes fill <code class="ic">from</code> / <code class="ic">to</code> automatically.</p>
+  <div class="pg-eyebrow">Live playground &middot; {PLATFORM}</div>
+  <h1 class="pg-h1">Try the Delhi NCR Metro API live</h1>
+  <p class="pg-sub">Pick two stations once and hit Run on anything below. No keys, no local setup. The page calls the live API straight from your browser, and journey endpoints reuse your <code class="ic">from</code> and <code class="ic">to</code> so you are not retyping codes.</p>
 
   <div class="pg-bar">
     <form class="pg-form" autocomplete="off">
@@ -1301,8 +1301,9 @@ def _docs_html() -> str:
     <section id="introduction">
       <div class="eyebrow">NCR Metro API &middot; DMRC + NMRC</div>
       <h1 class="title">{PLATFORM} API</h1>
+      <p class="lede">If you have ever tried to build anything on top of Delhi's metro data, you know it is a patchwork. Official endpoints that disagree, an Aqua Line with no API at all, and map files that change names every deploy. This API cleans that up.</p>
       <p class="lede">{DESCRIPTION}</p>
-      <p class="lede">Stable REST under <code class="ic">/api/v1</code> and <code class="ic">/api/v2</code>, typed with Pydantic, with unified error envelopes for upstream failures. DMRC and NMRC share the same response schemas so clients can switch networks without a second contract.</p>
+      <p class="lede">It is a thin, typed wrapper. Pydantic everywhere, one predictable error shape whether you messed up or an upstream did, and the same schemas for Delhi and Noida so your app does not need two code paths. REST and JSON, no auth. If you can fetch, you can use it. <code class="ic">/api/v1</code> mirrors the operators one for one, <code class="ic">/api/v2</code> is the nicer planner that prefers Sarthi and falls back to the legacy route when it has to.</p>
       <div class="metarow">
         <span class="chip">REST</span>
         <span class="chip">JSON</span>
@@ -1315,7 +1316,7 @@ def _docs_html() -> str:
     <div class="steps">
       <section class="section" id="quickstart">
         <div class="section-head"><span class="step">1</span><h2>Make your first request</h2></div>
-        <p>No API key. Plan a journey, or list lines. Station codes work in either upstream vocabulary on the v2 planner.</p>
+        <p>No API key, no ceremony. Plan a journey or list every line with curl. On the v2 planner you can mix station codes from either operator and the API handles the translation for you.</p>
         <div class="code">
           <div class="cap"><span class="dot"></span>Terminal<button class="copy">Copy</button></div>
           <pre>{curl_sample}</pre>
@@ -1334,7 +1335,7 @@ def _docs_html() -> str:
 
       <section class="section" id="errors">
         <div class="section-head"><span class="step">2</span><h2>Error envelope</h2></div>
-        <p>Successful responses return the domain payload directly (no outer wrapper). Failures use one stable shape for both local validation and upstream problems.</p>
+        <p>Success returns the payload directly, no wrapper. Failures all look the same, which is on purpose. You get a <code class="ic">detail</code> string and, when an upstream is to blame, the status it returned.</p>
         <div class="code">
           <div class="cap"><span class="dot"></span>4xx / 502 &middot; application/json<button class="copy">Copy</button></div>
           <pre>{error_sample}</pre>
@@ -1344,7 +1345,7 @@ def _docs_html() -> str:
 
       <section class="section" id="versions">
         <div class="section-head"><span class="step">3</span><h2>API versions</h2></div>
-        <p><code class="ic">/api/v1</code> wraps operator resources one-for-one (DMRC passenger API + NMRC public HTML). <code class="ic">/api/v2</code> is the normalized journey planner: Sarthi first, legacy DMRC fallback, with automatic cross-network stitching at Sector 52/51.</p>
+        <p><code class="ic">/api/v1</code> is literal. It mirrors what each operator actually publishes, DMRC's JSON and NMRC's HTML, without pretending they are one system. <code class="ic">/api/v2</code> is the opinionated planner. Sarthi answers first because its data is richer, legacy DMRC fills in when Sarthi fails, and trips that cross from Delhi to Noida are stitched automatically at the Sector 52 to 51 walk.</p>
         <div class="code small">
           <div class="cap"><span class="dot"></span>200 OK &middot; PlannedJourney<button class="copy">Copy</button></div>
           <pre>{plan_sample}</pre>
@@ -1359,19 +1360,19 @@ def _docs_html() -> str:
 
       <section class="section" id="dmrc">
         <div class="section-head"><span class="step">5</span><h2>DMRC endpoints (v1)</h2></div>
-        <p>Delhi Metro lines, stations, journeys, notifications, and map assets. Click any route for parameters and sample payloads.</p>
+        <p>All the Delhi Metro primitives. Lines, stations, journeys, notifications, and map assets. Open any route for params and a real sample payload.</p>
         <div class="eps">{dmrc}</div>
       </section>
 
       <section class="section" id="nmrc">
         <div class="section-head"><span class="step">6</span><h2>NMRC endpoints (v1)</h2></div>
-        <p>Noida Metro Aqua Line, same path shapes and schemas as DMRC. Scraped from public NMRC pages with checked-in table fallbacks when HTML cannot be read.</p>
+        <p>The Aqua Line, same shapes and schemas as Delhi Metro so your client does not branch. The data comes from NMRC's public pages, parsed on the server, with checked-in tables as fallback when the HTML is unavailable.</p>
         <div class="eps">{nmrc}</div>
       </section>
 
       <section class="section" id="planner">
         <div class="section-head"><span class="step">7</span><h2>Journey planner (v2)</h2></div>
-        <p>One normalized <code class="ic">PlannedJourney</code> regardless of upstream. Cross-network trips set <code class="ic">source: "combined"</code>, include a walking transfer leg, and split fares in <code class="ic">fare.breakdown</code>.</p>
+        <p>One clean <code class="ic">PlannedJourney</code> no matter who answered. Cross-network trips come back with <code class="ic">source: "combined"</code>, a walking leg for the Sector 52 to 51 bridge, and fares split in <code class="ic">fare.breakdown</code> because the two systems do not share tickets.</p>
         <div class="eps">{planner}</div>
       </section>
     </div>

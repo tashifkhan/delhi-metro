@@ -15,12 +15,13 @@ API_ROOT = Path(__file__).resolve().parent.parent
 class Settings(BaseSettings):
     """Runtime settings for the API process."""
 
-    app_name: str = Field(default="Delhi and Noida Metro API")
+    app_name: str = Field(default="Delhi NCR Metro API")
     app_version: str = Field(default="0.2.0")
     app_description: str = Field(
         default=(
-            "Typed FastAPI wrapper for Delhi Metro APIs and normalized Noida "
-            "Metro passenger information."
+            "A typed REST API for Delhi NCR. Lines, stations, fares, routes, "
+            "first and last trains, maps, and notifications for DMRC and NMRC, "
+            "plus a unified v2 planner that stitches both networks."
         )
     )
     debug: bool = Field(default=False)
