@@ -70,7 +70,10 @@ export function NetworkSwitcher({ compact = false }: { compact?: boolean }) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignSelf: 'flex-start',
+    // The app bar is taller than the pill, so the pill has to opt out of the
+    // row's stretch — centred rather than `flex-start`, which pinned it to the
+    // top edge with the title sitting below it.
+    alignSelf: 'center',
     borderRadius: radius.pill,
     gap: 2,
   },

@@ -144,6 +144,11 @@ export function RootTabs() {
           lineHeight: LABEL_HEIGHT,
           fontWeight: '500',
           marginTop: LABEL_GAP,
+          // React Navigation pads its tab items by 5dp, which BAR_HEIGHT does
+          // not budget for, so the column overflows and the label — the only
+          // shrinkable child — is what gives. Native lets the squashed text
+          // spill; web clips it to the box and eats the descenders.
+          flexShrink: 0,
         },
         tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];

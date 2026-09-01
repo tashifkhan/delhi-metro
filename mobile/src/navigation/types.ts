@@ -11,6 +11,7 @@ export type HomeStackParamList = {
   };
   StationDetail: { stationCode: string; stationName: string };
   Appearance: undefined;
+  About: undefined;
 };
 
 export type ExploreStackParamList = {

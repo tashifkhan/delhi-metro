@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   LayoutChangeEvent,
   PanResponder,
@@ -11,8 +10,6 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as MediaLibrary from 'expo-media-library';
 import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { useMapFamilyPrimaryQuery } from '../hooks';
@@ -24,6 +21,11 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius } from '../theme';
 import { useMetroNetwork } from '../network';
 import { mapService } from '../services/mapService';
+import {
+  notifyMapSaveFailed,
+  notifyMapUnavailable,
+  saveNetworkMap,
+} from '../services/mapDownload';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
@@ -224,36 +226,26 @@ export function MetroMapScreen() {
   const handleDownloadMap = async () => {
     const asset = data?.image;
     if (!asset?.url) {
-      Alert.alert('Unavailable', 'The network map is not available at the moment.');
+      notifyMapUnavailable();
       return;
     }
     try {
       setDownloading(true);
-      const permission = await MediaLibrary.requestPermissionsAsync(true, []);
-      if (!permission.granted) {
-        Alert.alert(
-          'Permission needed',
-          'Allow photo saving to store the network map on your device.',
-        );
-        return;
-      }
 
       const extension =
         asset.content_type?.toLowerCase().includes('png') ||
         asset.source_path.toLowerCase().endsWith('.png')
           ? 'png'
           : 'jpg';
-      const fileUri =
-        (FileSystem.cacheDirectory ?? '') + `${network}-metro-map.${extension}`;
-      const downloadUrl = mapService.getProxyFileUrl('network', 'image', network);
-      const { uri } = await FileSystem.downloadAsync(downloadUrl, fileUri);
-      await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert(
-        'Map saved',
-        `${networkName} network map was saved to your ${process.env.EXPO_OS === 'ios' ? 'Photos' : 'Gallery'}.`,
-      );
+
+      await saveNetworkMap({
+        downloadUrl: mapService.getProxyFileUrl('network', 'image', network),
+        extension,
+        network,
+        networkName,
+      });
     } catch {
-      Alert.alert('Error', 'Failed to save the map. Please try again.');
+      notifyMapSaveFailed();
     } finally {
       setDownloading(false);
     }

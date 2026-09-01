@@ -9,7 +9,7 @@ import { apiClient } from './src/api/client';
 import { queryClient } from './src/api/queryClient';
 import { DIProvider } from './src/di/DIContext';
 import { createServiceContainer } from './src/di/container';
-import { ThemeProvider, useAppTheme } from './src/theme';
+import { ThemeProvider, useAppTheme, useFocusRing } from './src/theme';
 import { RootTabs } from './src/navigation/RootTabs';
 import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
@@ -30,6 +30,8 @@ function AppNavigation() {
 
 function AppInner() {
   const { paperTheme, navTheme, isDark, settingsLoaded } = useAppTheme();
+
+  useFocusRing(paperTheme.colors.primary);
 
   return (
     <PaperProvider theme={paperTheme}>

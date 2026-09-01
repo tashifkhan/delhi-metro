@@ -13,6 +13,7 @@ export { shape, radius } from './shape';
 export { typography, weights, emphasis, tabular, overline } from './typography';
 export { motion, duration, easing, spring } from './motion';
 export { onColor, tint, luminance } from './contrast';
+export { useFocusRing } from './useFocusRing';
 export {
   PALETTES,
   paletteFromId,

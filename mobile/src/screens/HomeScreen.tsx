@@ -204,6 +204,20 @@ export function HomeScreen() {
           </View>
           <Touchable
             radius={radius.pill}
+            onPress={() => navigation.navigate('About')}
+            accessibilityLabel="About this app"
+            style={{ backgroundColor: fills.subtle }}
+          >
+            <View style={styles.heroAction}>
+              <Ionicons
+                name="information-circle-outline"
+                size={20}
+                color={theme.colors.onSurfaceVariant}
+              />
+            </View>
+          </Touchable>
+          <Touchable
+            radius={radius.pill}
             onPress={() => navigation.navigate('Appearance')}
             accessibilityLabel="Appearance settings"
             style={{ backgroundColor: fills.subtle }}

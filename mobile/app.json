@@ -28,7 +28,16 @@
       "versionCode": 23
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png",
+      "name": "Delhi NCR Metro",
+      "shortName": "NCR Metro",
+      "description": "Journey planner, fares, timings, and network maps for Delhi Metro and Noida Metro.",
+      "lang": "en",
+      "themeColor": "#0A3D7A",
+      "backgroundColor": "#ffffff",
+      "display": "standalone"
     },
     "plugins": [
       "expo-sqlite",

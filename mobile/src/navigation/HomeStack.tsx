@@ -5,6 +5,7 @@ import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyResultsScreen } from '../screens/JourneyResultsScreen';
 import { StationDetailScreen } from '../screens/StationDetailScreen';
 import { AppearanceScreen } from '../screens/AppearanceScreen';
+import { AboutScreen } from '../screens/AboutScreen';
 import type { HomeStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -28,6 +29,7 @@ export function HomeStack() {
         component={AppearanceScreen}
         options={{ title: 'Appearance' }}
       />
+      <Stack.Screen name="About" component={AboutScreen} options={{ title: 'About' }} />
     </Stack.Navigator>
   );
 }

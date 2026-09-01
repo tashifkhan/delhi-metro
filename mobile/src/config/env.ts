@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 /**
  * Runtime configuration.
  *
@@ -24,8 +26,23 @@ function normalizeApiBaseUrl(raw: string): string {
   return trimmed.replace(/\/api\/v\d+$/i, '');
 }
 
+/**
+ * On the web the app is served by a Worker that also reverse-proxies `/api/*`
+ * to the backend, so the page's own origin is the API origin. Calling the
+ * Vercel host directly from the browser would be a cross-origin request the
+ * API does not allow.
+ */
+function resolveApiBaseUrl(): string {
+  const configured = process.env.EXPO_PUBLIC_API_BASE_URL;
+  if (configured) {
+    return normalizeApiBaseUrl(configured);
+  }
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return DEFAULT_API_BASE_URL;
+}
+
 export const env = {
-  apiBaseUrl: normalizeApiBaseUrl(
-    process.env.EXPO_PUBLIC_API_BASE_URL ?? DEFAULT_API_BASE_URL,
-  ),
+  apiBaseUrl: resolveApiBaseUrl(),
 } as const;

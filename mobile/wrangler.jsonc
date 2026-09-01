@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "ncr-metro",
+  "main": "worker/index.ts",
+  "compatibility_date": "2026-09-01",
+
+  // Built by `bun run build:web` (`expo export --platform web`).
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // React Navigation owns the URL, so any unknown path is a deep link into
+    // the app shell rather than a 404.
+    "not_found_handling": "single-page-application"
+  },
+
+  "vars": {
+    "API_ORIGIN": "https://dmrc-rest-api.vercel.app"
+  },
+
+  "routes": [
+    {
+      "pattern": "ncr-metro.tashif.codes",
+      "custom_domain": true
+    }
+  ],
+
+  "observability": {
+    "enabled": true
+  }
+}

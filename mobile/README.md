@@ -1,7 +1,8 @@
-# Delhi + Noida Metro Mobile App
+# Delhi + Noida Metro App
 
 Expo + React Native app for planning journeys on Delhi Metro and Noida Metro
-from one persistent network selector.
+from one persistent network selector. Builds for iOS, Android, and the web —
+the site is live at https://ncr-metro.tashif.codes.
 
 ## Features
 
@@ -13,7 +14,7 @@ from one persistent network selector.
 - Metro lines explorer with line station lists
 - High-resolution interactive network maps with zoom and direct Photos/Gallery saving
 - Notifications feed
-- Local SQLite-backed popular route cache
+- Local SQLite-backed popular route cache (`localStorage` on web)
 - Noida Aqua Line route/fare/distance planning and first/last trains
 - NMRC stations, line view, network map, and press-release archive
 - Separate offline station and route caches for each network
@@ -27,6 +28,7 @@ from one persistent network selector.
 - TanStack React Query
 - react-native-paper
 - expo-sqlite, expo-file-system, expo-media-library
+- react-native-web + Cloudflare Workers for the web target
 
 ## Prerequisites
 
@@ -61,16 +63,27 @@ Shortcuts:
 - `bun run ios`
 - `bun run web`
 
-## Build and Release
+## Web
+
+The web build is hosted on Cloudflare Workers, which also reverse-proxies
+`/api/*` to the backend so the browser talks to a single origin.
+
+```bash
+bun run build:web     # export to dist/
+bun run preview:web   # the real Worker on localhost:8787
+bun run deploy:web    # export + wrangler deploy
+```
+
+Modules with no meaningful web behaviour have `.web.ts` variants: the storage
+repositories persist to `localStorage` instead of SQLite, and the map saves
+through a browser download instead of `expo-media-library`.
+
+## Build and release
 
 This project includes an EAS profile for APK release:
 
 - Profile name: `github-release`
 - File: `mobile/eas.json`
-
-See full release instructions in:
-
-- `docs/expo-apk-release-guide.md`
 
 ## Architecture Notes
 
@@ -78,7 +91,7 @@ See full release instructions in:
 - Network calls are centralized in `src/api/client.ts` and service modules.
 - Query hooks live in `src/hooks/`.
 - App-level dependency injection is wired through `src/di/`.
-- Local persistence uses SQLite (`src/storage/`).
+- Local persistence uses SQLite (`src/storage/`), or `localStorage` on web.
 
 ## Useful Paths
 
@@ -88,7 +101,7 @@ See full release instructions in:
 - Services: `mobile/src/services/`
 - Types: `mobile/src/types/`
 
-## Related Docs
+## Related docs
 
 - Mobile deep-dive: `docs/expo-app-guide.md`
 - API backend docs: `docs/api-backend-guide.md`

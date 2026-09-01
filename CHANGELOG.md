@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Web target.** The Expo app now builds for the browser and is live at
+  [ncr-metro.tashif.codes](https://ncr-metro.tashif.codes), served by a
+  Cloudflare Worker (`mobile/wrangler.jsonc`) that also reverse-proxies
+  `/api/*` to the backend so the page talks to a single origin.
+- `bun run build:web`, `preview:web`, and `deploy:web` in `mobile/`.
+- **About screen**, reached from an info button on the home masthead: what the
+  app reads from each operator, links to the source and API docs, a privacy
+  note, and the running app version and API origin.
+
+### Changed
+
+- The web build resolves its API base from the page origin when
+  `EXPO_PUBLIC_API_BASE_URL` is unset; native still falls back to the deployed
+  API.
+- Storage repositories persist to `localStorage` on web instead of SQLite, and
+  the metro map downloads through the browser instead of the photo library.
+  Native behaviour is unchanged.
+
+### Fixed
+
+- Stop the bottom tab labels from being clipped: they no longer shrink below
+  their line height when React Navigation's item padding overflows the bar.
+- Centre the network switcher in the app bar instead of pinning it to the top
+  edge.
+- Replace the browser's default focus ring on web with a themed one shown only
+  for keyboard focus.
+
 ## [1.4.1] — 2026-07-29
 
 ### Fixed
