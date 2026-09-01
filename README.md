@@ -99,31 +99,16 @@ If you are building a bot, a widget, or a different frontend, start from the pla
 - API package README: `api/README.md`
 - App package README: `app/README.md`
 
-## Features
+## What it can do
 
-This started as a journey planner and grew into a full NCR companion. I built it for the daily commute first, then made the API usable for anything else you want to build.
-
-### For riders
-
-- **Plan trips that actually make sense.** Least distance and minimum interchange, side by side. You see time, fare, the full station list, line changes, and where to get off. Cross from Delhi to Aqua and it stitches at Sector 52 to 51 with a walk leg, split fares in `fare.breakdown`, and `separate_tickets: true` because the operators do not share tickets.
-- **Fares and timings that match the day.** Weekday vs weekend, first and last train per strategy, and distance. The v2 planner tells you `applicable` fare for the date you pass in.
-- **Find any station fast.** Typeahead search with debounced queries, empty states that explain, and a detail screen with gates, lifts, platforms, facilities, parking, and nearby places. If you know the code from either operator it just works.
-- **Browse the network.** Lines with ordered stations, interchange badges, and a terminal to terminal view that reads like a timeline.
-- **A map you can actually use.** High resolution network map with pinch, pan, and double tap, plus save to Photos or Gallery when a PDF exists. The backend finds the map by scanning the frontend bundle, so hashed filenames do not break it. If a family has no PDF upstream the API says so instead of failing.
-- **Stay on the right network.** Delhi and Noida feel like one app. A switch sticks, caches stay separate per network, and popular routes are kept offline so a repeat trip is one tap even when the network flickers.
-
-### Product capabilities
-
-- **Two operators, one contract.** `GET /api/v1/dmrc/*` and `GET /api/v1/nmrc/*` share the same schemas. NMRC is scraped from public HTML and normalized to that contract, with checked in tables as fallback when a page is unreadable.
-- **A planner you can trust to fall back.** `GET /api/v2/journeys/plan` tries Sarthi first for richer legs like platform, direction, and distance, and falls back to the legacy DMRC planner on timeout or 500. You get `source` and `fallback_reason` so you know who answered.
-- **Station codes that translate.** Legacy `JRMR` and Sarthi `JRMJ` resolve to the same slug via `api/data/stations.normalized.json` and `core/catalog.py`. Soorghat `SOOG` is legacy only and skips Sarthi cleanly.
-- **Built for building.** JSON, REST, no auth. Swagger at `/docs`, OpenAPI at `/openapi.json`, a live playground at `/playground`, and typed schemas in `api/schemas/` if you want to generate clients. Errors are one shape: `400`/`404` for you, `502` for upstream with `upstream_status_code` kept for debugging.
-
-### App polish
-
-- **Fast where it counts.** React Query for caching and retries, SQLite for popular routes, separate offline caches per network.
-- **Feels native.** Material 3 with wallpaper colors on Android 12+, a deep black dark mode that lifts with blue, haptics and motion that do not get in the way.
-- **Everywhere you need it.** iOS and Android via Expo, web at `ncr-metro.tashif.codes` through a Cloudflare Worker that proxies `/api/*` so the browser stays same origin, and an APK on GitHub Releases plus `https://tashif.codes/fdroid/repo` for F-Droid.
+- List lines and discover stations
+- Search stations and show station detail, gates, lifts, platforms, and facilities
+- Plan routes with fare and timing across two strategies, least distance and minimum interchange
+- Look up first and last train times
+- Find and serve DMRC map assets, including the tricky hashed network map
+- Cover the NMRC Aqua Line too, stations, fare, time, distance, map, and press releases, from one shared schema
+- Remember your network choice and keep separate caches per network so switching feels instant
+- Cache popular routes locally and fall back offline when the network drops
 
 ## Notes
 
