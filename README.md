@@ -46,7 +46,7 @@ This started as a journey planner and grew into a full NCR companion. I built it
   - `/api/v2` plans journeys through the Delhi Metro Sarthi API and falls back to the `/api/v1` planner when Sarthi trips
 - `app/`
   - Cross-platform app for journey planning, station search, line browsing, maps, and alerts
-  - Also builds the website, served by a Cloudflare Worker that reverse-proxies `/api/*` to the backend so the browser only ever talks to one origin
+  - Also builds the website, served by a Cloudflare Worker that reverse-proxies `/api/*` to the backend, docs and playground included, so the browser only ever talks to one origin
 - `docs/`
   - API and app deep dives, DMRC flow notes, Sarthi research, and release docs
 
@@ -89,6 +89,16 @@ bun run deploy:web
 ```
 
 That exports the web build and deploys the Worker to `ncr-metro.tashif.codes`.
+
+The Worker serves the site from `app/dist` and reverse-proxies the backend, which needs one wrinkle worth knowing. The API answers under `/api/v1` and `/api/v2`, but its documentation lives at the backend's root, and that root belongs to the web app here. So the versioned paths pass through untouched while the documentation is offered under the same `/api` prefix:
+
+| URL | Backend |
+| --- | --- |
+| `/api` | `/` (docs landing) |
+| `/api/playground`, `/api/docs`, `/api/redoc` | `/playground`, `/docs`, `/redoc` |
+| `/api/v1/...`, `/api/v2/...` | unchanged |
+
+Two details keep that working. `assets.run_worker_first` covers the proxied paths, because the single-page-app fallback otherwise answers browser navigations before the Worker runs and hands back the app shell instead of the API. And the Worker rewrites the documentation's root-relative links onto the prefix on the way out, since the backend writes them for a domain of its own.
 
 ## Build your own thing on the API
 

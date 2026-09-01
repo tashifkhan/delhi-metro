@@ -10,7 +10,13 @@
     "binding": "ASSETS",
     // React Navigation owns the URL, so any unknown path is a deep link into
     // the app shell rather than a 404.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+
+    // The SPA fallback answers browser navigations (`Sec-Fetch-Mode: navigate`)
+    // before the Worker ever runs, so without this, opening any API or docs URL
+    // in a tab returned the app shell instead. `fetch` from the app was never
+    // affected, which is why it went unnoticed.
+    "run_worker_first": ["/api", "/api/*", "/openapi.json", "/ph/*"]
   },
 
   "vars": {

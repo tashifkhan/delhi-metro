@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.1] — 2026-09-01
+
+### Added
+
+- API docs also served from the app's own domain at `/api`, with `/api/playground`, `/api/docs` and `/api/redoc` alongside the site.
+
+### Fixed
+
+- Release workflow now uses Node 24 so `eas-cli` installs correctly. The v1.5.0 tag failed on Node 20 with `engine node >=22 required`.
+- Browser navigations to `/api/...` returned the web app instead of the API. The static-asset SPA fallback answers `Sec-Fetch-Mode: navigate` requests before the Worker runs, so the proxied paths now set `run_worker_first`.
+- A base URL ending in `/api` no longer builds `/api/api/v1/...`; `normalizeApiBaseUrl` now strips `/api` as well as `/api/vX`.
+
 ## [1.5.0] — 2026-09-01
 
 ### Added
@@ -161,7 +173,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.3.0...v1.4.0

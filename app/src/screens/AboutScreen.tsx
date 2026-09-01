@@ -13,7 +13,7 @@ import { spacing, radius, emphasis } from '../theme';
 import type { MetroNetwork } from '../network';
 
 const REPOSITORY_URL = 'https://github.com/tashifkhan/delhi-metro';
-const API_DOCS_URL = 'https://dmrc-rest-api.vercel.app';
+const API_DOCS_URL = 'https://ncr-metro.tashif.codes/api';
 
 interface SourceEntry {
   network: MetroNetwork;
