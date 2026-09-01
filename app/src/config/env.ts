@@ -18,12 +18,17 @@ const DEFAULT_API_BASE_URL = 'https://dmrc-rest-api.vercel.app';
 
 /**
  * Normalize a configured base so path joining never doubles a trailing slash
- * or an accidental `/api/v1` leftover from older env files.
+ * or repeats a prefix that the service paths already carry.
+ *
+ * Every service path starts with `/api/v1` or `/api/v2`, so the base must be
+ * an origin. Two things get pasted in by mistake: `/api/v1` from older env
+ * files, and now `/api` from the public URL, since `ncr-metro.tashif.codes/api`
+ * is where the API answers. Left in, either one builds `/api/api/v1/...`,
+ * which the backend answers with a 404.
  */
 function normalizeApiBaseUrl(raw: string): string {
   const trimmed = raw.trim().replace(/\/+$/, '');
-  // Older configs appended `/api/v1`; strip that so v1 and v2 can both be used.
-  return trimmed.replace(/\/api\/v\d+$/i, '');
+  return trimmed.replace(/\/api(\/v\d+)?$/i, '');
 }
 
 /**
