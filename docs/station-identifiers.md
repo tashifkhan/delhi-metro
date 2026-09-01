@@ -1,24 +1,20 @@
 # DMRC station identifiers and canonical slugs
 
-This project keeps a crosswalk between the two read-only station catalogs:
+Two APIs, two different ideas of what a station code should be. This doc explains the crosswalk I built to make them agree.
 
-- Legacy DMRC website API:
-  `https://backend.delhimetrorail.com/api/v2/en/`
-- Delhi Metro Sarthi API:
-  `https://dmrc.autope.in/metro/v4/`
+This project keeps a crosswalk between the two read-only catalogs:
 
-The APIs do not publish a common station ID or a URL slug. The generated
-catalog therefore preserves both APIs' native identifiers and adds one stable
-canonical slug per physical station.
+- legacy DMRC website API at `https://backend.delhimetrorail.com/api/v2/en/`
+- Delhi Metro Sarthi API at `https://dmrc.autope.in/metro/v4/`
+
+Neither publishes a common station id or a slug. So the generated catalog keeps both native ids and adds one stable canonical slug per physical station. That way the API can accept either vocabulary and call the upstream with the right one.
 
 ## Generated station lists
 
-- [`api/data/stations.normalized.json`](../api/data/stations.normalized.json)
-  is the application-friendly catalog with direct lookup indexes.
-- [`api/data/stations.normalized.csv`](../api/data/stations.normalized.csv)
-  is the same crosswalk in spreadsheet-friendly form.
+- `api/data/stations.normalized.json` is the app friendly catalog with lookup indexes. This is what the API loads.
+- `api/data/stations.normalized.csv` is the same crosswalk as a spreadsheet. Easier to scan in a PR.
 
-Snapshot generated on 27 July 2026:
+Snapshot from 27 July 2026:
 
 | Catalog result | Count |
 | --- | ---: |
@@ -26,15 +22,14 @@ Snapshot generated on 27 July 2026:
 | Sarthi station records | 254 |
 | Canonical physical stations | 254 |
 | Matched canonical stations | 253 |
-| Legacy-only stations | 1 |
-| Sarthi-only stations | 0 |
+| Legacy only stations | 1 |
+| Sarthi only stations | 0 |
 
-The unmatched record is `SOORGHAT` (`SOOG`, legacy line `LN7`). It was not
-present in the live Sarthi station response at generation time.
+The one unmatched record is `SOORGHAT`, `SOOG` on legacy line `LN7`. It was not in the live Sarthi response when I generated the snapshot, so it stays legacy only.
 
 ## Record shape
 
-Each JSON station has this structure:
+Each JSON station looks like this:
 
 ```json
 {
@@ -67,23 +62,24 @@ Each JSON station has this structure:
 }
 ```
 
-`sarthi` is always an array because the relationship is not strictly
-one-to-one. Sikanderpur is the known example:
+`sarthi` is always an array. Most stations map one to one, but Sikanderpur breaks that:
 
-- Legacy: `SKRP`, with `LN2` and `LN11`
-- Sarthi Yellow Line record: `SKY`
-- Sarthi Rapid Metro record: `SKRP`
-- Canonical slug for all three identifiers: `sikanderpur`
+- legacy `SKRP` with `LN2` and `LN11`
+- Sarthi Yellow Line record `SKY`
+- Sarthi Rapid Metro record `SKRP`
+- canonical slug for all three ids is `sikanderpur`
+
+I kept it as an array so the odd case does not need a special shape.
 
 ## Lookup indexes
 
-The JSON document has three indexes:
+The JSON has three indexes at the top:
 
-- `indexes.by_legacy_code`: legacy station code to canonical slug
-- `indexes.by_sarthi_code`: Sarthi station code to canonical slug
-- `indexes.by_slug`: canonical slug to its position in `stations`
+- `indexes.by_legacy_code` maps legacy code to canonical slug
+- `indexes.by_sarthi_code` maps Sarthi code to canonical slug
+- `indexes.by_slug` maps slug to its position in `stations`
 
-For example:
+Example:
 
 ```python
 import json
@@ -100,32 +96,26 @@ assert slug == "jharoda-majra"
 assert station["legacy"]["code"] == "JRMR"
 ```
 
-This lets an application accept a code from either upstream, resolve it to a
-canonical slug, and then choose the native code required by the target API.
+That is the whole trick. Take a code from either side, get the slug, then pick the native code the target API wants.
 
 ## Use in the API
 
-`api/core/catalog.py` loads this document once per process and exposes that
-translation to the services:
+`api/core/catalog.py` loads the catalog once per process and exposes helpers the services use:
 
 ```python
 from core.catalog import resolve_station, to_legacy_code, to_sarthi_code
 
 to_sarthi_code("KPEN")   # "KPE"
 to_legacy_code("JRMJ")   # "JRMR"
-to_sarthi_code("SOOG")   # None - legacy only, so the planner falls back
+to_sarthi_code("SOOG")   # None, legacy only, so the planner falls back
 resolve_station("SKRP").slug  # "sikanderpur"
 ```
 
-For Sikanderpur's one-to-many mapping, `CanonicalStation.sarthi_code` prefers
-the Sarthi record whose name matches the canonical name (`SKY`, Yellow Line)
-over the Rapid Metro record (`SKRP`). The `/api/v2` planner uses these helpers
-to translate station codes before calling either upstream, and echoes `slug`,
-`legacy_code`, and `sarthi_code` back in the journey's `origin`/`destination`.
+For Sikanderpur the one to many case, `CanonicalStation.sarthi_code` prefers the Sarthi record whose name matches the canonical name, which is `SKY` on the Yellow Line, rather than the Rapid Metro `SKRP`. The `/api/v2` planner uses these helpers before calling either upstream, and it echoes `slug`, `legacy_code`, and `sarthi_code` back in the journey `origin` and `destination` so callers can see the translation.
 
 ## Refreshing the catalog
 
-Run the normalizer from the API package:
+Run the normalizer from the `api` package:
 
 ```bash
 cd api
@@ -134,7 +124,7 @@ uv run python scripts/normalize_station_catalogs.py \
   --csv-output data/stations.normalized.csv
 ```
 
-To make CI fail when either API adds an unmatched station:
+To make CI fail if either API adds an unmatched station:
 
 ```bash
 uv run python scripts/normalize_station_catalogs.py \
@@ -142,22 +132,17 @@ uv run python scripts/normalize_station_catalogs.py \
   --fail-on-unmatched
 ```
 
-The current snapshot intentionally fails that strict check because Soorghat is
-legacy-only.
+The current snapshot fails that strict check on purpose because Soorghat is legacy only. That is expected, not a bug.
 
 ## Matching rules
 
-The script uses conservative, deterministic matching:
+The script is conservative and deterministic:
 
-1. Exact native station code
-2. Unique punctuation-insensitive station name
-3. Explicit reviewed rename aliases
-4. Unique physical-name variant, used for split records such as Sikanderpur
+1. exact native station code
+2. unique punctuation insensitive station name
+3. explicit rename aliases that I reviewed by hand
+4. unique physical name variant for split records like Sikanderpur
 
-Fuzzy similarity is only emitted as a suggestion for review. It is never
-accepted automatically. This avoids silently mapping two similarly named
-stations to each other.
+Fuzzy similarity is only printed as a suggestion for you to review. The script never accepts it automatically. That avoids quietly mapping two similar sounding stations to each other, which would be worse than leaving one unmatched.
 
-The canonical display name prefers the current Sarthi name, removes
-`Formerly`/`earlier` qualifiers from the slug, and retains raw upstream names
-in the native records and `aliases`.
+The canonical display name prefers the current Sarthi name, strips `Formerly` or `earlier` qualifiers from the slug, and keeps the raw upstream names in the native records and in `aliases` so nothing is lost.

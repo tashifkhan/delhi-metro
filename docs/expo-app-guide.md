@@ -1,81 +1,79 @@
-# Expo Mobile App Guide
+# Expo mobile app guide
 
-This document explains the Expo React Native app in this repository: architecture, setup, environment configuration, and how it integrates with the API.
+This is the guide for the app in `mobile/`. If you want to run it, shape its navigation, or understand how it talks to the API, start here.
+
+I wanted the app to feel fast on a crowded train. Pick two stations, see both route options, and keep working when the network flickers. Delhi NCR has two operators, so the app also remembers which network you chose and keeps its data separate.
 
 ## Overview
 
-The mobile app lives in `mobile/` and provides Delhi Metro user flows for:
+The app lives in `mobile/` and covers the core commuter flows:
 
-- Journey planning
-- Station search and details
-- Metro line browsing
-- Network map viewing and PDF sharing
-- Alert/notification feed
-- Lightweight local caching of popular routes
+- journey planning with fare and route
+- station search and station detail
+- line browsing and per line station lists
+- the big network map with pinch, pan, and PDF sharing
+- the alerts feed
 
-## Tech Stack
+It also caches popular journeys locally so repeat trips do not always need the network.
+
+## Tech stack
 
 - Expo SDK 54
-- React Native 0.81 + React 19
-- React Navigation (stack + bottom tabs)
+- React Native 0.81 and React 19
+- React Navigation with a stack inside bottom tabs
 - TanStack React Query
-- react-native-paper (UI components + theming)
-- expo-sqlite (local cache)
-- expo-file-system + expo-sharing (map PDF download/share)
+- react-native-paper for UI and theming
+- expo-sqlite for local caching
+- expo-file-system and expo-sharing for map PDF download and sharing
 - TypeScript
 
-## App Structure
+Same approach as the backend. Keep the stack predictable and let the app code handle the interesting parts.
+
+## App structure
 
 Key files and folders in `mobile/`:
 
-- `App.tsx`: app providers and root composition
-- `src/navigation/`: tab + stack navigators and route param types
-- `src/screens/`: feature screens (home, search, lines, maps, alerts)
-- `src/components/`: reusable UI components
-- `src/hooks/`: React Query hooks and helper hooks
-- `src/services/`: DMRC and map API service layer
-- `src/api/`: API client, errors, query client
-- `src/storage/`: SQLite setup and popular route repository
-- `src/theme/`: theme primitives and theme context
-- `src/types/`: API and app data types
-- `src/config/env.ts`: environment variable mapping
+- `App.tsx` composes the providers and the root
+- `src/navigation/` holds tab and stack navigators plus route param types
+- `src/screens/` has feature screens for home, search, lines, maps, and alerts
+- `src/components/` has reusable UI pieces
+- `src/hooks/` has React Query hooks and small helper hooks
+- `src/services/` is the DMRC and map service layer
+- `src/api/` has the typed API client, error handling, and the query client
+- `src/storage/` has SQLite setup and the popular route repository
+- `src/theme/` has theme primitives and the theme context
+- `src/types/` has API and app data types
+- `src/config/env.ts` maps env vars to app config
 
-## Runtime Flow
+## Runtime flow
 
-1. App bootstraps providers in `App.tsx`:
-   - `SafeAreaProvider`
-   - `ThemeProvider`
-   - `DIProvider`
-   - `QueryClientProvider`
-2. `RootTabs` mounts feature stacks:
-   - Plan (home)
-   - Search
-   - Lines
-   - Map
-   - Alerts
-3. Screens use typed hooks in `src/hooks/`.
+1. `App.tsx` boots providers in order, `SafeAreaProvider`, `ThemeProvider`, `DIProvider`, then `QueryClientProvider`.
+2. `RootTabs` mounts the feature stacks, Plan for home, Search, Lines, Map, Alerts.
+3. Screens call typed hooks from `src/hooks/`.
 4. Hooks call service methods in `src/services/`.
-5. Services call typed API client against backend `/api/v1`.
-6. Popular journey plans can be cached and reused from SQLite.
+5. Services call the typed API client against the backend under `/api/v1`.
+6. For popular routes, successful journey plans get cached in SQLite and reused.
 
-## Environment Configuration
+That layering is on purpose. Screens stay simple, hooks own the async state, services own the endpoint shape.
 
-The app reads backend base URL from `EXPO_PUBLIC_API_BASE_URL`:
+## Environment configuration
 
-- Source: `mobile/src/config/env.ts`
-- Fallback: `http://localhost:8000/api/v1`
+The app gets the backend base URL from `EXPO_PUBLIC_API_BASE_URL`:
 
-Example local `.env` in `mobile/`:
+- read in `mobile/src/config/env.ts`
+- fallback is `http://localhost:8000/api/v1`
+
+Create `mobile/.env` for local dev:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ```
 
-For production EAS builds, configure this in Expo project environments instead of hardcoding values.
+For production EAS builds, set the same var in the Expo project environment instead of committing it. That keeps local and prod configs separate and avoids leaking prod hosts into the repo.
 
-## Local Development
+## Local development
 
-From repository root:
+From the repo root:
 
 ```bash
 cd mobile
@@ -83,17 +81,17 @@ bun install
 bun run start
 ```
 
-Other scripts:
+Other scripts you will actually use:
 
 - `bun run android`
 - `bun run ios`
 - `bun run web`
 
-## API Integration
+## API integration
 
-The app expects the backend routes under `/dmrc/*` on top of `apiBaseUrl`.
+The app expects backend routes under `/dmrc/*` appended to `apiBaseUrl`. The v1 NMRC routes mirror the same shapes at `/nmrc/*`.
 
-Primary calls from mobile service layer:
+Main calls from the mobile service layer:
 
 - `GET /dmrc/lines`
 - `GET /dmrc/notifications`
@@ -103,81 +101,80 @@ Primary calls from mobile service layer:
 - `GET /dmrc/journeys/fare-route`
 - `GET /dmrc/journeys/first-last-train`
 - `GET /dmrc/journeys/complete`
-- `GET /dmrc/maps/{family}` and related map routes
+- `GET /dmrc/maps/{family}` and the related map asset and file routes
 
-If the API base URL is unreachable, user-facing screens show error states with retry.
+If the base URL is wrong or the API is down, screens show an error state with a retry. I did not want spinners that never resolve.
 
-## Data and Caching Strategy
+## Data and caching strategy
 
-- React Query handles request lifecycle, caching, retries, and stale control.
-- A SQLite table (`popular_routes`) stores successful journey plans by route key.
-- For non-timed journeys, app attempts network first, then falls back to local cached plan.
-- Popular routes are surfaced on the Home screen with hit counts.
+- React Query owns request lifecycle, caching, retries, and staleness. It is the main cache.
+- A SQLite table called `popular_routes` stores successful journey plans by route key, so the app has something to show when the network is spotty.
+- For journeys without a specific `journey_time`, the app tries the network first and falls back to the cached plan.
+- Popular routes show on Home with a hit count so repeat trips are one tap.
 
-SQLite schema is created automatically in `src/storage/database.ts`.
+The SQLite schema is created automatically in `src/storage/database.ts`. You do not need to run migrations by hand.
 
-## Screen-Level Feature Map
+## Screen level feature map
 
 - `HomeScreen`
-  - Station pickers for source/destination
-  - Optional departure offset chips (`Now`, `+15m`, `+30m`, `+1h`)
-  - Navigate to journey results
-  - Popular routes and recent notifications
+  - pickers for source and destination stations
+  - departure offset chips for `Now`, `+15m`, `+30m`, `+1h` that set `journey_time` for you
+  - button to view journey results
+  - popular routes and recent notifications on the same screen
 
 - `JourneyResultsScreen`
-  - Combined journey payload via `/journeys/complete`
-  - Strategy toggle (`least-distance` / `minimum-interchange`)
-  - Fare summary, route segments, first/last train details
+  - fetches the combined payload via `/journeys/complete`
+  - toggle between `least-distance` and `minimum-interchange`
+  - shows fare summary, route segments, and first and last train details for the chosen strategy
 
 - `StationSearchScreen`
-  - Debounced station search
-  - Empty/loading states
-  - Navigate to station detail
+  - debounced search input so you are not firing on every keystroke
+  - empty and loading states that actually explain what happened
+  - tap to open station detail
 
-- `MetroLinesScreen` and line station screens
-  - List lines and station sequence per selected line
+- `MetroLinesScreen` and per line screens
+  - list every line, then show the ordered station sequence for the selected line
+  - interchange stations are marked so you can spot changes at a glance
 
 - `MetroMapScreen`
-  - Fetches primary network map asset
-  - Pinch/pan/double-tap zoom interactions
-  - Downloads and shares map PDF when available
+  - loads the primary network map asset for the current network
+  - supports pinch, pan, and double tap zoom
+  - downloads and shares the map PDF when the upstream has one
 
 - `NotificationsScreen`
-  - Passenger alert cards
+  - renders passenger alert cards from the notifications feed
 
-## Build and Release
+## Build and release
 
-Current EAS profile:
+Current EAS setup:
 
-- File: `mobile/eas.json`
-- Profile: `github-release`
-- Android build type: APK
-- Channel: production
-- Auto version increment enabled
+- file is `mobile/eas.json`
+- profile is `github-release`
+- Android build type is APK
+- channel is `production`
+- auto version increment is on
 
-Use the dedicated release guide for full steps:
+## Common setup issues
 
-- `docs/expo-apk-release-guide.md`
+- API requests fail locally
+  - Check that the API is running and `EXPO_PUBLIC_API_BASE_URL` ends with `/api/v1`. A missing prefix is the most common mistake.
 
-## Common Setup Issues
+- Emulator or device cannot reach localhost
+  - Use your machine LAN IP or the emulator host mapping. `localhost` inside the emulator is not your laptop.
 
-- API requests failing locally:
-  - Ensure backend is running and `EXPO_PUBLIC_API_BASE_URL` points to `/api/v1`.
-- Emulator/device cannot reach localhost:
-  - Use machine LAN IP or proper emulator host mapping.
-- Empty map PDF state:
-  - Some map families may not currently expose PDF assets upstream.
-- Build-time env missing:
-  - Ensure EAS environment variables are configured for `production`.
+- Map PDF is empty for a family
+  - Some families do not currently have a PDF upstream. The API returns an empty list or null in that case. That is expected.
 
-## Security and Ops Notes
+- Build time env missing
+  - Make sure EAS environment variables are set for `production`. Client builds only see `EXPO_PUBLIC_*` values.
 
-- Do not commit secrets in app config or source.
-- Only `EXPO_PUBLIC_*` values are intended for client-side exposure.
-- Keep backend URL and app versioning consistent across releases.
+## Security and ops notes
 
-## Related Docs
+- Do not commit secrets in app config or source. I know it is tempting to paste a prod URL and move on.
+- Only `EXPO_PUBLIC_*` values are exposed to the client build. Anything else stays on the server side.
+- Keep the backend URL and the app version in sync across releases so users do not hit a stale contract.
 
-- API backend details: `docs/api-backend-guide.md`
-- API reverse-engineering notes: `docs/DMRC_API_FLOW.md`
-- APK release process: `docs/expo-apk-release-guide.md`
+## Related docs
+
+- API backend details at `docs/api-backend-guide.md`
+- DMRC API flow notes at `docs/dmrc-api-flow.md`

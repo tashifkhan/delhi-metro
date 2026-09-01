@@ -1,47 +1,44 @@
-# DMRC Maps + API Documentation
+# DMRC maps and API docs
 
-This document is based on live requests to:
+DMRC does not publish API docs. I got this by hitting the live site and its backend directly and writing down what actually worked. Everything below is from real requests in July 2026, so treat it as observed behavior, not a contract.
+
+Checked against:
 
 - `https://delhimetrorail.com/network_map`
 - `https://delhimetrorail.com/airport-express-line`
 - `https://delhimetrorail.com/rapid-metro`
 - `https://backend.delhimetrorail.com/api/v2/en/*`
 
-## 1) How to get Metro maps (HD image + PDF)
+## 1. How to get metro maps (HD image and PDF)
 
-### Proven downloadable assets
+### What you can actually download today
 
-The frontend is a React SPA. Route pages do not contain direct HTML image
-links. Some assets are listed in:
+The frontend is a React SPA. The route pages do not contain plain image links. Some assets appear in:
 
 - `https://delhimetrorail.com/asset-manifest.json`
 
-The current full-resolution network map and PDF are referenced inside the
-compiled `main.js` bundle instead of the manifest. The manifest's
-`mapimgEng` file is only a 550 × 332 preview and must not be selected as the
-primary map.
+The full resolution network map and PDF are not in the manifest. They are referenced inside the compiled `main.js` bundle. The manifest's `mapimgEng` is only a 550 by 332 preview. Do not pick it as the primary map. I made that mistake once and the image looked terrible on a real screen.
 
-Assets verified on 27 July 2026:
+Assets I verified on 27 July 2026:
 
 - Network map image: `DMRC-NMRC-NCRTC-MAP-16.07.2026.3bd317f6.jpg`
-  - Type: `image/jpeg`
-  - Size: `9565911` bytes
-  - Resolution: `17250 x 15750`
+  - type `image/jpeg`
+  - size `9565911` bytes
+  - resolution `17250 x 15750`
 - Network map PDF: `DMRC-NMRC-NCRTC-MAP-16.07.2026.14a605a6.pdf`
-  - Type: `application/pdf`
-  - Size: `2743904` bytes
+  - type `application/pdf`
+  - size `2743904` bytes
 
-Airport/Rapid specific images in current build:
+Airport and Rapid specific images in the same build:
 
-- Airport Express image:
+- Airport Express image
   - `https://delhimetrorail.com/static/media/AIRPORT-EXPRESS.8b991cc0.jpg`
-  - Resolution: `1000 x 667`
-- Rapid Metro image:
+  - resolution `1000 x 667`
+- Rapid Metro image
   - `https://delhimetrorail.com/static/media/RAPID-METRO.741fc16a.jpg`
-  - Resolution: `1000 x 667`
+  - resolution `1000 x 667`
 
-The hashed names change when DMRC publishes a new build, so clients should
-resolve them through this project's map API rather than hardcoding these URLs.
+Those hashed names change every time DMRC publishes a new frontend build, so do not hardcode them. Resolve them through the map API in this repo which already does the scanning.
 
 ### Download commands
 
@@ -52,26 +49,25 @@ curl -L "https://delhimetrorail.com/static/media/AIRPORT-EXPRESS.8b991cc0.jpg" -
 curl -L "https://delhimetrorail.com/static/media/RAPID-METRO.741fc16a.jpg" -o dmrc-rapid-metro.jpg
 ```
 
-### Programmatic way to always get latest map files
+### How to always get the latest map files programmatically
 
 1. Fetch `asset-manifest.json`.
-2. Parse its `files` object and locate the compiled `main.js` path.
-3. Extract `static/media/*.(jpg|jpeg|png|svg|pdf)` references from that bundle.
-4. Merge bundle references with the manifest files.
-5. Filter and rank full `DMRC-NMRC-NCRTC-MAP` / `DMRC-Network-Map`
-   assets above the small `mapimg` preview.
+2. Parse its `files` object and find the compiled `main.js` path.
+3. Pull every `static/media/*.(jpg|jpeg|png|svg|pdf)` reference out of that bundle.
+4. Merge those bundle refs with the manifest files.
+5. Filter and rank. Prefer full `DMRC-NMRC-NCRTC-MAP` or `DMRC-Network-Map` assets and ignore the small `mapimg` preview.
 6. Download the resolved hashed URL.
 
-This handles both DMRC build layouts and avoids hardcoding hashes.
+That covers both DMRC build layouts and avoids chasing a hash that changed overnight.
 
-## 2) DMRC API base and headers
+## 2. DMRC API base and headers
 
 ### Base URL
 
 - `https://backend.delhimetrorail.com/api/v2/{lang}`
-- Example language: `en`
+- used language is `en`
 
-### Request headers (working set)
+### Request headers that worked
 
 ```http
 User-Agent: Mozilla/5.0 ...
@@ -85,21 +81,19 @@ Sec-Fetch-Mode: cors
 Sec-Fetch-Site: same-site
 ```
 
-Important: some curl builds fail on `zstd` if you force `Accept-Encoding: gzip, deflate, br, zstd`. Use `gzip, deflate`, or omit this header.
+A note on compression. Some curl builds break on `zstd` if you force `Accept-Encoding: gzip, deflate, br, zstd`. Stick to `gzip, deflate` or leave the header out. I lost an afternoon to that.
 
-## 3) Endpoint documentation (from live calls)
+## 3. Endpoint documentation from live calls
 
-## `GET /passengers/notification/`
+### `GET /passengers/notification/`
 
-Purpose: passenger notices/notifications feed.
+Passenger notices and notification feed.
 
-Response: array of notifications.
-
-Top-level fields:
+Response is an array of notifications. Top level fields on each item:
 
 - `id`
 - `title`
-- `notification_type` (object with `name`, `image`)
+- `notification_type` which is an object with `name` and `image`
 - `image`
 - `video_url`
 - `link_to`
@@ -108,59 +102,52 @@ Top-level fields:
 - `link_to_outside_url`
 - `date`
 
-## Notification detail endpoints
+### Notification detail endpoints
 
-DMRC uses two upstream resources for notification details:
+DMRC keeps two resources for detail:
 
-- `GET /corporate/{page_slug}/` for standard corporate pages
+- `GET /corporate/{page_slug}/` for normal corporate pages
 - `GET /pressrelease_details/{page_slug}` for press releases
 
-The corporate response is a one-item array, while the press-release response is
-an object with `english_title` and `body_english` fields. The wrapper endpoint
-`GET /api/v1/dmrc/notifications/{page_slug}` checks both resources and normalizes
-them into an object with:
+Corporate returns a one item array. Press release returns an object with `english_title` and `body_english`. The wrapper at `GET /api/v1/dmrc/notifications/{page_slug}` checks both and normalizes to:
 
-- `page_id` (nullable for press releases)
+- `page_id` which is null for press releases
 - `title`
-- `content` (raw HTML)
+- `content` which is raw HTML
 - `page_slug`
 - `cover_photo`
 - `seo_title`
 - `search_description`
 
-## `GET /line_list`
+I kept both because the feed mixes them and the app wants one shape.
 
-Purpose: all metro lines with metadata.
+### `GET /line_list`
 
-Response: array.
-
-Top-level fields:
+All metro lines with metadata. Response is an array. Fields include:
 
 - `id`
 - `name`
 - `line_color`
-- `line_code` (example: `LN3`, `LN10`, `LN11`)
+- `line_code` like `LN3`, `LN10`, `LN11`
 - `primary_color_code`, `secondary_color_code`
 - `start_station`, `end_station`
 - `show_in_frontend`
 - `status`
 
-Examples from response:
+Examples seen:
 
-- `LN10` => Airport Express
-- `LN11` => Rapid Metro
+- `LN10` is Airport Express
+- `LN11` is Rapid Metro
 
-## `GET /station_by_line/{line_code}`
+### `GET /station_by_line/{line_code}`
 
-Purpose: ordered station list for a line.
+Ordered station list for a line. I tested:
 
-Examples tested:
+- `LN3` Blue with 50 stations
+- `LN10` Airport Express with 7 stations
+- `LN11` Rapid Metro with 11 stations
 
-- `LN3` (Blue): 50 stations
-- `LN10` (Airport Express): 7 stations
-- `LN11` (Rapid Metro): 11 stations
-
-Item fields:
+Each item has:
 
 - `id`
 - `station_name`
@@ -169,26 +156,19 @@ Item fields:
 - `interchange`
 - `status`
 
-## `GET /station/{station_code}`
+### `GET /station/{station_code}`
 
-Purpose: rich station details.
+Rich detail for one station. Example I checked was `RG`.
 
-Example tested: `RG`.
+Fields include station metadata `station_code`, `station_name`, `station_type`, `interchange`, geo and layout `latitude`, `longitude`, `x_coords`, `y_coords`, line context `metro_lines`, `prev_next_stations`, facilities `station_facility`, `stations_facilities`, `parkings`, `feeder`, `nearby_places`, movement details `gates`, `lifts`, `platforms`, and train info `first_last_train`.
 
-Top-level fields include:
+It is a big payload. Useful for the station detail screen.
 
-- station metadata: `station_code`, `station_name`, `station_type`, `interchange`
-- geo/layout: `latitude`, `longitude`, `x_coords`, `y_coords`
-- line context: `metro_lines`, `prev_next_stations`
-- facilities: `station_facility`, `stations_facilities`, `parkings`, `feeder`, `nearby_places`
-- movement details: `gates`, `lifts`, `platforms`
-- train info: `first_last_train`
+### `GET /station_by_keyword/{filter}/{keyword}`
 
-## `GET /station_by_keyword/{filter}/{keyword}`
+Station search and autocomplete.
 
-Purpose: station search/autocomplete.
-
-Filters tested:
+Filters I tried:
 
 - `least-distance`
 - `minimum-interchange`
@@ -199,13 +179,11 @@ Examples:
 - `/station_by_keyword/all/RAJOURI%20GARDEN`
 - `/station_by_keyword/all/VAISHALI`
 
-Response: array of station matches with basic facility information.
+Response is an array of station matches with basic facility info.
 
-## `GET /new_fare_with_route/{from_code}/{to_code}/{strategy}/`
+### `GET /new_fare_with_route/{from_code}/{to_code}/{strategy}/`
 
-Purpose: route plan + fare calculation.
-
-Strategies tested:
+Route plus fare. Strategies that worked:
 
 - `least-distance`
 - `minimum-interchange`
@@ -221,109 +199,83 @@ Response fields:
 - `from`, `to`
 - `total_time`
 - `weekday_fare`, `weekend_fare`
-- `route` (array)
+- `route` which is an array
 
-Route segment fields:
+Each route segment has `line`, `line_no`, `path` which is the station sequence, `path_time`, `map-path` for edge ids, `station_interchange_time`, `start`, `end`.
 
-- `line`, `line_no`
-- `path` (station sequence)
-- `path_time`
-- `map-path` (edge identifiers)
-- `station_interchange_time`
-- `start`, `end`
+### `GET /first_and_last_train_with_filter/{from_code}/{to_code}/{strategy}/`
 
-## `GET /first_and_last_train_with_filter/{from_code}/{to_code}/{strategy}/`
-
-Purpose: first/last train timing for selected route strategy.
+First and last train timing for a strategy.
 
 Examples:
 
 - `/first_and_last_train_with_filter/RG/MVE/least-distance/`
 - `/first_and_last_train_with_filter/RG/MVE/minimum-interchange/`
 
-Response:
+Response shape:
 
-- `first_train`
-  - `endstation_from_first_train_estimated_time`
-  - `first_train_route_detail[]`
-- `last_train`
-  - `endstation_from_last_train_estimated_time`
-  - `last_train_route_detail[]`
+- `first_train` with `endstation_from_first_train_estimated_time` and `first_train_route_detail[]`
+- `last_train` with `endstation_from_last_train_estimated_time` and `last_train_route_detail[]`
 
-Train detail item fields:
+Each timing detail has `start_st`, `start_time`, `end_st`, `end_time`, `interchange_time`, `start_station_name`, `end_station_name`.
 
-- `start_st`, `start_time`
-- `end_st`, `end_time`
-- `interchange_time`
-- `start_station_name`, `end_station_name`
-
-## 4) Complete product flow using these APIs
+## 4. Complete product flow using these APIs
 
 ### A. App bootstrap
 
 1. Call `GET /line_list`.
 2. Call `GET /passengers/notification/`.
-3. Build line chips, status badges, and alerts feed.
+3. Build line chips, status badges, and the alerts feed from those two.
 
-### B. Search/select stations
+### B. Search and pick stations
 
-1. On input change, call `GET /station_by_keyword/all/{keyword}`.
-2. Resolve to station objects (`station_code`, `station_name`).
+1. On input change call `GET /station_by_keyword/all/{keyword}` with debounce.
+2. Turn the results into station objects with `station_code` and `station_name`.
 
-### C. Route planning (two strategy tabs)
+### C. Route planning for two strategies
 
-For selected `from_code` and `to_code`, call in parallel:
+For the chosen `from_code` and `to_code`, call in parallel:
 
 1. `GET /new_fare_with_route/{from}/{to}/least-distance/`
 2. `GET /new_fare_with_route/{from}/{to}/minimum-interchange/`
 
-Render:
+Then show fare cards for weekday and weekend, total time, and the route segments with interchanges.
 
-- fare cards (weekday/weekend)
-- total time
-- route segments and interchanges
+### D. First and last train timings
 
-### D. First/last train timings
-
-For same pair, call in parallel:
+For the same pair, call in parallel:
 
 1. `GET /first_and_last_train_with_filter/{from}/{to}/least-distance/`
 2. `GET /first_and_last_train_with_filter/{from}/{to}/minimum-interchange/`
 
-Render start/end timing chains per strategy.
+Render the start and end timing chains per strategy.
 
-### E. Station details view
+### E. Station details
 
-When user opens station details:
+When someone opens station detail:
 
 1. Call `GET /station/{station_code}`.
-2. Render gates/lifts/platforms, parking, feeder, nearby places.
+2. Show gates and lifts and platforms, parking, feeder, nearby places.
 
 ### F. Line explorer
 
-1. User picks line (from `line_list`).
+1. User picks a line from `line_list`.
 2. Call `GET /station_by_line/{line_code}`.
-3. Render ordered station timeline with interchange badges.
+3. Show the ordered timeline with interchange badges.
 
-## 5) Building high-definition Airport/Rapid maps via API data
+## 5. Building high definition Airport and Rapid maps from API data
 
-If official high-res image/PDF is not published for Airport/Rapid pages, generate your own HD exports from API data:
+If no official high res image or PDF is published for Airport or Rapid, you can build your own export from API data:
 
-1. Get line station order:
-   - `GET /station_by_line/LN10`
-   - `GET /station_by_line/LN11`
-2. For each station code, call `GET /station/{code}` to obtain:
-   - `latitude`, `longitude`
-   - `x_coords`, `y_coords` (diagram coordinates)
+1. Get line order via `GET /station_by_line/LN10` and `GET /station_by_line/LN11`.
+2. For each station code call `GET /station/{code}` to get `latitude`, `longitude` and the diagram coords `x_coords`, `y_coords`.
 3. Plot the polyline in station order.
-4. Label stations and interchanges.
-5. Export as:
-   - PNG at 300+ DPI
-   - PDF (vector preferred)
+4. Label stations and mark interchanges.
+5. Export as PNG at 300 DPI or better and as PDF, vector if you can.
 
-This gives print-quality line maps independent of frontend static images.
+That gives you a print quality line map without waiting on frontend static images.
 
-## 6) Practical curl examples
+## 6. Practical curl examples
 
 ```bash
 # line list
@@ -343,7 +295,7 @@ curl -sS "https://backend.delhimetrorail.com/api/v2/en/station_by_keyword/all/RA
   -H "Origin: https://delhimetrorail.com" \
   -H "content-type: application/json"
 
-# fare + route
+# fare and route
 curl -sS "https://backend.delhimetrorail.com/api/v2/en/new_fare_with_route/RG/VASI/least-distance/" \
   -H "User-Agent: Mozilla/5.0" \
   -H "Accept: application/json, text/plain, */*" \
@@ -351,7 +303,7 @@ curl -sS "https://backend.delhimetrorail.com/api/v2/en/new_fare_with_route/RG/VA
   -H "Origin: https://delhimetrorail.com" \
   -H "content-type: application/json"
 
-# first/last train
+# first and last train
 curl -sS "https://backend.delhimetrorail.com/api/v2/en/first_and_last_train_with_filter/RG/MVE/minimum-interchange/" \
   -H "User-Agent: Mozilla/5.0" \
   -H "Accept: application/json, text/plain, */*" \
@@ -360,9 +312,9 @@ curl -sS "https://backend.delhimetrorail.com/api/v2/en/first_and_last_train_with
   -H "content-type: application/json"
 ```
 
-## 7) Notes and caveats
+## 7. Notes and caveats
 
-- Backend is protected by Cloudflare; requests without browser-like headers may be blocked.
-- Keep retries and exponential backoff in your API client.
-- Cache static-like responses (`line_list`, `station_by_line`) to reduce load.
-- URL hash names for static assets change across deployments; always resolve from `asset-manifest.json`.
+- The backend sits behind Cloudflare. Requests without browser like headers can get blocked. The clients in this repo already set them.
+- Add retries with backoff in your API client. Upstream can be slow at peak.
+- Cache static like responses `line_list` and `station_by_line` locally. No need to refetch every screen open.
+- Hashed names for static assets change on each deploy. Always resolve from `asset-manifest.json` and the bundle, do not hardcode.
