@@ -40,11 +40,11 @@ the site is live at https://ncr-metro.tashif.codes.
 ## Setup
 
 ```bash
-cd mobile
+cd app
 bun install
 ```
 
-Create `mobile/.env`:
+Create `app/.env`:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
@@ -53,7 +53,7 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ## Run
 
 ```bash
-cd mobile
+cd app
 bun run start
 ```
 
@@ -83,7 +83,7 @@ through a browser download instead of `expo-media-library`.
 This project includes an EAS profile for APK release:
 
 - Profile name: `github-release`
-- File: `mobile/eas.json`
+- File: `app/eas.json`
 
 ## Architecture Notes
 
@@ -95,11 +95,11 @@ This project includes an EAS profile for APK release:
 
 ## Useful Paths
 
-- App entry: `mobile/App.tsx`
-- Navigation: `mobile/src/navigation/`
-- Screens: `mobile/src/screens/`
-- Services: `mobile/src/services/`
-- Types: `mobile/src/types/`
+- App entry: `app/App.tsx`
+- Navigation: `app/src/navigation/`
+- Screens: `app/src/screens/`
+- Services: `app/src/services/`
+- Types: `app/src/types/`
 
 ## Related docs
 

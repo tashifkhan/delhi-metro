@@ -11,9 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Web target.** The Expo app now builds for the browser and is live at
   [ncr-metro.tashif.codes](https://ncr-metro.tashif.codes), served by a
-  Cloudflare Worker (`mobile/wrangler.jsonc`) that also reverse-proxies
+  Cloudflare Worker (`app/wrangler.jsonc`) that also reverse-proxies
   `/api/*` to the backend so the page talks to a single origin.
-- `bun run build:web`, `preview:web`, and `deploy:web` in `mobile/`.
+- `bun run build:web`, `preview:web`, and `deploy:web` in `app/`.
 - **About screen**, reached from an info button on the home masthead: what the
   app reads from each operator, links to the source and API docs, a privacy
   note, and the running app version and API origin.

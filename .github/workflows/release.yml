@@ -41,19 +41,19 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Install mobile dependencies
-        working-directory: mobile
+      - name: Install app dependencies
+        working-directory: app
         run: npm install
 
       - name: Build APK on EAS
-        working-directory: mobile
+        working-directory: app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas build --platform android --profile github-release --non-interactive --wait
 
       - name: Resolve APK artifact URL
         id: apk
-        working-directory: mobile
+        working-directory: app
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |

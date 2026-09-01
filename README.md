@@ -5,7 +5,7 @@ Delhi runs on its metro. If you live here you know the feel. A last-minute chang
 It is a monorepo for the whole NCR network, Delhi Metro and Noida Metro together:
 
 - `api/`: FastAPI backend that normalizes DMRC APIs and the NMRC public pages into one contract
-- `mobile/`: Expo app with a Delhi and Noida switch that sticks, running on iOS, Android, and the web at [ncr-metro.tashif.codes](https://ncr-metro.tashif.codes)
+- `app/`: Expo app with a Delhi and Noida switch that sticks, running on iOS, Android, and the web at [ncr-metro.tashif.codes](https://ncr-metro.tashif.codes)
 - `docs/`: the research and guides I wish I had at the start, flows, station crosswalks, and API details
 
 ## Repository layout
@@ -14,7 +14,7 @@ It is a monorepo for the whole NCR network, Delhi Metro and Noida Metro together
   - Typed backend with schemas, DMRC clients, and an NMRC HTML scraper
   - `/api/v1` wraps the legacy DMRC website API, one endpoint per upstream resource
   - `/api/v2` plans journeys through the Delhi Metro Sarthi API and falls back to the `/api/v1` planner when Sarthi trips
-- `mobile/`
+- `app/`
   - Cross-platform app for journey planning, station search, line browsing, maps, and alerts
   - Also builds the website, served by a Cloudflare Worker that reverse-proxies `/api/*` to the backend so the browser only ever talks to one origin
 - `docs/`
@@ -39,13 +39,13 @@ API docs will be available at:
 ### 2) Run the app
 
 ```bash
-cd mobile
+cd app
 bun install
 bun run start   # iOS / Android
 bun run web     # browser
 ```
 
-Set mobile env in `mobile/.env`:
+Set app env in `app/.env`:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
@@ -54,7 +54,7 @@ EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
 ### 3) Ship the website
 
 ```bash
-cd mobile
+cd app
 bun run deploy:web
 ```
 
@@ -97,7 +97,7 @@ If you are building a bot, a widget, or a different frontend, start from the pla
 - Legacy and Sarthi station ID crosswalk: `docs/station-identifiers.md`
 - NMRC HTML research: `docs/nmrc-html-research.md`
 - API package README: `api/README.md`
-- Mobile package README: `mobile/README.md`
+- Mobile package README: `app/README.md`
 
 ## What it can do
 

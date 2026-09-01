@@ -1,12 +1,12 @@
 # Expo mobile app guide
 
-This is the guide for the app in `mobile/`. If you want to run it, shape its navigation, or understand how it talks to the API, start here.
+This is the guide for the app in `app/`. If you want to run it, shape its navigation, or understand how it talks to the API, start here.
 
 I wanted the app to feel fast on a crowded train. Pick two stations, see both route options, and keep working when the network flickers. Delhi NCR has two operators, so the app also remembers which network you chose and keeps its data separate.
 
 ## Overview
 
-The app lives in `mobile/` and covers the core commuter flows:
+The app lives in `app/` and covers the core commuter flows:
 
 - journey planning with fare and route
 - station search and station detail
@@ -31,7 +31,7 @@ Same approach as the backend. Keep the stack predictable and let the app code ha
 
 ## App structure
 
-Key files and folders in `mobile/`:
+Key files and folders in `app/`:
 
 - `App.tsx` composes the providers and the root
 - `src/navigation/` holds tab and stack navigators plus route param types
@@ -60,10 +60,10 @@ That layering is on purpose. Screens stay simple, hooks own the async state, ser
 
 The app gets the backend base URL from `EXPO_PUBLIC_API_BASE_URL`:
 
-- read in `mobile/src/config/env.ts`
+- read in `app/src/config/env.ts`
 - fallback is `http://localhost:8000/api/v1`
 
-Create `mobile/.env` for local dev:
+Create `app/.env` for local dev:
 
 ```env
 EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1
@@ -76,7 +76,7 @@ For production EAS builds, set the same var in the Expo project environment inst
 From the repo root:
 
 ```bash
-cd mobile
+cd app
 bun install
 bun run start
 ```
@@ -148,7 +148,7 @@ The SQLite schema is created automatically in `src/storage/database.ts`. You do 
 
 Current EAS setup:
 
-- file is `mobile/eas.json`
+- file is `app/eas.json`
 - profile is `github-release`
 - Android build type is APK
 - channel is `production`

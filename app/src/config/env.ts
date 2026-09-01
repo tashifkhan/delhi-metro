@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
  * build — it only ever worked on a simulator sharing the dev machine's
  * loopback.
  *
- * Set `EXPO_PUBLIC_API_BASE_URL` in `mobile/.env` to point at a local backend
+ * Set `EXPO_PUBLIC_API_BASE_URL` in `app/.env` to point at a local backend
  * instead; see `.env.example`.
  */
 
