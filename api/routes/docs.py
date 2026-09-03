@@ -848,14 +848,15 @@ def _playground_rows(endpoints: list[Endpoint]) -> str:
 
 def _topbar(show_menu_btn: bool = True) -> str:
     menu_btn = (
-        '<button class="menu-btn" aria-label="Toggle navigation">&#9776;</button>'
+        '<button class="menu-btn" type="button" aria-label="Open navigation" '
+        'aria-expanded="false" aria-controls="docs-nav">&#9776;</button>'
         if show_menu_btn
         else ""
     )
     return f"""
 <header class="topbar">
   {menu_btn}
-  <a class="brand" href="/"><span class="glyph">{_logo_svg()}</span>{PLATFORM}<span class="sub">/ API</span></a>
+  <a class="brand" href="/"><span class="glyph">{_logo_svg()}</span><span class="brand-text">{PLATFORM}<span class="sub">/ API</span></span></a>
   <nav class="topnav">
     <a href="/">Home</a>
     <a href="/docs">OpenAPI</a>
@@ -1274,8 +1275,9 @@ def _docs_html() -> str:
 
     body = f"""
 {_topbar()}
+<div class="nav-scrim" id="nav-scrim"></div>
 <div class="wrap">
-  <aside class="side">
+  <aside class="side" id="docs-nav">
     <div class="search">{_SEARCH_SVG}<input placeholder="Search the docs..." aria-label="Search"/><kbd>/</kbd></div>
     <div class="navgroup"><h4>Get Started</h4>
       <a href="#introduction" data-nav>Introduction</a>
