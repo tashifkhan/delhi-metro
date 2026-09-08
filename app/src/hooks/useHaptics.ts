@@ -1,60 +1,49 @@
-import { useMemo } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-/**
- * App-wide haptic vocabulary.
- *
- * Intent-named rather than intensity-named (`select` not `light`) so call
- * sites stay readable and the physical feel can be retuned in one place.
- *
- * Restraint is the whole game: buzzing on every touch trains people to ignore
- * the feedback, so this fires on state the user *changed*, never on plain
- * navigation or scrolling.
- *
- * Every call is fire-and-forget. The promises are deliberately swallowed —
- * a device without a motor, or with system haptics disabled, must never turn
- * a button press into an unhandled rejection.
- */
+/** Feedback grows with intent: navigation, selection, commitment, outcome. */
 export interface HapticFeedback {
-  /** Picking one option among several: chips, palettes, theme modes. */
+  navigate: () => void;
   select: () => void;
-  /** Flipping something on or off; the "on" edge is given more weight. */
   toggle: (on: boolean) => void;
-  /** A committing press: search, swap, primary actions. */
   press: () => void;
-  /** An operation finished cleanly. */
   success: () => void;
-  /** An operation failed. */
+  warning: () => void;
   error: () => void;
 }
 
-const noop = () => {};
-
-function run(fn: () => Promise<void>) {
-  return () => {
-    void fn().catch(() => {});
-  };
+// Shared across components so nested handlers and rapid taps cannot stack pulses.
+let lastFeedbackAt = -Infinity;
+let quietUntil = -Infinity;
+function emit(ios: () => Promise<void>, android: Haptics.AndroidHaptics, outcome = false) {
+  if (Platform.OS === 'web' || (AppState.currentState && AppState.currentState !== 'active')) return;
+  const now = Date.now();
+  if (now < quietUntil || (!outcome && now - lastFeedbackAt < 80)) return;
+  lastFeedbackAt = now;
+  if (outcome) quietUntil = now + 400;
+  try {
+    const result = Platform.OS === 'android'
+      ? Haptics.performAndroidHapticsAsync(android)
+      : ios();
+    void result.catch(() => {});
+  } catch {
+    // Missing native support must never interrupt an interaction.
+  }
 }
 
-export function useHaptics(): HapticFeedback {
-  return useMemo<HapticFeedback>(() => {
-    // Web has no haptics API; calling through would throw on every press.
-    if (Platform.OS === 'web') {
-      return { select: noop, toggle: noop, press: noop, success: noop, error: noop };
-    }
+const feedback: HapticFeedback = {
+  navigate: () => emit(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft), Haptics.AndroidHaptics.Segment_Frequent_Tick),
+  select: () => emit(() => Haptics.selectionAsync(), Haptics.AndroidHaptics.Segment_Tick),
+  toggle: (on) => emit(
+    () => on ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) : Haptics.selectionAsync(),
+    on ? Haptics.AndroidHaptics.Toggle_On : Haptics.AndroidHaptics.Toggle_Off,
+  ),
+  press: () => emit(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium), Haptics.AndroidHaptics.Virtual_Key),
+  success: () => emit(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), Haptics.AndroidHaptics.Confirm, true),
+  warning: () => emit(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning), Haptics.AndroidHaptics.Reject, true),
+  error: () => emit(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error), Haptics.AndroidHaptics.Reject, true),
+};
 
-    return {
-      select: run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
-      toggle: (on: boolean) =>
-        void Haptics.impactAsync(
-          on ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
-        ).catch(() => {}),
-      press: run(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
-      success: run(() =>
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success),
-      ),
-      error: run(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),
-    };
-  }, []);
+export function useHaptics(): HapticFeedback {
+  return feedback;
 }

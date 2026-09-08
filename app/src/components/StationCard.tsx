@@ -21,6 +21,7 @@ interface Props {
   station: StationLike;
   onPress?: () => void;
   showChevron?: boolean;
+  selected?: boolean;
   /**
    * Operator that runs this station. Shown as its roundel when a list mixes
    * networks, so a Noida Metro station is not mistaken for a Delhi Metro one.
@@ -32,6 +33,7 @@ export function StationCard({
   station,
   onPress,
   showChevron = true,
+  selected,
   network,
 }: Props) {
   const theme = useTheme();
@@ -47,7 +49,8 @@ export function StationCard({
       <Card style={styles.card}>
         <Touchable
           radius={radius.card}
-          haptic="select"
+          haptic={showChevron ? 'navigate' : 'select'}
+          accessibilityState={{ selected }}
           onPress={onPress}
           accessibilityLabel={`${station.station_name}, code ${station.station_code}${
             network ? `, ${NETWORK_NAMES[network]}` : ''

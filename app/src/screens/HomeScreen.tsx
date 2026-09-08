@@ -250,6 +250,7 @@ export function HomeScreen() {
             <Touchable
               radius={radius.pill}
               haptic="press"
+              disabled={!fromPicker.station && !toPicker.station || fromPicker.station?.code === toPicker.station?.code}
               onPress={handleSwap}
               accessibilityLabel="Swap departure and destination"
               style={[styles.swapBtn, { borderColor: theme.colors.outlineVariant }]}
@@ -429,6 +430,7 @@ export function HomeScreen() {
                   )}
                   <Touchable
                     radius={0}
+                    haptic="press"
                     onPress={() =>
                       handlePopularRoute(route.fromStationCode, route.toStationCode)
                     }
@@ -501,12 +503,14 @@ export function HomeScreen() {
 
       <StationPicker
         visible={fromPicker.visible}
+        selectedCode={fromPicker.station?.code}
         onSelect={fromPicker.select as (s: { code: string; name: string }) => void}
         onClose={fromPicker.close}
         title="Departure Station"
       />
       <StationPicker
         visible={toPicker.visible}
+        selectedCode={toPicker.station?.code}
         onSelect={toPicker.select as (s: { code: string; name: string }) => void}
         onClose={toPicker.close}
         title="Destination Station"

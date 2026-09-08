@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.2] — 2026-09-08
+
+### Added
+
+- Progressive haptic feedback across navigation, selection, primary actions, and operation outcomes.
+- Android native haptic presets, duplicate-pulse suppression, and silent web/background behavior.
+- Haptic coverage for map zoom and double-tap gestures, route planning outcomes, refresh, retry, and map saving.
+
+### Fixed
+
+- Repeated selections stay quiet, route results no longer announce cached placeholder data, and denied map-save permissions no longer report success.
+
 ## [1.5.1] — 2026-09-01
 
 ### Added
@@ -174,6 +186,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
 [Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...HEAD
+[1.5.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...v1.5.0
 [1.4.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.0...v1.4.1

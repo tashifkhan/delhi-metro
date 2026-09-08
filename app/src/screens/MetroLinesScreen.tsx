@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -105,6 +106,7 @@ function LineCard({ line }: { line: MetroLine }) {
 }
 
 export function MetroLinesScreen() {
+  const haptics = useHaptics();
   const { data, isLoading, isError, refetch, isRefetching } = useMetroLinesQuery();
   const theme = useTheme();
 
@@ -119,7 +121,7 @@ export function MetroLinesScreen() {
       renderItem={({ item }) => <LineCard line={item} />}
       contentContainerStyle={styles.list}
       refreshing={isRefetching}
-      onRefresh={refetch}
+      onRefresh={() => { haptics.select(); void refetch(); }}
     />
   );
 }

@@ -28,12 +28,8 @@ interface Props {
   scaleOnPress?: boolean;
   /** Overrides the default 12% on-surface state layer. */
   rippleColor?: string;
-  /**
-   * Haptic fired on press. Off by default — buzzing on every tap, including
-   * plain navigation, trains people to ignore the feedback. Opt in where the
-   * press actually changes state.
-   */
-  haptic?: 'select' | 'press' | false;
+  /** Soft navigation by default; state changes and primary actions opt into more weight. */
+  haptic?: 'navigate' | 'select' | 'press' | false;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   accessibilityRole?: 'button' | 'link' | 'tab' | 'checkbox' | 'radio';
@@ -59,7 +55,7 @@ export function Touchable({
   style,
   scaleOnPress = false,
   rippleColor,
-  haptic = false,
+  haptic = 'navigate',
   accessibilityLabel,
   accessibilityHint,
   accessibilityRole = 'button',
@@ -87,9 +83,11 @@ export function Touchable({
   const handlePressOut = useCallback(() => animateTo(1), [animateTo]);
 
   const handlePress = useCallback(() => {
-    if (haptic) haptics[haptic]();
+    if (disabled || !onPress) return;
+    const unchangedSelection = haptic === 'select' && accessibilityState?.selected;
+    if (haptic && !unchangedSelection) haptics[haptic]();
     onPress?.();
-  }, [haptic, haptics, onPress]);
+  }, [disabled, haptic, haptics, onPress, accessibilityState?.selected]);
 
   const content = (
     <TouchableRipple

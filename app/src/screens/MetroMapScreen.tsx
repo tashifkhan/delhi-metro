@@ -1,13 +1,14 @@
-import { useRef, useState } from 'react';
+import { useHaptics } from '../hooks/useHaptics';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   LayoutChangeEvent,
   PanResponder,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
@@ -131,6 +132,11 @@ function HighResolutionMapImage({
 }
 
 export function MetroMapScreen() {
+  const isFocused = useIsFocused();
+  const feedbackAllowed = useRef(isFocused);
+  feedbackAllowed.current = isFocused;
+  useEffect(() => () => { feedbackAllowed.current = false; }, []);
+  const haptics = useHaptics();
   const theme = useTheme();
   const { fills } = useAppTheme();
   const { width } = useWindowDimensions();
@@ -138,6 +144,7 @@ export function MetroMapScreen() {
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, refetch } = useMapFamilyPrimaryQuery('network');
   const [downloading, setDownloading] = useState(false);
+  const downloadInFlight = useRef(false);
   const [canvasSize, setCanvasSize] = useState({ width, height: width });
 
   const scale = useRef(new Animated.Value(1)).current;
@@ -176,61 +183,91 @@ export function MetroMapScreen() {
     }
   };
 
+  const transformRef = useRef(applyTransform);
+  transformRef.current = applyTransform;
+  const gestureMoved = useRef(false);
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: (evt) => {
+        gestureMoved.current = evt.nativeEvent.touches.length !== 1;
         lastDist.current = null;
         lastPan.current = null;
         if (evt.nativeEvent.touches.length === 1) {
           lastPan.current = { x: evt.nativeEvent.touches[0].pageX, y: evt.nativeEvent.touches[0].pageY };
         }
       },
-      onPanResponderMove: (evt) => {
+      onPanResponderMove: (evt, gesture) => {
+        if (Math.abs(gesture.dx) > 8 || Math.abs(gesture.dy) > 8 || evt.nativeEvent.touches.length !== 1) {
+          gestureMoved.current = true;
+        }
         const touches = evt.nativeEvent.touches;
         if (touches.length === 2) {
           lastPan.current = null;
           const dist = getDistance(touches as { pageX: number; pageY: number }[]);
-          if (lastDist.current !== null) {
-            applyTransform(sv.current * (dist / lastDist.current), txv.current, tyv.current);
+          if (lastDist.current !== null && lastDist.current > 0) {
+            transformRef.current(sv.current * (dist / lastDist.current), txv.current, tyv.current);
           }
           lastDist.current = dist;
         } else if (touches.length === 1 && sv.current > 1) {
           lastDist.current = null;
           const touch = touches[0];
           if (lastPan.current) {
-            applyTransform(sv.current, txv.current + (touch.pageX - lastPan.current.x), tyv.current + (touch.pageY - lastPan.current.y));
+            transformRef.current(sv.current, txv.current + (touch.pageX - lastPan.current.x), tyv.current + (touch.pageY - lastPan.current.y));
           }
           lastPan.current = { x: touch.pageX, y: touch.pageY };
         }
       },
-      onPanResponderRelease: () => {
+      onPanResponderTerminate: () => {
+        lastTapTime.current = 0;
+        lastDist.current = null;
+        lastPan.current = null;
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (!gestureMoved.current && Math.abs(gesture.dx) <= 8 && Math.abs(gesture.dy) <= 8) {
+          handleDoubleTap();
+        } else {
+          lastTapTime.current = 0;
+        }
         lastDist.current = null;
         lastPan.current = null;
       },
     }),
   ).current;
 
-  const handleDoubleTap = () => {
+  function handleDoubleTap() {
     const now = Date.now();
     if (now - lastTapTime.current < 300) {
-      applyTransform(sv.current > 1.2 ? MIN_SCALE : 2.5, 0, 0, true);
+      haptics.select();
+      lastTapTime.current = 0;
+      transformRef.current(sv.current > 1.2 ? MIN_SCALE : 2.5, 0, 0, true);
+      return;
     }
     lastTapTime.current = now;
-  };
+  }
 
-  const handleZoomIn = () => applyTransform(sv.current + ZOOM_STEP, txv.current, tyv.current, true);
-  const handleZoomOut = () => applyTransform(sv.current - ZOOM_STEP, txv.current, tyv.current, true);
+  const zoomBy = (step: number) => {
+    const next = clampScale(sv.current + step);
+    if (next === sv.current) return;
+    haptics.select();
+    applyTransform(next, txv.current, tyv.current, true);
+  };
+  const handleZoomIn = () => zoomBy(ZOOM_STEP);
+  const handleZoomOut = () => zoomBy(-ZOOM_STEP);
 
   const handleDownloadMap = async () => {
+    if (downloadInFlight.current) return;
     const asset = data?.image;
     if (!asset?.url) {
+      haptics.warning();
       notifyMapUnavailable();
       return;
     }
     try {
+      downloadInFlight.current = true;
       setDownloading(true);
+      haptics.press();
 
       const extension =
         asset.content_type?.toLowerCase().includes('png') ||
@@ -238,15 +275,21 @@ export function MetroMapScreen() {
           ? 'png'
           : 'jpg';
 
-      await saveNetworkMap({
+      const result = await saveNetworkMap({
         downloadUrl: mapService.getProxyFileUrl('network', 'image', network),
         extension,
         network,
         networkName,
       });
+      if (feedbackAllowed.current) {
+        if (result === 'saved') haptics.success();
+        else if (result === 'permission-denied') haptics.warning();
+      }
     } catch {
+      if (feedbackAllowed.current) haptics.error();
       notifyMapSaveFailed();
     } finally {
+      downloadInFlight.current = false;
       setDownloading(false);
     }
   };
@@ -275,7 +318,7 @@ export function MetroMapScreen() {
         onLayout={handleCanvasLayout}
         {...panResponder.panHandlers}
       >
-        <Pressable onPress={handleDoubleTap} style={styles.canvasFill}>
+        <View style={styles.canvasFill}>
           {imageSource && imageSourceKey ? (
             <HighResolutionMapImage
               key={imageSourceKey}
@@ -293,7 +336,7 @@ export function MetroMapScreen() {
               icon="map-outline"
             />
           )}
-        </Pressable>
+        </View>
       </View>
 
       {/* Zoom controls — sibling of canvas, outside PanResponder */}
@@ -303,6 +346,7 @@ export function MetroMapScreen() {
       >
         <Touchable
           radius={radius.iconSmall}
+          haptic={false}
           onPress={handleZoomIn}
           accessibilityLabel="Zoom in"
           style={{ backgroundColor: fills.floating }}
@@ -314,6 +358,7 @@ export function MetroMapScreen() {
         <View style={[styles.zoomDivider, { backgroundColor: theme.colors.outlineVariant }]} />
         <Touchable
           radius={radius.iconSmall}
+          haptic={false}
           onPress={handleZoomOut}
           accessibilityLabel="Zoom out"
           style={{ backgroundColor: fills.floating }}

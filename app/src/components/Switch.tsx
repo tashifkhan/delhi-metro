@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,7 @@ const THUMB_ON_X = 22;
 
 export function Switch({ value, onValueChange, disabled, accessibilityLabel }: Props) {
   const theme = useTheme();
+  const haptics = useHaptics();
   const { fills } = useAppTheme();
   const progress = useRef(new Animated.Value(value ? 1 : 0)).current;
 
@@ -102,7 +104,7 @@ export function Switch({ value, onValueChange, disabled, accessibilityLabel }: P
 
   return (
     <Pressable
-      onPress={() => onValueChange(!value)}
+      onPress={() => { haptics.toggle(!value); onValueChange(!value); }}
       disabled={disabled}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}

@@ -1,4 +1,4 @@
-import type { SaveNetworkMapOptions } from './mapDownload';
+import type { SaveNetworkMapOptions, SaveNetworkMapResult } from './mapDownload';
 
 /**
  * Browser download of the network map.
@@ -12,7 +12,7 @@ export async function saveNetworkMap({
   downloadUrl,
   extension,
   network,
-}: SaveNetworkMapOptions): Promise<void> {
+}: SaveNetworkMapOptions): Promise<SaveNetworkMapResult> {
   const anchor = document.createElement('a');
   anchor.href = downloadUrl;
   anchor.download = `${network}-metro-map.${extension}`;
@@ -20,6 +20,7 @@ export async function saveNetworkMap({
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
+  return 'started';
 }
 
 export function notifyMapUnavailable(): void {

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { Appbar, Text, useTheme } from 'react-native-paper';
@@ -36,6 +37,7 @@ type OptionsFactory = (props: {
  */
 export function useStackScreenOptions({ networkSwitcher = false } = {}): OptionsFactory {
   const theme = useTheme();
+  const haptics = useHaptics();
 
   return ({ navigation }) => ({
     animation: 'slide_from_right',
@@ -51,7 +53,7 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
           elevated={false}
         >
           {back ? (
-            <Appbar.BackAction onPress={navigation.goBack} color={theme.colors.onSurface} />
+            <Appbar.BackAction onPress={() => { haptics.navigate(); navigation.goBack(); }} color={theme.colors.onSurface} />
           ) : null}
 
           {centreAroundSwitcher ? (

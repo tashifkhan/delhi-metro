@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
@@ -10,6 +11,7 @@ interface Props {
 
 export function ErrorState({ message, onRetry }: Props) {
   const theme = useTheme();
+  const haptics = useHaptics();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -31,7 +33,7 @@ export function ErrorState({ message, onRetry }: Props) {
       {onRetry ? (
         <Button
           mode="contained"
-          onPress={onRetry}
+          onPress={() => { haptics.press(); onRetry(); }}
           icon="refresh"
           style={styles.button}
           contentStyle={styles.buttonContent}

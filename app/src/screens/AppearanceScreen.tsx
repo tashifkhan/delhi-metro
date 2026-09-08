@@ -123,6 +123,7 @@ function ToggleCard({
     <Card radius={radius.hero} style={styles.toggleSurface}>
       <Touchable
         radius={radius.hero}
+        haptic={false}
         onPress={handleToggle}
         accessibilityRole="checkbox"
         accessibilityState={{ selected: value }}
@@ -232,6 +233,7 @@ export function AppearanceScreen() {
         {hiddenCount > 0 && (
           <Touchable
             radius={radius.pill}
+            haptic="select"
             onPress={() => setShowAll((v) => !v)}
             accessibilityLabel={showAll ? 'Show fewer palettes' : 'Show all palettes'}
             accessibilityState={{ expanded: showAll }}

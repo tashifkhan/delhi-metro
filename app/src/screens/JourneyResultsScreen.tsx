@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useHaptics } from '../hooks/useHaptics';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, ScrollView, StyleSheet, View } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,7 +33,10 @@ function normalizeLineKey(value: string): string {
 }
 
 export function JourneyResultsScreen() {
+  const haptics = useHaptics();
   const route = useRoute<Route>();
+  const isFocused = useIsFocused();
+  const lastOutcome = useRef<string | null>(null);
   const navigation = useNavigation<Nav>();
   const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
   const theme = useTheme();
@@ -73,31 +77,47 @@ export function JourneyResultsScreen() {
     [editing, navigation, fromCode, toCode, handleSwapStations],
   );
 
-  const { data: plan, isPending, isError, refetch } = useJourneyPlanCachedQuery(
+  const { data: plan, isPending, isError, isPlaceholderData, refetch } = useJourneyPlanCachedQuery(
     fromCode,
     toCode,
     strategy,
     journeyTime,
   );
+  // One outcome per requested journey, including cached results. Refetches stay quiet.
+  const journeyKey = JSON.stringify([fromCode, toCode, strategy, journeyTime]);
+  useEffect(() => {
+    if (!isFocused || isPending || isPlaceholderData || (!plan && !isError)) return;
+    const outcomeKey = `${journeyKey}:${plan ? 'success' : 'error'}`;
+    if (lastOutcome.current === outcomeKey) return;
+    lastOutcome.current = outcomeKey;
+    if (plan) haptics.success();
+    else haptics.error();
+  }, [isFocused, isPending, isPlaceholderData, plan, isError, journeyKey, haptics]);
   const { data: lines } = useMetroLinesQuery();
   const { data: allStations } = useStationSearchQuery('');
   const swipeHint = useRef(new Animated.Value(0)).current;
+  const canSwipe = !plan || plan.networks.length === 0 || plan.networks.includes('dmrc');
+  const canSwipeRef = useRef(canSwipe);
+  canSwipeRef.current = canSwipe;
   const strategyRef = useRef(strategy);
   strategyRef.current = strategy;
 
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
+        canSwipeRef.current && Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.5,
       onPanResponderRelease: (_, gs) => {
+        if (!canSwipeRef.current) return;
         const current = strategyRef.current;
         if (gs.dx < -50 && current !== 'minimum-interchange') {
+          haptics.select();
           setStrategy('minimum-interchange');
           Animated.sequence([
             Animated.timing(swipeHint, { toValue: -8, duration: 120, useNativeDriver: true }),
             Animated.spring(swipeHint, { toValue: 0, useNativeDriver: true }),
           ]).start();
         } else if (gs.dx > 50 && current !== 'least-distance') {
+          haptics.select();
           setStrategy('least-distance');
           Animated.sequence([
             Animated.timing(swipeHint, { toValue: 8, duration: 120, useNativeDriver: true }),
@@ -254,6 +274,7 @@ export function JourneyResultsScreen() {
               <View style={[styles.heroLine, { backgroundColor: fills.onHeroText }]} />
               <Touchable
                 radius={radius.pill}
+                haptic="press"
                 onPress={handleSwapStations}
                 accessibilityLabel="Reverse this journey"
                 style={[styles.heroSwapBtn, { backgroundColor: fills.onHero }]}
@@ -407,6 +428,7 @@ export function JourneyResultsScreen() {
 
       <StationPicker
         visible={editing !== null}
+        selectedCode={editing === 'from' ? fromCode : toCode}
         onSelect={handleStationSelect}
         onClose={() => setEditing(null)}
         title={editing === 'to' ? 'Change Destination' : 'Change Departure'}

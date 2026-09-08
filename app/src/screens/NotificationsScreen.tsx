@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useNotificationsQuery } from '../hooks';
@@ -12,6 +13,7 @@ import { useMetroNetwork } from '../network';
 
 export function NotificationsScreen() {
   const theme = useTheme();
+  const haptics = useHaptics();
   const { network } = useMetroNetwork();
   const { data, isLoading, isError, refetch, isRefetching } = useNotificationsQuery();
 
@@ -44,7 +46,7 @@ export function NotificationsScreen() {
         </View>
       )}
       refreshing={isRefetching}
-      onRefresh={refetch}
+      onRefresh={() => { haptics.select(); void refetch(); }}
       ListEmptyComponent={
         <EmptyState
           title={network === 'nmrc' ? 'No Press Releases' : 'No Notices'}

@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { useState } from 'react';
 import { FlatList, Modal, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,10 +16,12 @@ interface Props {
   onSelect: (station: { code: string; name: string }) => void;
   onClose: () => void;
   title?: string;
+  selectedCode?: string;
 }
 
-export function StationPicker({ visible, onSelect, onClose, title = 'Select Station' }: Props) {
+export function StationPicker({ visible, onSelect, onClose, title = 'Select Station', selectedCode }: Props) {
   const theme = useTheme();
+  const haptics = useHaptics();
   const { fills } = useAppTheme();
   const insets = useSafeAreaInsets();
   const [searchText, setSearchText] = useState('');
@@ -61,7 +64,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
           </Text>
           <IconButton
             icon="close"
-            onPress={handleClose}
+            onPress={() => { haptics.navigate(); handleClose(); }}
             iconColor={theme.colors.onSurfaceVariant}
             accessibilityLabel="Close station picker"
           />
@@ -90,6 +93,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
             renderItem={({ item }) => (
               <StationCard
                 station={item}
+                selected={item.station_code === selectedCode}
                 onPress={() => handleSelect(item)}
                 showChevron={false}
                 network={item.network}

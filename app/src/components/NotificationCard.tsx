@@ -1,3 +1,4 @@
+import { useHaptics } from '../hooks/useHaptics';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { ActivityIndicator, Button, Divider, Text, useTheme } from 'react-native-paper';
@@ -121,6 +122,7 @@ function prepareNotificationHtml(content: string): string {
 
 export const NotificationCard = memo(function NotificationCard({ notification }: Props) {
   const theme = useTheme();
+  const haptics = useHaptics();
   const { width } = useWindowDimensions();
   const [isExpanded, setIsExpanded] = useState(false);
   const pageSlug = useMemo(() => getDetailSlug(notification), [notification]);
@@ -144,9 +146,10 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
 
   const handleOpenExternal = useCallback(() => {
     if (externalUrl) {
-      void Linking.openURL(externalUrl);
+      haptics.navigate();
+      void Linking.openURL(externalUrl).catch(() => haptics.error());
     }
-  }, [externalUrl]);
+  }, [externalUrl, haptics]);
 
   const htmlSource = useMemo(
     () =>
@@ -249,7 +252,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                   Could not load this notice.
                 </Text>
                 <View style={styles.errorActions}>
-                  <Button compact mode="text" icon="refresh" onPress={() => detailQuery.refetch()}>
+                  <Button compact mode="text" icon="refresh" onPress={() => { haptics.press(); void detailQuery.refetch(); }}>
                     Try again
                   </Button>
                   {externalUrl ? (

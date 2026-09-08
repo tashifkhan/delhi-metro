@@ -3,6 +3,8 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import type { MetroNetwork } from '../network';
 
+export type SaveNetworkMapResult = 'saved' | 'permission-denied' | 'started';
+
 export interface SaveNetworkMapOptions {
   downloadUrl: string;
   extension: 'png' | 'jpg';
@@ -21,14 +23,14 @@ export async function saveNetworkMap({
   extension,
   network,
   networkName,
-}: SaveNetworkMapOptions): Promise<void> {
+}: SaveNetworkMapOptions): Promise<SaveNetworkMapResult> {
   const permission = await MediaLibrary.requestPermissionsAsync(true, []);
   if (!permission.granted) {
     Alert.alert(
       'Permission needed',
       'Allow photo saving to store the network map on your device.',
     );
-    return;
+    return 'permission-denied';
   }
 
   const fileUri = (FileSystem.cacheDirectory ?? '') + `${network}-metro-map.${extension}`;
@@ -41,6 +43,7 @@ export async function saveNetworkMap({
       process.env.EXPO_OS === 'ios' ? 'Photos' : 'Gallery'
     }.`,
   );
+  return 'saved';
 }
 
 export function notifyMapUnavailable(): void {
