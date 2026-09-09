@@ -41,11 +41,8 @@ const ios: Record<HapticEffect, () => Promise<void>> = {
   error: () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error),
 };
 
+/** A backgrounded app must not buzz a pocket over work the user cannot see. */
 export function ready(): boolean {
-  // The web has no driver of its own yet, and this one would reach for native
-  // modules that are not there.
-  if (Platform.OS === 'web') return false;
-  // A backgrounded app must not buzz a pocket over work the user cannot see.
   return !AppState.currentState || AppState.currentState === 'active';
 }
 
