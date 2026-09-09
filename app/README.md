@@ -29,6 +29,7 @@ the site is live at https://ncr-metro.tashif.codes.
 - react-native-paper
 - expo-sqlite, expo-file-system, expo-media-library
 - react-native-web + Cloudflare Workers for the web target
+- expo-haptics on native, web-haptics in the browser
 
 ## Prerequisites
 
