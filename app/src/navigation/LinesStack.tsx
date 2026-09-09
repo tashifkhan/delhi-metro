@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useStackScreenOptions } from './useStackScreenOptions';
+import { useMetroNetwork } from '../network';
 
 import { MetroLinesScreen } from '../screens/MetroLinesScreen';
 import { LineStationsScreen } from '../screens/LineStationsScreen';
@@ -10,9 +11,13 @@ const Stack = createNativeStackNavigator<LinesStackParamList>();
 
 export function LinesStack() {
   const screenOptions = useStackScreenOptions();
+  const { network } = useMetroNetwork();
 
   return (
     <Stack.Navigator
+      // Same scoped reset as HomeStack: only this page reloads on a network
+      // switch, not the whole app.
+      key={network}
       screenOptions={screenOptions}
     >
       <Stack.Screen name="MetroLines" component={MetroLinesScreen} options={{ title: 'Metro Lines' }} />

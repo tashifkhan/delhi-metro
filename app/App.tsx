@@ -18,22 +18,21 @@ import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 const container = createServiceContainer(apiClient);
 
 function AppNavigation() {
-  const { network, isLoaded } = useMetroNetwork();
+  const { isLoaded } = useMetroNetwork();
   const isDesktop = useIsDesktop();
 
   if (!isLoaded) {
     return null;
   }
 
-  // Remounting on a network change also returns every tab to its root. That
-  // prevents a Delhi station-detail route from lingering after switching to
-  // Noida (and vice versa). The desktop shell swaps on resize, so its key
-  // also carries the layout — switching shells resets each navigator rather
-  // than re-parenting routes across layouts.
+  // Each stack keys itself by network, so a switch pops that page to its
+  // root without remounting the shell or losing the selected tab. The layout
+  // key only separates the two shells so resize swaps reset navigators
+  // rather than re-parenting routes across layouts.
   if (isDesktop) {
-    return <DesktopRoot key={`desktop-${network}`} />;
+    return <DesktopRoot key="desktop" />;
   }
-  return <RootTabs key={`mobile-${network}`} />;
+  return <RootTabs key="mobile" />;
 }
 
 function AppInner() {
