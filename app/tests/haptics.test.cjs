@@ -4,6 +4,22 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 
+function evaluate(path, requireFn, sandbox = {}) {
+  const source = fs.readFileSync(path, 'utf8');
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const exports = {};
+  vm.runInNewContext(code, { exports, require: requireFn, ...sandbox });
+  return exports;
+}
+
+/** The policy layer is shared, so each driver is tested behind the real one. */
+function loadPolicy(driver, now) {
+  const effects = evaluate('src/hooks/hapticEffects.ts', () => {});
+  return evaluate('src/hooks/useHaptics.ts', name => (name === './hapticsDriver' ? driver : effects), {
+    Date: { now },
+  }).useHaptics();
+}
+
 function loadHaptics(os = 'ios', failure) {
   const calls = [];
   let now = 1000;
@@ -17,15 +33,8 @@ function loadHaptics(os = 'ios', failure) {
       return failure === 'reject' ? Promise.reject(new Error('Unavailable')) : Promise.resolve();
     };
   }
-  const source = fs.readFileSync('src/hooks/useHaptics.ts', 'utf8');
-  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  const exports = {};
-  vm.runInNewContext(code, {
-    exports,
-    require: (name) => name === 'react-native' ? native : expo,
-    Date: { now: () => now },
-  });
-  return { feedback: exports.useHaptics(), calls, native, advance: (ms) => { now += ms; } };
+  const driver = evaluate('src/hooks/hapticsDriver.ts', name => (name === 'react-native' ? native : expo));
+  return { feedback: loadPolicy(driver, () => now), calls, native, advance: (ms) => { now += ms; } };
 }
 
 test('iOS uses selection feedback and distinct navigation, commitment, and outcome patterns', () => {
