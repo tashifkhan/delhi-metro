@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Text, useTheme } from 'react-native-paper';
 
 import type { RootTabParamList } from '../../navigation/types';
-import { NetworkSwitcher } from '../NetworkSwitcher';
 import { Touchable } from '../Touchable';
 import { emphasis, radius, spacing } from '../../theme';
 
@@ -103,10 +102,6 @@ export function DesktopShell({ active, onSelect }: Props) {
           );
         })}
       </View>
-
-      <View style={styles.footer}>
-        <NetworkSwitcher compact />
-      </View>
     </View>
   );
 }
@@ -146,8 +141,5 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.base,
     paddingVertical: 13,
-  },
-  footer: {
-    alignItems: 'flex-start',
   },
 });
