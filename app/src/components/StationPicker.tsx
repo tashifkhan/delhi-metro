@@ -7,6 +7,7 @@ import { StationCard } from './StationCard';
 import { StationListSkeleton } from './StationListSkeleton';
 import { EmptyState } from './EmptyState';
 import { useDebounce, useStationSearchQuery } from '../hooks';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis } from '../theme';
 import type { StationSearchResult } from '../types';
@@ -24,6 +25,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
   const haptics = useHaptics();
   const { fills } = useAppTheme();
   const insets = useSafeAreaInsets();
+  const isDesktop = useIsDesktop();
   const [searchText, setSearchText] = useState('');
   const debouncedQuery = useDebounce(searchText, 300);
   const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
@@ -48,13 +50,16 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
       animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={handleClose}
+      transparent={isDesktop}
     >
-      <View
-        style={[
-          styles.container,
-          { paddingTop: topPadding, backgroundColor: theme.colors.background },
-        ]}
-      >
+      <View style={[styles.backdrop, isDesktop && styles.backdropDesktop]}>
+        <View
+          style={[
+            styles.container,
+            { paddingTop: topPadding, backgroundColor: theme.colors.background },
+            isDesktop && styles.containerDesktop,
+          ]}
+        >
         <View style={styles.header}>
           <Text
             variant="headlineSmall"
@@ -113,13 +118,34 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
           />
         )}
       </View>
+    </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+  },
+  // On desktop the sheet becomes a centred dialog over the content instead of
+  // a full-screen page.
+  backdropDesktop: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
   container: {
     flex: 1,
+  },
+  containerDesktop: {
+    flex: undefined,
+    width: '100%',
+    maxWidth: 600,
+    maxHeight: '85%',
+    borderRadius: radius.card,
+    overflow: 'hidden',
+    paddingBottom: spacing.md,
   },
   header: {
     flexDirection: 'row',

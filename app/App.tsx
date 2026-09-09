@@ -10,13 +10,16 @@ import { queryClient } from './src/api/queryClient';
 import { DIProvider } from './src/di/DIContext';
 import { createServiceContainer } from './src/di/container';
 import { ThemeProvider, useAppTheme, useFocusRing } from './src/theme';
+import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
+import { DesktopRoot } from './src/navigation/DesktopRoot';
 import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
 const container = createServiceContainer(apiClient);
 
 function AppNavigation() {
   const { network, isLoaded } = useMetroNetwork();
+  const isDesktop = useIsDesktop();
 
   if (!isLoaded) {
     return null;
@@ -24,8 +27,13 @@ function AppNavigation() {
 
   // Remounting on a network change also returns every tab to its root. That
   // prevents a Delhi station-detail route from lingering after switching to
-  // Noida (and vice versa).
-  return <RootTabs key={network} />;
+  // Noida (and vice versa). The desktop shell swaps on resize, so its key
+  // also carries the layout — switching shells resets each navigator rather
+  // than re-parenting routes across layouts.
+  if (isDesktop) {
+    return <DesktopRoot key={`desktop-${network}`} />;
+  }
+  return <RootTabs key={`mobile-${network}`} />;
 }
 
 function AppInner() {

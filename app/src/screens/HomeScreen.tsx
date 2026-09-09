@@ -12,6 +12,8 @@ import {
   useMetroLinesQuery,
   useStationSearchQuery,
 } from '../hooks';
+import { useIsDesktop } from '../hooks/useIsDesktop';
+import { useDesktopTabs } from '../navigation/DesktopRoot';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
 import { NotificationCard } from '../components/NotificationCard';
@@ -46,6 +48,8 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { semantic, fills } = useAppTheme();
+  const isDesktop = useIsDesktop();
+  const desktopTabs = useDesktopTabs();
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
@@ -121,6 +125,112 @@ export function HomeScreen() {
     });
   };
 
+  // On mobile this goes through the parent tab navigator; on desktop the
+  // sidebar owns tab state, so switch it directly.
+  const goToAlerts = useCallback(() => {
+    if (desktopTabs) {
+      desktopTabs.selectTab('AlertsTab');
+    } else {
+      navigation.getParent()?.navigate('AlertsTab' as never);
+    }
+  }, [desktopTabs, navigation]);
+
+  const hasFrequent = (popularRoutes.data?.length ?? 0) > 0;
+  const hasAlerts = (notifications.data?.length ?? 0) > 0;
+
+  const renderFrequent = () => {
+    if (!hasFrequent) return null;
+    return (
+      <Reveal index={3}>
+        <View style={styles.section}>
+          <SectionHeader title="Frequent" icon="repeat-outline" />
+          <Card radius={radius.hero} style={styles.groupCard}>
+            {popularRoutes.data!.map((route, index) => (
+              <View key={route.routeKey}>
+                {index > 0 && (
+                  <View
+                    style={[
+                      styles.groupDivider,
+                      { backgroundColor: theme.colors.outlineVariant },
+                    ]}
+                  />
+                )}
+                <Touchable
+                  radius={0}
+                  haptic="press"
+                  onPress={() =>
+                    handlePopularRoute(route.fromStationCode, route.toStationCode)
+                  }
+                  accessibilityLabel={`Plan ${nameForCode(route.fromStationCode)} to ${nameForCode(route.toStationCode)}`}
+                >
+                  <View style={styles.routeRow}>
+                    <View style={styles.miniRail}>
+                      <View
+                        style={[styles.miniDot, { backgroundColor: semantic.success }]}
+                      />
+                      <View
+                        style={[
+                          styles.miniLine,
+                          { backgroundColor: theme.colors.outlineVariant },
+                        ]}
+                      />
+                      <View
+                        style={[styles.miniDot, { backgroundColor: theme.colors.error }]}
+                      />
+                    </View>
+                    <View style={styles.routeNames}>
+                      <Text
+                        variant="bodyLarge"
+                        numberOfLines={1}
+                        style={[emphasis.medium, { color: theme.colors.onSurface }]}
+                      >
+                        {nameForCode(route.fromStationCode)}
+                      </Text>
+                      <Text
+                        variant="bodyLarge"
+                        numberOfLines={1}
+                        style={[emphasis.medium, { color: theme.colors.onSurface }]}
+                      >
+                        {nameForCode(route.toStationCode)}
+                      </Text>
+                    </View>
+                    <Text
+                      variant="labelSmall"
+                      style={[overline, { color: theme.colors.onSurfaceVariant }]}
+                    >
+                      {route.hitCount}×
+                    </Text>
+                  </View>
+                </Touchable>
+              </View>
+            ))}
+          </Card>
+        </View>
+      </Reveal>
+    );
+  };
+
+  const renderAlerts = () => {
+    if (!hasAlerts) return null;
+    return (
+      <Reveal index={4}>
+        <View style={styles.section}>
+          <SectionHeader
+            title="Alerts"
+            icon="megaphone-outline"
+            action="All"
+            onAction={goToAlerts}
+          />
+          <View style={styles.notifList}>
+            {notifications.data!.slice(0, 3).map((notif) => (
+              <NotificationCard key={notif.id} notification={notif} />
+            ))}
+          </View>
+        </View>
+      </Reveal>
+    );
+  };
+
   const renderEndpoint = (
     kind: 'from' | 'to',
     picker: ReturnType<typeof useStationPicker>,
@@ -181,7 +291,13 @@ export function HomeScreen() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + spacing.lg }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: insets.top + (isDesktop ? spacing.xl : spacing.lg) },
+        // The desktop shell already centres a max-width column, so the screen
+        // just fills it. On mobile the column is the full window.
+        isDesktop && styles.contentDesktop,
+      ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -366,7 +482,7 @@ export function HomeScreen() {
         <Reveal index={2}>
           <Touchable
             radius={radius.card}
-            onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
+            onPress={goToAlerts}
             scaleOnPress
             accessibilityLabel={`${disruptedLines.length} lines with service disruptions. View alerts.`}
             style={{ backgroundColor: semantic.warningContainer }}
@@ -411,94 +527,18 @@ export function HomeScreen() {
         </Reveal>
       )}
 
-      {/* Popular routes — one grouped list rather than a stack of cards, so
-          five entries read as a set instead of five competing objects. */}
-      {(popularRoutes.data?.length ?? 0) > 0 && (
-        <Reveal index={3}>
-          <View style={styles.section}>
-            <SectionHeader title="Frequent" icon="repeat-outline" />
-            <Card radius={radius.hero} style={styles.groupCard}>
-              {popularRoutes.data!.map((route, index) => (
-                <View key={route.routeKey}>
-                  {index > 0 && (
-                    <View
-                      style={[
-                        styles.groupDivider,
-                        { backgroundColor: theme.colors.outlineVariant },
-                      ]}
-                    />
-                  )}
-                  <Touchable
-                    radius={0}
-                    haptic="press"
-                    onPress={() =>
-                      handlePopularRoute(route.fromStationCode, route.toStationCode)
-                    }
-                    accessibilityLabel={`Plan ${nameForCode(route.fromStationCode)} to ${nameForCode(route.toStationCode)}`}
-                  >
-                    <View style={styles.routeRow}>
-                      <View style={styles.miniRail}>
-                        <View
-                          style={[styles.miniDot, { backgroundColor: semantic.success }]}
-                        />
-                        <View
-                          style={[
-                            styles.miniLine,
-                            { backgroundColor: theme.colors.outlineVariant },
-                          ]}
-                        />
-                        <View
-                          style={[styles.miniDot, { backgroundColor: theme.colors.error }]}
-                        />
-                      </View>
-                      <View style={styles.routeNames}>
-                        <Text
-                          variant="bodyLarge"
-                          numberOfLines={1}
-                          style={[emphasis.medium, { color: theme.colors.onSurface }]}
-                        >
-                          {nameForCode(route.fromStationCode)}
-                        </Text>
-                        <Text
-                          variant="bodyLarge"
-                          numberOfLines={1}
-                          style={[emphasis.medium, { color: theme.colors.onSurface }]}
-                        >
-                          {nameForCode(route.toStationCode)}
-                        </Text>
-                      </View>
-                      <Text
-                        variant="labelSmall"
-                        style={[overline, { color: theme.colors.onSurfaceVariant }]}
-                      >
-                        {route.hitCount}×
-                      </Text>
-                    </View>
-                  </Touchable>
-                </View>
-              ))}
-            </Card>
-          </View>
-        </Reveal>
-      )}
-
-      {/* Recent alerts */}
-      {(notifications.data?.length ?? 0) > 0 && (
-        <Reveal index={4}>
-          <View style={styles.section}>
-            <SectionHeader
-              title="Alerts"
-              icon="megaphone-outline"
-              action="All"
-              onAction={() => navigation.getParent()?.navigate('AlertsTab' as never)}
-            />
-            <View style={styles.notifList}>
-              {notifications.data!.slice(0, 3).map((notif) => (
-                <NotificationCard key={notif.id} notification={notif} />
-              ))}
-            </View>
-          </View>
-        </Reveal>
+      {/* Popular routes and recent alerts stack on mobile; on desktop they
+          sit side by side so the wider column reads as two panels. */}
+      {isDesktop ? (
+        <View style={styles.desktopColumns}>
+          <View style={styles.desktopColumn}>{renderFrequent()}</View>
+          <View style={styles.desktopColumn}>{renderAlerts()}</View>
+        </View>
+      ) : (
+        <>
+          {renderFrequent()}
+          {renderAlerts()}
+        </>
       )}
 
       <StationPicker
@@ -524,6 +564,19 @@ const styles = StyleSheet.create({
     padding: spacing.base,
     gap: spacing.xl,
     paddingBottom: spacing['4xl'],
+  },
+  contentDesktop: {
+    padding: spacing.xl,
+    gap: spacing.xl,
+  },
+  desktopColumns: {
+    flexDirection: 'row',
+    gap: spacing.xl,
+    alignItems: 'flex-start',
+  },
+  desktopColumn: {
+    flex: 1,
+    minWidth: 0,
   },
   // Masthead
   hero: {

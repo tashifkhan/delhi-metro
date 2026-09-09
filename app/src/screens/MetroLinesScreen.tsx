@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { Text, useTheme } from 'react-native-paper';
 import { useMetroLinesQuery } from '../hooks';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
@@ -109,9 +110,31 @@ export function MetroLinesScreen() {
   const haptics = useHaptics();
   const { data, isLoading, isError, refetch, isRefetching } = useMetroLinesQuery();
   const theme = useTheme();
+  const isDesktop = useIsDesktop();
 
   if (isLoading) return <LoadingState message="Loading metro lines..." />;
   if (isError) return <ErrorState message="Could not load metro lines" onRetry={refetch} />;
+
+  // On desktop the centred column is wide enough for two cards per row.
+  if (isDesktop) {
+    return (
+      <FlatList
+        data={data}
+        key="desktop-grid"
+        numColumns={2}
+        keyExtractor={(item) => String(item.id)}
+        style={{ backgroundColor: theme.colors.background }}
+        renderItem={({ item }) => (
+          <View style={styles.gridCell}>
+            <LineCard line={item} />
+          </View>
+        )}
+        contentContainerStyle={styles.list}
+        refreshing={isRefetching}
+        onRefresh={() => { haptics.select(); void refetch(); }}
+      />
+    );
+  }
 
   return (
     <FlatList
@@ -134,6 +157,10 @@ const styles = StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: spacing.base,
     paddingVertical: spacing.xs,
+  },
+  gridCell: {
+    flex: 1,
+    maxWidth: '50%',
   },
   card: {
     borderRadius: radius.card,
