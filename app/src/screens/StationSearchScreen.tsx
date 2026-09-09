@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Searchbar, Text, useTheme } from 'react-native-paper';
 import { useDebounce, useStationSearchQuery } from '../hooks';
@@ -13,17 +14,28 @@ import type { ExploreStackParamList } from '../navigation/types';
 import { spacing, radius } from '../theme';
 
 type Nav = NativeStackNavigationProp<ExploreStackParamList, 'StationSearch'>;
+type Route = RouteProp<ExploreStackParamList, 'StationSearch'>;
 
 /** How many rows stagger before results simply appear. */
 const STAGGER_LIMIT = 8;
 
 export function StationSearchScreen() {
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
   const theme = useTheme();
   const { fills } = useAppTheme();
-  const [searchText, setSearchText] = useState('');
+  // Deep links arrive with ?q= already set; typing updates it below so the
+  // URL stays shareable.
+  const [searchText, setSearchText] = useState(route.params?.q ?? '');
   const debouncedQuery = useDebounce(searchText, 300);
   const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
+
+  useEffect(() => {
+    const q = debouncedQuery.trim() || undefined;
+    if (q !== route.params?.q) {
+      navigation.setParams({ q });
+    }
+  }, [debouncedQuery, navigation, route.params?.q]);
 
   const resultCount = results?.length ?? 0;
 

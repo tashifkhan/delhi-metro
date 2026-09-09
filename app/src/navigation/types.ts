@@ -15,7 +15,7 @@ export type HomeStackParamList = {
 };
 
 export type ExploreStackParamList = {
-  StationSearch: undefined;
+  StationSearch: { q?: string } | undefined;
   StationDetail: { stationCode: string; stationName: string };
 };
 
