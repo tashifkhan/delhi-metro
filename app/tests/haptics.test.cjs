@@ -48,8 +48,14 @@ test('Android uses native presets for every intent', () => {
   for (const act of [h.navigate, h.select, () => h.toggle(true), () => h.toggle(false), h.press, h.success, h.warning, h.error]) {
     act(); advance(500);
   }
-  assert.deepEqual(calls.map(c => c[1]), ['Segment_Frequent_Tick', 'Segment_Tick', 'Toggle_On', 'Toggle_Off', 'Virtual_Key', 'Confirm', 'Reject', 'Reject']);
+  assert.deepEqual(calls.map(c => c[1]), ['Clock_Tick', 'Segment_Tick', 'Toggle_On', 'Toggle_Off', 'Virtual_Key', 'Confirm', 'Reject', 'Reject']);
   assert.ok(calls.every(c => c[0] === 'performAndroidHapticsAsync'));
+});
+
+test('navigation never uses the tick a device is allowed to drop', () => {
+  const { feedback: h, calls } = loadHaptics('android');
+  h.navigate();
+  assert.notEqual(calls[0][1], 'Segment_Frequent_Tick');
 });
 
 test('web and background apps stay silent', () => {

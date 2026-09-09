@@ -7,9 +7,15 @@ import type { HapticEffect } from './hapticEffects';
  * `performAndroidHapticsAsync` forwards to `HapticFeedbackConstants`, so each
  * one is tuned for the device's actuator and matches what the rest of the
  * platform does for the same gesture.
+ *
+ * `Clock_Tick` carries navigation instead of `Segment_Frequent_Tick`: the
+ * frequent tick is specified for scrubbing through many values in quick
+ * succession, and its contract lets a device skip it entirely when it cannot
+ * vibrate that softly. Opening a screen is deliberate and infrequent, so it
+ * should be the lightest effect that is still guaranteed to be felt.
  */
 const android: Record<HapticEffect, Haptics.AndroidHaptics> = {
-  navigate: Haptics.AndroidHaptics.Segment_Frequent_Tick,
+  navigate: Haptics.AndroidHaptics.Clock_Tick,
   select: Haptics.AndroidHaptics.Segment_Tick,
   toggleOff: Haptics.AndroidHaptics.Toggle_Off,
   toggleOn: Haptics.AndroidHaptics.Toggle_On,
