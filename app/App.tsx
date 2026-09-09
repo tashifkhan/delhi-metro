@@ -13,6 +13,7 @@ import { ThemeProvider, useAppTheme, useFocusRing } from './src/theme';
 import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
 import { DesktopRoot } from './src/navigation/DesktopRoot';
+import { navigationLinking } from './src/navigation/linking';
 import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
 const container = createServiceContainer(apiClient);
@@ -48,7 +49,7 @@ function AppInner() {
       */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {settingsLoaded ? (
-        <NavigationContainer theme={navTheme}>
+        <NavigationContainer theme={navTheme} linking={navigationLinking}>
           <AppNavigation />
         </NavigationContainer>
       ) : (
