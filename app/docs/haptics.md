@@ -1,6 +1,6 @@
 # Haptics
 
-Feedback is owned by the control that accepts the action. `Touchable` defaults to a soft navigation tap. Use `select` for choices and disclosures, `press` for committing actions, and `false` when the handler owns feedback. A selected option and a disabled control stay silent.
+Feedback is owned by the control that accepts the action. `Touchable` defaults to a soft navigation tap. Use `select` for choices and disclosures, `press` for committing actions, and `false` when the handler owns feedback. A selected option and a disabled control stay silent. A `Touchable` given an `onLongPress` also answers the long press itself with the heaviest tap, since a long press that returns nothing reads as one that failed to register.
 
 | Interaction | Feedback |
 | --- | --- |
@@ -18,25 +18,25 @@ Feedback is owned by the control that accepts the action. `Touchable` defaults t
 
 ## Layout
 
-`useHaptics` owns the vocabulary and the pacing policy; a platform driver owns the waveform. `hapticEffects.ts` names the effects the drivers share, and Metro picks `hapticsDriver.ts` or `hapticsDriver.web.ts` per platform. Keeping the policy above the drivers stops one platform drifting into feeling chattier than the others, and keeps `expo-haptics` out of the web bundle entirely.
+`useHaptics` owns the vocabulary and the pacing policy; a platform driver owns the waveform. `hapticEffects.ts` names the nine effects the drivers share, and Metro picks `hapticsDriver.ts` or `hapticsDriver.web.ts` per platform. Keeping the policy above the drivers stops one platform drifting into feeling chattier than the others, and keeps `expo-haptics` out of the web bundle entirely.
 
 Ordinary pulses are limited to one per 80 ms across all controls; outcome patterns have 400 ms to finish without overlapping feedback, and cancel the tap that asked for them so the tail cannot blur their first beat.
 
 ## Android
 
-Android plays the system's own effects through `performAndroidHapticsAsync`, following the [Expo SDK 54 guidance](https://docs.expo.dev/versions/v54.0.0/sdk/haptics/), so each one is tuned for the device's actuator and matches what the rest of the platform does for the same gesture: `Clock_Tick`, `Segment_Tick`, `Toggle_On`/`Toggle_Off`, `Virtual_Key`, `Confirm`, and `Reject`.
+Android plays the system's own effects through `performAndroidHapticsAsync`, following the [Expo SDK 54 guidance](https://docs.expo.dev/versions/v54.0.0/sdk/haptics/), so each one is tuned for the device's actuator and matches what the rest of the platform does for the same gesture: `Clock_Tick`, `Segment_Tick`, `Toggle_On`/`Toggle_Off`, `Virtual_Key`, `Long_Press`, `Confirm`, and `Reject`.
 
 Navigation deliberately avoids `Segment_Frequent_Tick`. That constant is specified for scrubbing through many values in quick succession, and its contract lets a device skip it when it cannot vibrate that softly. Opening a screen is deliberate and infrequent, so it takes the lightest effect that is still guaranteed to be felt.
 
 ## iOS
 
-iOS follows Apple's conventions rather than imitating Android: the selection generator owns discrete choices, impacts carry weight (soft, light, medium), and the notification generator owns outcomes.
+iOS follows Apple's conventions rather than imitating Android: the selection generator owns discrete choices, impacts carry weight (soft, light, medium, heavy), and the notification generator owns outcomes.
 
 ## Web
 
 The web runs on [`web-haptics`](https://haptics.lochie.me), which drives `navigator.vibrate` and falls back to toggling a hidden switch element where that is missing, which Safari answers with a system tap. The library's own debug click track and floating switch stay off.
 
-Browsers expose duration, not amplitude. `web-haptics` accepts an `intensity` below 1, but can only fake one by chopping the pulse into on/off slices, which reads as a buzz rather than as a lighter tap. So every effect runs at full intensity and carries its weight in duration alone: 6 ms for navigation up to 12 ms for a press, with outcomes adding a second beat (rising for success, falling for a warning, repeating for a failure). Beats stay at or under 16 ms because the fallback repeats its toggle at that interval for as long as a beat lasts, and a longer beat would rattle instead of tap.
+Browsers expose duration, not amplitude. `web-haptics` accepts an `intensity` below 1, but can only fake one by chopping the pulse into on/off slices, which reads as a buzz rather than as a lighter tap. So every effect runs at full intensity and carries its weight in duration alone: 6 ms for navigation up to 16 ms for a long press, with outcomes adding a second beat (rising for success, falling for a warning, repeating for a failure). Beats stay at or under 16 ms because the fallback repeats its toggle at that interval for as long as a beat lasts, and a longer beat would rattle instead of tap.
 
 There is no web equivalent of the system haptics switch, so `prefers-reduced-motion` stands in for it. A hidden tab is silent, and leaving the tab cancels a pattern mid-flight.
 
@@ -46,7 +46,7 @@ Journey outcomes ignore placeholder data and repeat refetch results. Map saving 
 
 ## Verification
 
-Run `node --test tests/haptics.test.cjs` from `app` for the platform mappings, web pattern shape, pulse suppression, reduced motion and hidden pages, disabled and selected controls, driver failure handling, and denied map permission. Run `bun x tsc --noEmit` for type checking.
+Run `node --test tests/haptics.test.cjs` from `app` for the platform mappings, web pattern shape, pulse suppression, reduced motion and hidden pages, disabled, selected and long-pressed controls, driver failure handling, and denied map permission. Run `bun x tsc --noEmit` for type checking.
 
 ### Physical device acceptance pass
 

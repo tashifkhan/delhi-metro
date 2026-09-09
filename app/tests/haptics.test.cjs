@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const ts = require('typescript');
 
-const VERBS = ['navigate', 'select', 'toggle', 'press', 'success', 'warning', 'error'];
+const VERBS = ['navigate', 'select', 'toggle', 'press', 'longPress', 'success', 'warning', 'error'];
 
 function evaluate(path, requireFn, sandbox = {}) {
   const source = fs.readFileSync(path, 'utf8');
@@ -36,7 +36,7 @@ function loadHaptics(os = 'ios', failure) {
     };
   }
   const driver = evaluate('src/hooks/hapticsDriver.ts', name => (name === 'react-native' ? native : expo));
-  return { feedback: loadPolicy(driver, () => now), calls, native, advance: (ms) => { now += ms; } };
+  return { feedback: loadPolicy(driver, () => now), calls, native, advance: ms => { now += ms; } };
 }
 
 function loadWebHaptics({ hidden = false, reduceMotion = false, failure } = {}) {
@@ -77,16 +77,24 @@ function loadWebHaptics({ hidden = false, reduceMotion = false, failure } = {}) 
 
 test('iOS uses selection feedback and distinct navigation, commitment, and outcome patterns', () => {
   const { feedback: h, calls, advance } = loadHaptics();
-  h.navigate(); advance(100); h.select(); advance(100); h.press(); advance(100); h.success();
-  assert.deepEqual(calls, [ ['impactAsync', 'Soft'], ['selectionAsync'], ['impactAsync', 'Medium'], ['notificationAsync', 'Success'] ]);
+  h.navigate(); advance(100); h.select(); advance(100); h.press(); advance(100); h.longPress(); advance(500); h.success();
+  assert.deepEqual(calls, [
+    ['impactAsync', 'Soft'],
+    ['selectionAsync'],
+    ['impactAsync', 'Medium'],
+    ['impactAsync', 'Heavy'],
+    ['notificationAsync', 'Success'],
+  ]);
 });
 
 test('Android uses native presets for every intent', () => {
   const { feedback: h, calls, advance } = loadHaptics('android');
-  for (const act of [h.navigate, h.select, () => h.toggle(true), () => h.toggle(false), h.press, h.success, h.warning, h.error]) {
+  for (const act of [h.navigate, h.select, () => h.toggle(true), () => h.toggle(false), h.press, h.longPress, h.success, h.warning, h.error]) {
     act(); advance(500);
   }
-  assert.deepEqual(calls.map(c => c[1]), ['Clock_Tick', 'Segment_Tick', 'Toggle_On', 'Toggle_Off', 'Virtual_Key', 'Confirm', 'Reject', 'Reject']);
+  assert.deepEqual(calls.map(c => c[1]), [
+    'Clock_Tick', 'Segment_Tick', 'Toggle_On', 'Toggle_Off', 'Virtual_Key', 'Long_Press', 'Confirm', 'Reject', 'Reject',
+  ]);
   assert.ok(calls.every(c => c[0] === 'performAndroidHapticsAsync'));
 });
 
@@ -155,7 +163,7 @@ test('web pulses carry weight as duration, never as a simulated amplitude', () =
 
 test('web weight grows with intent and only outcomes get a second beat', () => {
   const { feedback: h, patterns, advance } = loadWebHaptics();
-  for (const act of [h.navigate, h.select, () => h.toggle(false), () => h.toggle(true), h.press]) {
+  for (const act of [h.navigate, h.select, () => h.toggle(false), () => h.toggle(true), h.press, h.longPress]) {
     act(); advance(500);
   }
   const taps = patterns.map(pattern => pattern.map(beat => beat.duration));
@@ -219,7 +227,11 @@ function renderTouchable(props) {
     'react-native-paper': { TouchableRipple: 'Ripple', useTheme: () => ({ colors: { onSurface: '#000' } }) },
     '../theme': { radius: { card: 12 }, tint: value => value },
     '../theme/motion': {},
-    '../hooks/useHaptics': { useHaptics: () => Object.fromEntries(['navigate', 'select', 'press'].map(key => [key, () => pulses.push(key)])) },
+    '../hooks/useHaptics': {
+      useHaptics: () => Object.fromEntries(
+        ['navigate', 'select', 'press', 'longPress'].map(key => [key, () => pulses.push(key)]),
+      ),
+    },
   };
   const source = fs.readFileSync('src/components/Touchable.tsx', 'utf8');
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.React } }).outputText;
@@ -253,6 +265,29 @@ test('navigation gets one soft tap and handler-owned feedback opts out', () => {
     ripple.props.onPress();
     assert.deepEqual(pulses, haptic === false ? [] : [haptic ?? 'navigate']);
   }
+});
+
+test('a long press answers with the heaviest tap unless the handler owns feedback', () => {
+  let actions = 0;
+  for (const haptic of [undefined, false]) {
+    const { ripple, pulses } = renderTouchable({ haptic, onPress: () => {}, onLongPress: () => actions++ });
+    ripple.props.onLongPress();
+    assert.deepEqual(pulses, haptic === false ? [] : ['longPress']);
+  }
+  assert.equal(actions, 2);
+});
+
+test('a touchable given no long press handler leaves the gesture alone', () => {
+  const { ripple } = renderTouchable({ onPress: () => {} });
+  assert.equal(ripple.props.onLongPress, undefined);
+});
+
+test('a disabled touchable ignores a long press', () => {
+  let actions = 0;
+  const { ripple, pulses } = renderTouchable({ disabled: true, onPress: () => {}, onLongPress: () => actions++ });
+  ripple.props.onLongPress();
+  assert.equal(pulses.length, 0);
+  assert.equal(actions, 0);
 });
 
 test('denied photo permission cannot report a saved map', async () => {

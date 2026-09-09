@@ -12,6 +12,7 @@ export type HapticEffect =
   | 'toggleOff'
   | 'toggleOn'
   | 'press'
+  | 'longPress'
   | 'success'
   | 'warning'
   | 'error';
@@ -19,8 +20,8 @@ export type HapticEffect =
 const OUTCOMES = new Set<HapticEffect>(['success', 'warning', 'error']);
 
 /**
- * Outcomes are patterns that report the result of an action, so they need room
- * to play out and take precedence over an incidental tap.
+ * Outcomes are multi-beat patterns that report the result of an action, so
+ * they need room to play out and take precedence over an incidental tap.
  */
 export function isOutcome(effect: HapticEffect): boolean {
   return OUTCOMES.has(effect);

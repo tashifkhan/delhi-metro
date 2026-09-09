@@ -89,10 +89,19 @@ export function Touchable({
     onPress?.();
   }, [disabled, haptic, haptics, onPress, accessibilityState?.selected]);
 
+  const handleLongPress = useCallback(() => {
+    if (disabled || !onLongPress) return;
+    // A long press that answers with nothing reads as a press that failed to
+    // register, so it gets the heaviest tap regardless of the tap-level
+    // choice. `haptic={false}` still hands feedback to the caller.
+    if (haptic) haptics.longPress();
+    onLongPress();
+  }, [disabled, haptic, haptics, onLongPress]);
+
   const content = (
     <TouchableRipple
       onPress={handlePress}
-      onLongPress={onLongPress}
+      onLongPress={onLongPress ? handleLongPress : undefined}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled || !onPress}

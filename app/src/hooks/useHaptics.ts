@@ -7,6 +7,7 @@ export interface HapticFeedback {
   select: () => void;
   toggle: (on: boolean) => void;
   press: () => void;
+  longPress: () => void;
   success: () => void;
   warning: () => void;
   error: () => void;
@@ -38,6 +39,7 @@ const feedback: HapticFeedback = {
   select: () => emit('select'),
   toggle: (on) => emit(on ? 'toggleOn' : 'toggleOff'),
   press: () => emit('press'),
+  longPress: () => emit('longPress'),
   success: () => emit('success'),
   warning: () => emit('warning'),
   error: () => emit('error'),

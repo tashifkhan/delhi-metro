@@ -19,6 +19,7 @@ const patterns: Record<HapticEffect, HapticInput> = {
   toggleOff: [{ duration: 8, intensity: 1 }],
   toggleOn: [{ duration: 10, intensity: 1 }],
   press: [{ duration: 12, intensity: 1 }],
+  longPress: [{ duration: 16, intensity: 1 }],
   // Outcomes get a second beat, the only way a browser can say more than
   // "something happened": success rises, warning falls, failure repeats.
   success: [
