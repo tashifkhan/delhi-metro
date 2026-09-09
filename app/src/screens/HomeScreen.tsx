@@ -13,7 +13,6 @@ import {
   useStationSearchQuery,
 } from '../hooks';
 import { useIsDesktop } from '../hooks/useIsDesktop';
-import { useDesktopTabs } from '../navigation/DesktopRoot';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
 import { NotificationCard } from '../components/NotificationCard';
@@ -49,7 +48,6 @@ export function HomeScreen() {
   const theme = useTheme();
   const { semantic, fills } = useAppTheme();
   const isDesktop = useIsDesktop();
-  const desktopTabs = useDesktopTabs();
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
@@ -125,18 +123,12 @@ export function HomeScreen() {
     });
   };
 
-  // On mobile this goes through the parent tab navigator; on desktop the
-  // sidebar owns tab state, so switch it directly.
-  const goToAlerts = useCallback(() => {
-    if (desktopTabs) {
-      desktopTabs.selectTab('AlertsTab');
-    } else {
-      navigation.getParent()?.navigate('AlertsTab' as never);
-    }
-  }, [desktopTabs, navigation]);
-
   const hasFrequent = (popularRoutes.data?.length ?? 0) > 0;
   const hasAlerts = (notifications.data?.length ?? 0) > 0;
+
+  const goToAlerts = () => {
+    navigation.getParent()?.navigate('AlertsTab' as never);
+  };
 
   const renderFrequent = () => {
     if (!hasFrequent) return null;
