@@ -1,10 +1,11 @@
 import { useHaptics } from '../hooks/useHaptics';
+import { useIsDesktop } from '../hooks/useIsDesktop';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { Appbar, Text, useTheme } from 'react-native-paper';
 import { duration } from '../theme/motion';
 import { NetworkSwitcher } from '../components/NetworkSwitcher';
-import { emphasis } from '../theme';
+import { emphasis, spacing } from '../theme';
 
 type OptionsFactory = (props: {
   navigation: { goBack: () => void };
@@ -38,6 +39,7 @@ type OptionsFactory = (props: {
 export function useStackScreenOptions({ networkSwitcher = false } = {}): OptionsFactory {
   const theme = useTheme();
   const haptics = useHaptics();
+  const isDesktop = useIsDesktop();
 
   return ({ navigation }) => ({
     animation: 'slide_from_right',
@@ -45,6 +47,31 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
     header: ({ options, back }) => {
       const title = options.title ?? '';
       const showSwitcher = !back && networkSwitcher;
+
+      // Desktop headings are plain page titles, not app bars. The level2 band
+      // next to the sidebar read as a second navbar.
+      if (isDesktop) {
+        return (
+          <View style={styles.desktopHeader}>
+            {back ? (
+              <Appbar.BackAction
+                onPress={() => { haptics.navigate(); navigation.goBack(); }}
+                color={theme.colors.onSurface}
+                style={styles.desktopBack}
+              />
+            ) : null}
+            <Text
+              variant="headlineSmall"
+              numberOfLines={1}
+              style={[emphasis.heavy, styles.desktopTitle, { color: theme.colors.onSurface }]}
+            >
+              {title}
+            </Text>
+            {showSwitcher ? <NetworkSwitcher compact /> : null}
+          </View>
+        );
+      }
+
       const centreAroundSwitcher = showSwitcher && Platform.OS === 'ios';
 
       return (
@@ -103,5 +130,20 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     paddingHorizontal: 4,
+  },
+  desktopHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  desktopBack: {
+    margin: 0,
+  },
+  desktopTitle: {
+    flex: 1,
+    letterSpacing: -0.3,
   },
 });
