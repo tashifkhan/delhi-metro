@@ -49,6 +49,66 @@ test('the html template still lets Expo fill it in and the app mount', () => {
   assert.ok(html.includes('id="root"'));
 });
 
+test('the html paints a dark canvas before the bundle loads', () => {
+  // iOS Safari/Chrome show a white home-indicator strip unless the document
+  // canvas and color-scheme follow the theme on first paint.
+  assert.ok(html.includes('name="color-scheme"'));
+  assert.match(html, /prefers-color-scheme:\s*dark/);
+  assert.ok(html.includes("localStorage.getItem('dmrc:appSettings')"));
+  assert.ok(html.includes("id = 'app-browser-chrome'"));
+});
+
+function runCanvasBoot({ osDark, stored }) {
+  const match = html.match(
+    /\(function \(\) \{\s*\/\/ Paint the canvas[\s\S]*?\}\)\(\);/,
+  );
+  assert.ok(match, 'the canvas boot script is missing');
+
+  const root = { style: {} };
+  const created = [];
+  vm.runInNewContext(match[0], {
+    window: {
+      matchMedia: () => ({ matches: osDark }),
+    },
+    localStorage: {
+      getItem: () => (stored ? JSON.stringify(stored) : null),
+    },
+    document: {
+      documentElement: root,
+      createElement: (tag) => {
+        const el = { id: '', textContent: '', tag };
+        created.push(el);
+        return el;
+      },
+      head: { appendChild: () => {} },
+    },
+  });
+  return { root, created };
+}
+
+test('the canvas boot script follows a stored dark theme on a light OS', () => {
+  const { root, created } = runCanvasBoot({
+    osDark: false,
+    stored: { themeMode: 'dark' },
+  });
+
+  assert.equal(root.style.colorScheme, 'dark');
+  assert.equal(root.style.backgroundColor, '#000000');
+  assert.equal(created[0].id, 'app-browser-chrome');
+  assert.match(created[0].textContent, /color-scheme:dark/);
+});
+
+test('the canvas boot script follows a stored light theme on a dark OS', () => {
+  const { root, created } = runCanvasBoot({
+    osDark: true,
+    stored: { themeMode: 'light' },
+  });
+
+  assert.equal(root.style.colorScheme, 'light');
+  assert.equal(root.style.backgroundColor, '#FDFCFF');
+  assert.match(created[0].textContent, /color-scheme:light/);
+});
+
 test('the html links the manifest and the touch icon it ships', () => {
   assert.ok(html.includes('rel="manifest" href="/manifest.webmanifest"'));
 
