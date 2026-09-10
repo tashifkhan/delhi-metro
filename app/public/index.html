@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>%WEB_TITLE%</title>
+
+    <!--
+      Installability. Expo's Metro export fills in the title, description and
+      theme colour, and writes no manifest, so the manifest link and the
+      home-screen icons are declared here by hand. This file is the template
+      the exporter prefers over its own. See `docs/pwa.md`.
+    -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!--
+      `default` rather than `black-translucent`. Translucent pins the status
+      bar text to white in every theme and lets the app draw underneath it,
+      which costs more than it buys on a screen that already has a header.
+    -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="NCR Metro" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <script>
+      (function () {
+        // `beforeinstallprompt` fires before this page's app bundle has
+        // parsed, and the event object is the only way to open the install
+        // dialog. Miss it and there is no asking for it again, so stash it
+        // for the app to pick up (see `src/hooks/usePwaInstall.ts`).
+        // Cancelling it also hides Chrome's own install bar, which leaves the
+        // app's own button as the one place that offers to install.
+        window.__ncrMetroInstallPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', function (event) {
+          event.preventDefault();
+          window.__ncrMetroInstallPrompt = event;
+          window.dispatchEvent(new Event('ncr-metro-installable'));
+        });
+
+        window.addEventListener('appinstalled', function () {
+          window.__ncrMetroInstallPrompt = null;
+        });
+
+        // Metro's dev server serves this same template, and a worker holding
+        // a dev bundle outlives the session that created it. So the dev ports
+        // skip registration. `bun run preview:web` (wrangler, port 8787)
+        // serves the real export and does register.
+        var devPorts = ['8081', '19006'];
+        if ('serviceWorker' in navigator && devPorts.indexOf(window.location.port) === -1) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function () {});
+          });
+        }
+      })();
+    </script>
+
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>
