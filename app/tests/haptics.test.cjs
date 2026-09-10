@@ -19,7 +19,7 @@ function loadPolicy(driver, now) {
   const effects = evaluate('src/hooks/hapticEffects.ts', () => {});
   return evaluate('src/hooks/useHaptics.ts', name => (name === './hapticsDriver' ? driver : effects), {
     Date: { now },
-  }).useHaptics();
+  });
 }
 
 function loadHaptics(os = 'ios', failure) {
@@ -36,7 +36,14 @@ function loadHaptics(os = 'ios', failure) {
     };
   }
   const driver = evaluate('src/hooks/hapticsDriver.ts', name => (name === 'react-native' ? native : expo));
-  return { feedback: loadPolicy(driver, () => now), calls, native, advance: ms => { now += ms; } };
+  const policy = loadPolicy(driver, () => now);
+  return {
+    feedback: policy.useHaptics(),
+    setEnabled: policy.setHapticsEnabled,
+    calls,
+    native,
+    advance: ms => { now += ms; },
+  };
 }
 
 function loadWebHaptics({ hidden = false, reduceMotion = false, failure } = {}) {
@@ -64,8 +71,10 @@ function loadWebHaptics({ hidden = false, reduceMotion = false, failure } = {}) 
     document,
     window,
   });
+  const policy = loadPolicy(driver, () => now);
   return {
-    feedback: loadPolicy(driver, () => now),
+    feedback: policy.useHaptics(),
+    setEnabled: policy.setHapticsEnabled,
     patterns,
     listeners,
     document,
@@ -75,33 +84,34 @@ function loadWebHaptics({ hidden = false, reduceMotion = false, failure } = {}) 
   };
 }
 
-test('iOS uses selection feedback and distinct navigation, commitment, and outcome patterns', () => {
-  const { feedback: h, calls, advance } = loadHaptics();
-  h.navigate(); advance(100); h.select(); advance(100); h.press(); advance(100); h.longPress(); advance(500); h.success();
-  assert.deepEqual(calls, [
-    ['impactAsync', 'Soft'],
-    ['selectionAsync'],
-    ['impactAsync', 'Medium'],
-    ['impactAsync', 'Heavy'],
-    ['notificationAsync', 'Success'],
-  ]);
-});
-
-test('Android uses native presets for every intent', () => {
-  const { feedback: h, calls, advance } = loadHaptics('android');
-  for (const act of [h.navigate, h.select, () => h.toggle(true), () => h.toggle(false), h.press, h.longPress, h.success, h.warning, h.error]) {
-    act(); advance(500);
+test('routine navigation, selection, and presses stay silent on every platform', () => {
+  for (const platform of [loadHaptics(), loadHaptics('android'), loadWebHaptics()]) {
+    for (const verb of ['navigate', 'select', 'press']) {
+      platform.feedback[verb](); platform.advance(1000);
+    }
+    assert.equal((platform.calls ?? platform.patterns).length, 0);
+    platform.feedback.success();
+    assert.equal((platform.calls ?? platform.patterns).length, 1);
   }
-  assert.deepEqual(calls.map(c => c[1]), [
-    'Clock_Tick', 'Segment_Tick', 'Toggle_On', 'Toggle_Off', 'Virtual_Key', 'Long_Press', 'Confirm', 'Reject', 'Reject',
-  ]);
-  assert.ok(calls.every(c => c[0] === 'performAndroidHapticsAsync'));
 });
 
-test('navigation never uses the tick a device is allowed to drop', () => {
-  const { feedback: h, calls } = loadHaptics('android');
-  h.navigate();
-  assert.notEqual(calls[0][1], 'Segment_Frequent_Tick');
+test('iOS uses selection ticks for switches and soft single impacts otherwise', () => {
+  const { feedback: h, calls, advance } = loadHaptics();
+  for (const act of [() => h.toggle(true), () => h.toggle(false), h.longPress, h.success, h.warning, h.error]) {
+    act(); advance(1000);
+  }
+  assert.deepEqual(calls, [
+    ['selectionAsync'], ['selectionAsync'],
+    ...Array.from({ length: 4 }, () => ['impactAsync', 'Soft']),
+  ]);
+});
+
+test('Android uses the soft system tick for retained feedback', () => {
+  const { feedback: h, calls, advance } = loadHaptics('android');
+  for (const act of [() => h.toggle(true), () => h.toggle(false), h.longPress, h.success, h.warning, h.error]) {
+    act(); advance(1000);
+  }
+  assert.deepEqual(calls, Array.from({ length: 6 }, () => ['performAndroidHapticsAsync', 'Segment_Frequent_Tick']));
 });
 
 test('background apps stay silent', () => {
@@ -113,75 +123,81 @@ test('background apps stay silent', () => {
   }
 });
 
-test('rapid taps coalesce without suppressing an immediate outcome', () => {
-  const { feedback: h, calls, advance } = loadHaptics();
-  h.select(); h.press(); advance(79); h.navigate();
+test('disabling the haptics preference silences every effect until re-enabled', () => {
+  const { feedback: h, setEnabled, calls, advance } = loadHaptics();
+  setEnabled(false);
+  for (const verb of VERBS) { h[verb](true); advance(1000); }
+  assert.equal(calls.length, 0);
+
+  setEnabled(true);
+  h.longPress();
   assert.equal(calls.length, 1);
-  advance(1); h.press(); h.error();
-  assert.equal(calls.length, 3);
-  h.error(); advance(399); h.select();
-  assert.equal(calls.length, 3);
-  advance(1); h.select();
-  assert.equal(calls.length, 4);
 });
 
-test('turning a switch off feels lighter than turning it on', () => {
+test('the haptics preference also gates the web driver', () => {
+  const web = loadWebHaptics();
+  web.setEnabled(false);
+  for (const verb of VERBS) { web.feedback[verb](true); web.advance(1000); }
+  assert.equal(web.patterns.length, 0);
+
+  web.setEnabled(true);
+  web.feedback.longPress();
+  assert.equal(web.patterns.length, 1);
+});
+
+test('rapid feedback coalesces and outcomes get a longer quiet window', () => {
   const { feedback: h, calls, advance } = loadHaptics();
-  h.toggle(true); advance(100); h.toggle(false);
-  assert.deepEqual(calls, [['impactAsync', 'Light'], ['selectionAsync']]);
+  h.toggle(true); h.longPress(); advance(249); h.toggle(false);
+  assert.equal(calls.length, 1);
+  advance(1); h.longPress(); h.error();
+  assert.equal(calls.length, 3);
+  h.error(); advance(599); h.toggle(true);
+  assert.equal(calls.length, 3);
+  advance(1); h.toggle(false);
+  assert.equal(calls.length, 4);
 });
 
 for (const failure of ['throw', 'reject']) {
   test(`native ${failure} never escapes the interaction`, async () => {
     const { feedback: h } = loadHaptics('ios', failure);
-    assert.doesNotThrow(() => h.press());
+    assert.doesNotThrow(() => h.longPress());
     await new Promise(resolve => setImmediate(resolve));
   });
 
   test(`web ${failure} never escapes the interaction`, async () => {
     const { feedback: h } = loadWebHaptics({ failure });
-    assert.doesNotThrow(() => h.press());
+    assert.doesNotThrow(() => h.longPress());
     await new Promise(resolve => setImmediate(resolve));
   });
 }
 
 test('the web covers the same vocabulary as native', () => {
   const { feedback: h, patterns, advance } = loadWebHaptics();
-  for (const verb of VERBS) { h[verb](true); advance(500); }
-  assert.equal(patterns.length, VERBS.length);
+  for (const verb of VERBS) { h[verb](true); advance(1000); }
+  assert.equal(patterns.length, VERBS.length - 3);
   assert.ok(patterns.every(pattern => Array.isArray(pattern) && pattern.length > 0));
 });
 
 test('web pulses carry weight as duration, never as a simulated amplitude', () => {
   const { feedback: h, patterns, advance } = loadWebHaptics();
-  for (const verb of VERBS) { h[verb](true); advance(500); }
+  for (const verb of VERBS) { h[verb](true); advance(1000); }
   const beats = patterns.flat();
   assert.ok(beats.every(beat => beat.intensity === 1));
   // Beyond one 16ms fallback interval a single tap starts to rattle.
-  assert.ok(beats.every(beat => beat.duration > 0 && beat.duration <= 16));
+  assert.ok(beats.every(beat => beat.duration > 0 && beat.duration <= 6));
 });
 
-test('web weight grows with intent and only outcomes get a second beat', () => {
+test('every retained web effect is a short single pulse', () => {
   const { feedback: h, patterns, advance } = loadWebHaptics();
-  for (const act of [h.navigate, h.select, () => h.toggle(false), () => h.toggle(true), h.press, h.longPress]) {
-    act(); advance(500);
+  for (const act of [() => h.toggle(false), () => h.toggle(true), h.longPress, h.success, h.warning, h.error]) {
+    act(); advance(1000);
   }
-  const taps = patterns.map(pattern => pattern.map(beat => beat.duration));
-  assert.ok(taps.every(tap => tap.length === 1));
-  const weights = taps.flat();
-  assert.deepEqual(weights, [...weights].sort((a, b) => a - b));
-
-  patterns.length = 0;
-  for (const act of [h.success, h.warning, h.error]) { act(); advance(500); }
-  assert.ok(patterns.every(pattern => pattern.length === 2 && pattern[1].delay > 0));
-  // The whole pattern has to land inside the 400ms outcome quiet window.
-  const spans = patterns.map(p => p.reduce((total, beat) => total + beat.duration + (beat.delay ?? 0), 0));
-  assert.ok(spans.every(span => span < 400));
+  assert.deepEqual(patterns.map(p => Array.from(p, beat => beat.duration)), [[4], [4], [6], [6], [6], [6]]);
 });
 
 test('a web outcome clears the tap that asked for it', () => {
   const web = loadWebHaptics();
-  web.feedback.press();
+  web.feedback.longPress();
   assert.equal(web.cancels, 0);
   web.advance(10);
   web.feedback.success();
@@ -192,14 +208,14 @@ test('a web outcome clears the tap that asked for it', () => {
 test('hidden pages and reduced motion stay silent on the web', () => {
   for (const options of [{ hidden: true }, { reduceMotion: true }]) {
     const { feedback: h, patterns, advance } = loadWebHaptics(options);
-    for (const verb of VERBS) { h[verb](true); advance(500); }
+    for (const verb of VERBS) { h[verb](true); advance(1000); }
     assert.equal(patterns.length, 0);
   }
 });
 
 test('leaving the tab stops a web pattern mid-flight', () => {
   const web = loadWebHaptics();
-  web.feedback.press();
+  web.feedback.longPress();
   web.document.hidden = true;
   web.listeners.visibilitychange();
   assert.equal(web.cancels, 1);
@@ -207,7 +223,7 @@ test('leaving the tab stops a web pattern mid-flight', () => {
 
 test('the web engine never shows its own switch or plays audible clicks', () => {
   const web = loadWebHaptics();
-  web.feedback.press();
+  web.feedback.longPress();
   // Debug adds an audible click track, and the switch is the library's own
   // floating control; both belong to its demo, not to a shipped app.
   assert.equal(web.options.debug, false);
@@ -259,7 +275,7 @@ test('already selected options stay silent but still allow their action', () => 
   assert.equal(actions, 1);
 });
 
-test('navigation gets one soft tap and handler-owned feedback opts out', () => {
+test('touchables forward intent and handler-owned feedback opts out', () => {
   for (const haptic of [undefined, false, 'press']) {
     const { ripple, pulses } = renderTouchable({ haptic, onPress: () => {} });
     ripple.props.onPress();
@@ -267,7 +283,7 @@ test('navigation gets one soft tap and handler-owned feedback opts out', () => {
   }
 });
 
-test('a long press answers with the heaviest tap unless the handler owns feedback', () => {
+test('a long press requests feedback unless the handler owns it', () => {
   let actions = 0;
   for (const haptic of [undefined, false]) {
     const { ripple, pulses } = renderTouchable({ haptic, onPress: () => {}, onLongPress: () => actions++ });
