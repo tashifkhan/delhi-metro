@@ -9,7 +9,7 @@ import { apiClient } from './src/api/client';
 import { queryClient } from './src/api/queryClient';
 import { DIProvider } from './src/di/DIContext';
 import { createServiceContainer } from './src/di/container';
-import { ThemeProvider, useAppTheme, useFocusRing } from './src/theme';
+import { ThemeProvider, useAppTheme, useFocusRing, useBrowserChrome } from './src/theme';
 import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
 import { DesktopRoot } from './src/navigation/DesktopRoot';
@@ -40,6 +40,7 @@ function AppInner() {
   const { paperTheme, navTheme, isDark, settingsLoaded } = useAppTheme();
 
   useFocusRing(paperTheme.colors.primary);
+  useBrowserChrome(isDark, paperTheme.colors.background, settingsLoaded);
 
   return (
     <PaperProvider theme={paperTheme}>

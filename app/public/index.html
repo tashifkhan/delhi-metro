@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="color-scheme" content="light dark" />
     <title>%WEB_TITLE%</title>
 
     <!--
@@ -31,6 +32,29 @@
       body {
         height: 100%;
       }
+      /*
+        iOS Safari/Chrome paint the home-indicator gap and overscroll from
+        the document canvas. Without an explicit colour that canvas is white,
+        which shows as a strip under a dark app. `color-scheme` is what the
+        UA uses for its own chrome; the background is what shows through.
+      */
+      html {
+        color-scheme: light;
+        background-color: #FDFCFF;
+      }
+      html,
+      body {
+        background-color: #FDFCFF;
+      }
+      @media (prefers-color-scheme: dark) {
+        html {
+          color-scheme: dark;
+        }
+        html,
+        body {
+          background-color: #000;
+        }
+      }
       /* These styles disable body scrolling if you are using <ScrollView> */
       body {
         overflow: hidden;
@@ -42,6 +66,34 @@
         flex: 1;
       }
     </style>
+    <script>
+      (function () {
+        // Paint the canvas before the bundle parses, using the stored theme
+        // if there is one. `useBrowserChrome` takes over after settings load
+        // (same element id) so a pinned dark theme on a light OS does not
+        // flash white, and the default (system) scheme does not clobber it
+        // for a frame. Key: `src/storage/appSettingsRepository.web.ts`.
+        var dark = false;
+        try {
+          dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var raw = localStorage.getItem('dmrc:appSettings');
+          if (raw) {
+            var settings = JSON.parse(raw);
+            if (settings.themeMode === 'dark') dark = true;
+            else if (settings.themeMode === 'light') dark = false;
+          }
+        } catch (e) {}
+        var bg = dark ? '#000000' : '#FDFCFF';
+        var scheme = dark ? 'dark' : 'light';
+        document.documentElement.style.colorScheme = scheme;
+        document.documentElement.style.backgroundColor = bg;
+        var style = document.createElement('style');
+        style.id = 'app-browser-chrome';
+        style.textContent =
+          'html,body{background-color:' + bg + ';color-scheme:' + scheme + ';}';
+        document.head.appendChild(style);
+      })();
+    </script>
   </head>
 
   <body>
