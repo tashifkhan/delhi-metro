@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +19,7 @@ import { NotificationCard } from '../components/NotificationCard';
 import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { Card } from '../components/Card';
+import { GetTheApp } from '../components/web/GetTheApp';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
@@ -532,6 +533,15 @@ export function HomeScreen() {
           {renderAlerts()}
         </>
       )}
+
+      {/* Narrow web viewports get no sidebar, so the install and download
+          links sit at the foot of the screen most visitors land on. Desktop
+          has them in the rail already, and native is the app. */}
+      {Platform.OS === 'web' && !isDesktop ? (
+        <Reveal index={5}>
+          <GetTheApp />
+        </Reveal>
+      ) : null}
 
       <StationPicker
         visible={fromPicker.visible}

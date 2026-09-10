@@ -7,6 +7,7 @@ import { Card } from '../components/Card';
 import { SectionHeader } from '../components/SectionHeader';
 import { Touchable } from '../components/Touchable';
 import { OperatorMark } from '../components/OperatorMark';
+import { GetTheApp } from '../components/web/GetTheApp';
 import { apiClient } from '../api/client';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis } from '../theme';
@@ -142,6 +143,8 @@ export function AboutScreen() {
           </Text>
         </View>
       </Card>
+
+      <GetTheApp />
 
       <View style={styles.section}>
         <SectionHeader title="Where the data comes from" icon="git-network-outline" />

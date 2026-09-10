@@ -4,6 +4,8 @@ import { Text, useTheme } from 'react-native-paper';
 
 import type { RootTabParamList } from '../../navigation/types';
 import { Touchable } from '../Touchable';
+import { openAndroidDownload } from './GetTheApp';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { emphasis, radius, spacing } from '../../theme';
 
 export type DesktopTab = keyof RootTabParamList;
@@ -33,6 +35,7 @@ interface Props {
  */
 export function DesktopShell({ active, onSelect }: Props) {
   const theme = useTheme();
+  const install = usePwaInstall();
 
   return (
     <View
@@ -102,6 +105,66 @@ export function DesktopShell({ active, onSelect }: Props) {
           );
         })}
       </View>
+
+      {/* The rail has room the mobile layout does not, so installing and the
+          Android build sit at its foot rather than only inside About. The
+          install row shows only while the browser has a prompt to open, and
+          goes once the app is installed. */}
+      <View style={styles.footer}>
+        {install.canInstall ? (
+          <Touchable
+            radius={radius.card}
+            haptic="press"
+            onPress={install.install}
+            accessibilityLabel="Install this app"
+            accessibilityHint="Opens the browser's install dialog"
+            style={{ backgroundColor: theme.colors.primary }}
+          >
+            <View style={styles.footerRow}>
+              <Ionicons name="add-circle-outline" size={18} color={theme.colors.onPrimary} />
+              <Text
+                variant="labelLarge"
+                style={[emphasis.heavy, { color: theme.colors.onPrimary }]}
+              >
+                Install this app
+              </Text>
+            </View>
+          </Touchable>
+        ) : null}
+        <Touchable
+          radius={radius.card}
+          haptic="press"
+          onPress={openAndroidDownload}
+          accessibilityRole="link"
+          accessibilityLabel="Download for Android"
+          accessibilityHint="Opens the latest release on tashif.codes"
+          style={{ backgroundColor: theme.colors.secondaryContainer }}
+        >
+          <View style={styles.footerRow}>
+            <Ionicons
+              name="logo-android"
+              size={18}
+              color={theme.colors.onSecondaryContainer}
+            />
+            <Text
+              variant="labelLarge"
+              style={[emphasis.heavy, { color: theme.colors.onSecondaryContainer }]}
+            >
+              Get it on Android
+            </Text>
+          </View>
+        </Touchable>
+        <View style={styles.footerNote}>
+          <Ionicons name="logo-apple" size={13} color={theme.colors.onSurfaceVariant} />
+          {/* Not the usual tracked capitals: they would print "IOS". */}
+          <Text
+            variant="labelSmall"
+            style={[emphasis.medium, { color: theme.colors.onSurfaceVariant }]}
+          >
+            iOS coming soon
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -141,5 +204,22 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.base,
     paddingVertical: 13,
+  },
+  footer: {
+    gap: spacing.sm,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.base,
+    paddingVertical: spacing.md,
+  },
+  footerNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
 });
