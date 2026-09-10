@@ -79,6 +79,10 @@ Modules with no meaningful web behaviour have `.web.ts` variants: the storage
 repositories persist to `localStorage` instead of SQLite, and the map saves
 through a browser download instead of `expo-media-library`.
 
+The build is also an installable PWA. The manifest, service worker and icons
+live in `public/`, and the install and download rows in
+`src/components/web/GetTheApp.tsx`. See `docs/pwa.md`.
+
 ## Build and release
 
 This project includes an EAS profile for APK release:
