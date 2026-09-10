@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Installable web build: manifest, icons, service worker, and a row that opens the browser's own install prompt. On iOS, where there is no such prompt, the same row spells out the Safari share-sheet steps.
+- Android download and iOS "coming soon" rows on the web, in About, at the foot of the mobile home screen, and in the desktop sidebar.
+- Offline web support for the app shell and its bundles. The worker never answers a request for live metro data from the cache.
+
 ## [1.5.2] — 2026-09-08
 
 ### Added
