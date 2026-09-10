@@ -8,6 +8,7 @@ export interface AppSettings {
   paletteId: string;
   amoledDark: boolean;
   highContrast: boolean;
+  hapticsEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   paletteId: DEFAULT_PALETTE_ID,
   amoledDark: false,
   highContrast: false,
+  hapticsEnabled: true,
 };
 
 const STORAGE_KEY = 'dmrc:appSettings';
@@ -31,6 +33,9 @@ function decode(stored: Partial<AppSettings> | null): AppSettings {
     paletteId: stored.paletteId || DEFAULT_SETTINGS.paletteId,
     amoledDark: stored.amoledDark === true,
     highContrast: stored.highContrast === true,
+    // Absent key means settings written before this option existed; haptics
+    // were on then, so they stay on.
+    hapticsEnabled: stored.hapticsEnabled !== false,
   };
 }
 

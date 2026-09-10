@@ -1,39 +1,18 @@
 import { WebHaptics, type HapticInput } from 'web-haptics';
 import type { HapticEffect } from './hapticEffects';
 
-/**
- * Browsers expose duration, not amplitude. `web-haptics` offers an `intensity`
- * below 1, but it can only fake one by chopping the pulse into on/off slices,
- * which reads as a buzz rather than as a lighter tap. So every effect runs at
- * full intensity and carries its weight in duration alone.
- *
- * Durations stay at or under 16ms per beat. Where `navigator.vibrate` is
- * missing the library falls back to toggling a hidden switch element, which
- * Safari answers with a system tap, and it repeats that toggle every 16ms for
- * as long as a beat lasts. Staying inside one interval keeps a tap feeling
- * like a tap instead of a rattle.
- */
+// Short single pulses avoid repeated browser fallback taps. Browsers control
+// motor amplitude, so reduce duration rather than simulating it with a buzz.
 const patterns: Record<HapticEffect, HapticInput> = {
-  navigate: [{ duration: 6, intensity: 1 }],
-  select: [{ duration: 8, intensity: 1 }],
-  toggleOff: [{ duration: 8, intensity: 1 }],
-  toggleOn: [{ duration: 10, intensity: 1 }],
-  press: [{ duration: 12, intensity: 1 }],
-  longPress: [{ duration: 16, intensity: 1 }],
-  // Outcomes get a second beat, the only way a browser can say more than
-  // "something happened": success rises, warning falls, failure repeats.
-  success: [
-    { duration: 8, intensity: 1 },
-    { delay: 70, duration: 14, intensity: 1 },
-  ],
-  warning: [
-    { duration: 14, intensity: 1 },
-    { delay: 90, duration: 10, intensity: 1 },
-  ],
-  error: [
-    { duration: 14, intensity: 1 },
-    { delay: 60, duration: 14, intensity: 1 },
-  ],
+  navigate: [{ duration: 4, intensity: 1 }],
+  select: [{ duration: 4, intensity: 1 }],
+  toggleOff: [{ duration: 4, intensity: 1 }],
+  toggleOn: [{ duration: 4, intensity: 1 }],
+  press: [{ duration: 4, intensity: 1 }],
+  longPress: [{ duration: 6, intensity: 1 }],
+  success: [{ duration: 6, intensity: 1 }],
+  warning: [{ duration: 6, intensity: 1 }],
+  error: [{ duration: 6, intensity: 1 }],
 };
 
 let engine: WebHaptics | undefined;

@@ -1,7 +1,7 @@
 import { isOutcome, type HapticEffect } from './hapticEffects';
 import { cancel, play, ready } from './hapticsDriver';
 
-/** Feedback grows with intent: navigation, selection, commitment, outcome. */
+/** Routine taps stay silent; switches, long presses, and outcomes get light feedback. */
 export interface HapticFeedback {
   navigate: () => void;
   select: () => void;
@@ -19,14 +19,25 @@ export interface HapticFeedback {
 let lastFeedbackAt = -Infinity;
 let quietUntil = -Infinity;
 
+// The user's own switch. On by default, and toggled from the Appearance screen
+// via `setHapticsEnabled`, so feedback stays a policy decision and no control
+// has to know about the preference.
+let enabled = true;
+
+export function setHapticsEnabled(next: boolean) {
+  enabled = next;
+}
+
 function emit(effect: HapticEffect) {
-  if (!ready()) return;
+  // Keep routine interactions silent across every screen and platform.
+  if (effect === 'navigate' || effect === 'select' || effect === 'press') return;
+  if (!enabled || !ready()) return;
   const now = Date.now();
   const outcome = isOutcome(effect);
-  if (now < quietUntil || (!outcome && now - lastFeedbackAt < 80)) return;
+  if (now < quietUntil || (!outcome && now - lastFeedbackAt < 250)) return;
   lastFeedbackAt = now;
   if (outcome) {
-    quietUntil = now + 400;
+    quietUntil = now + 600;
     // Clear the tap that triggered the action so its tail cannot blur the
     // first beat of the answer.
     cancel();

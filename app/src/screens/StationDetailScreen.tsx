@@ -52,7 +52,7 @@ function Section({
         // Square ripple: the header is the top slice of the card, and the
         // parent Surface already clips the rounded corners.
         radius={0}
-        haptic="select"
+        haptic={false}
         onPress={handleToggle}
         accessibilityLabel={title}
         accessibilityState={{ expanded }}

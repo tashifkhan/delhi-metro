@@ -281,6 +281,13 @@ export function AppearanceScreen() {
             value={settings.highContrast}
             onChange={(highContrast) => updateSettings({ highContrast })}
           />
+          <ToggleCard
+            icon="pulse"
+            title="Haptics"
+            subtitle="Light feedback for switches and results"
+            value={settings.hapticsEnabled}
+            onChange={(hapticsEnabled) => updateSettings({ hapticsEnabled })}
+          />
         </View>
       </View>
     </ScrollView>

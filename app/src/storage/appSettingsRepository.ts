@@ -8,6 +8,7 @@ export interface AppSettings {
   paletteId: string;
   amoledDark: boolean;
   highContrast: boolean;
+  hapticsEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -15,6 +16,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   paletteId: DEFAULT_PALETTE_ID,
   amoledDark: false,
   highContrast: false,
+  hapticsEnabled: true,
 };
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
@@ -42,6 +44,9 @@ function decode(rows: SettingRow[]): AppSettings {
     paletteId: paletteId || DEFAULT_SETTINGS.paletteId,
     amoledDark: map.get('amoledDark') === 'true',
     highContrast: map.get('highContrast') === 'true',
+    // Absent key means a settings row written before this option existed;
+    // haptics were on then, so they stay on.
+    hapticsEnabled: map.get('hapticsEnabled') !== 'false',
   };
 }
 
@@ -64,6 +69,7 @@ export const appSettingsRepository = {
       ['paletteId', settings.paletteId],
       ['amoledDark', String(settings.amoledDark)],
       ['highContrast', String(settings.highContrast)],
+      ['hapticsEnabled', String(settings.hapticsEnabled)],
     ];
 
     await db.withTransactionAsync(async () => {

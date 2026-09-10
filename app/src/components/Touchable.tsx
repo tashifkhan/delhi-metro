@@ -28,7 +28,7 @@ interface Props {
   scaleOnPress?: boolean;
   /** Overrides the default 12% on-surface state layer. */
   rippleColor?: string;
-  /** Soft navigation by default; state changes and primary actions opt into more weight. */
+  /** Interaction intent; the shared policy silences routine taps. */
   haptic?: 'navigate' | 'select' | 'press' | false;
   accessibilityLabel?: string;
   accessibilityHint?: string;
@@ -91,9 +91,8 @@ export function Touchable({
 
   const handleLongPress = useCallback(() => {
     if (disabled || !onLongPress) return;
-    // A long press that answers with nothing reads as a press that failed to
-    // register, so it gets the heaviest tap regardless of the tap-level
-    // choice. `haptic={false}` still hands feedback to the caller.
+    // Confirm a recognized long press with light feedback.
+    // `haptic={false}` hands feedback to the caller.
     if (haptic) haptics.longPress();
     onLongPress();
   }, [disabled, haptic, haptics, onLongPress]);

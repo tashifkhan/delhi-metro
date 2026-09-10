@@ -37,6 +37,7 @@ import {
   DEFAULT_SETTINGS,
   type AppSettings,
 } from '../storage/appSettingsRepository';
+import { setHapticsEnabled } from '../hooks/useHaptics';
 
 const IS_ANDROID_12_PLUS =
   Platform.OS === 'android' &&
@@ -202,6 +203,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       active = false;
     };
   }, []);
+
+  // Haptics are a preference, not a theme, but they travel with the rest of
+  // the stored settings and feed the shared policy through this side channel.
+  // Applied after the optimistic write so the toggle responds immediately.
+  useEffect(() => {
+    setHapticsEnabled(settings.hapticsEnabled);
+  }, [settings.hapticsEnabled]);
 
   const updateSettings = useCallback((patch: Partial<AppSettings>) => {
     // Apply optimistically so the UI repaints on tap; the write is a
