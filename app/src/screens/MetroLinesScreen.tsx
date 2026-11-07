@@ -2,11 +2,12 @@ import { useHaptics } from '../hooks/useHaptics';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import { useMetroLinesQuery } from '../hooks';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { LoadingState } from '../components/LoadingState';
+import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
 import { Card } from '../components/Card';
@@ -108,12 +109,15 @@ function LineCard({ line }: { line: MetroLine }) {
 
 export function MetroLinesScreen() {
   const haptics = useHaptics();
-  const { data, isLoading, isError, refetch, isRefetching } = useMetroLinesQuery();
+  const { data, isLoading, isError, isOfflineCopy, refetch, isRefetching } =
+    useMetroLinesQuery();
   const theme = useTheme();
   const isDesktop = useIsDesktop();
 
   if (isLoading) return <LoadingState message="Loading metro lines..." />;
-  if (isError) return <ErrorState message="Could not load metro lines" onRetry={refetch} />;
+  if (isError && !data) {
+    return <ErrorState message="Could not load metro lines" onRetry={refetch} />;
+  }
 
   // On desktop the centred column is wide enough for two cards per row.
   if (isDesktop) {
@@ -132,6 +136,11 @@ export function MetroLinesScreen() {
         contentContainerStyle={styles.list}
         refreshing={isRefetching}
         onRefresh={() => { haptics.select(); void refetch(); }}
+        ListHeaderComponent={
+          isOfflineCopy ? (
+            <OfflineNote inset message="Saved lines. Service status may be out of date." />
+          ) : null
+        }
       />
     );
   }
@@ -145,6 +154,11 @@ export function MetroLinesScreen() {
       contentContainerStyle={styles.list}
       refreshing={isRefetching}
       onRefresh={() => { haptics.select(); void refetch(); }}
+      ListHeaderComponent={
+        isOfflineCopy ? (
+            <OfflineNote inset message="Saved lines. Service status may be out of date." />
+          ) : null
+      }
     />
   );
 }

@@ -3,10 +3,11 @@ import { LayoutAnimation, ScrollView, StyleSheet, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Divider, Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useStationDetailQuery } from '../hooks';
 import { LineBadge } from '../components/LineBadge';
 import { LoadingState } from '../components/LoadingState';
+import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
 import { Card } from '../components/Card';
@@ -202,10 +203,13 @@ export function StationDetailScreen() {
   const { stationCode } = route.params;
   const theme = useTheme();
   const { semantic, fills } = useAppTheme();
-  const { data: station, isLoading, isError, refetch } = useStationDetailQuery(stationCode);
+  const { data: station, isLoading, isError, isOfflineCopy, refetch } =
+    useStationDetailQuery(stationCode);
 
   if (isLoading) return <LoadingState message="Loading station details..." />;
-  if (isError) return <ErrorState message="Could not load station details" onRetry={refetch} />;
+  if (isError && !station) {
+    return <ErrorState message="Could not load station details" onRetry={refetch} />;
+  }
   if (!station) return <ErrorState message="Station not found" />;
 
   const lineColor = station.metro_lines?.[0]?.primary_color_code ?? theme.colors.primary;
@@ -216,6 +220,9 @@ export function StationDetailScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {isOfflineCopy ? (
+        <OfflineNote message="Saved station details. Gates and facilities may have changed." />
+      ) : null}
       {/* Hero */}
       <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>
         <View style={styles.heroTop}>

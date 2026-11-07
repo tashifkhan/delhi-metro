@@ -5,6 +5,7 @@ import { useNotificationsQuery } from '../hooks';
 import { NotificationCard } from '../components/NotificationCard';
 import { LineStatusCarousel } from '../components/LineStatusCarousel';
 import { LoadingState } from '../components/LoadingState';
+import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
 import { SectionHeader } from '../components/SectionHeader';
@@ -15,13 +16,20 @@ export function NotificationsScreen() {
   const theme = useTheme();
   const haptics = useHaptics();
   const { network } = useMetroNetwork();
-  const { data, isLoading, isError, refetch, isRefetching } = useNotificationsQuery();
+  const { data, isLoading, isError, isOfflineCopy, refetch, isRefetching } =
+    useNotificationsQuery();
 
   if (isLoading) return <LoadingState message="Loading alerts..." />;
-  if (isError) return <ErrorState message="Could not load alerts" onRetry={refetch} />;
+  if (isError && !data) return <ErrorState message="Could not load alerts" onRetry={refetch} />;
 
   const ListHeader = (
     <View>
+      {isOfflineCopy ? (
+        <OfflineNote
+          inset
+          message="Saved notices. Newer ones will not appear until you are back online."
+        />
+      ) : null}
       <LineStatusCarousel />
       <SectionHeader
         title={network === 'nmrc' ? 'NMRC Press Releases' : 'Passenger Notices'}

@@ -5,6 +5,7 @@ import type {
   PopularRouteEntry,
   RouteStrategy,
 } from '../types';
+import type { StoredJourney } from './storedJourney';
 
 const STORAGE_KEY = 'dmrc:popularRoutes';
 
@@ -77,12 +78,12 @@ export const popularRoutesRepository = {
     toStationCode: string,
     strategy: RouteStrategy,
     scope: JourneyScope = 'dmrc',
-  ): Promise<PlannedJourney | null> {
+  ): Promise<StoredJourney | null> {
     const stored = readAll()[buildRouteKey(fromStationCode, toStationCode, strategy, scope)];
     if (!stored || !isPlannedJourney(stored.plan)) {
       return null;
     }
-    return stored.plan;
+    return { plan: stored.plan, savedAt: stored.lastFetchedAt };
   },
 
   /**

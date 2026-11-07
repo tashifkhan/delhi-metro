@@ -45,8 +45,10 @@ one caches by what a response is worth offline.
   are content-hashed, so a hit is always the right file.
 - Navigations go to the network first and fall back to the cached shell. Every
   client-side route is the same page, so one cached copy answers all of them.
-- `/api/*` is never cached and never intercepted. A stale fare or a stale
-  service alert in front of someone at a gate is worse than an error.
+- `/api/*` is never cached and never intercepted. The app keeps its own copy
+  of the catalogs and the journeys it already planned, and says on screen
+  when it is showing that copy. A cached response here would arrive with a
+  success status, and the app would present it as live.
 
 The template skips registration on Metro's dev ports (8081, 19006), because a
 worker holding a dev bundle outlives the session that created it.

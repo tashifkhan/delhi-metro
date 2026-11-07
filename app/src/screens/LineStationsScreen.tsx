@@ -2,10 +2,11 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import { useStationsByLineQuery } from '../hooks';
 import { LoadingState } from '../components/LoadingState';
+import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
 import { Touchable } from '../components/Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
@@ -129,10 +130,10 @@ export function LineStationsScreen() {
   const route = useRoute<Route>();
   const theme = useTheme();
   const { lineCode, lineColor } = route.params;
-  const { data, isLoading, isError, refetch } = useStationsByLineQuery(lineCode);
+  const { data, isLoading, isError, isOfflineCopy, refetch } = useStationsByLineQuery(lineCode);
 
   if (isLoading) return <LoadingState message="Loading stations..." />;
-  if (isError) return <ErrorState message="Could not load stations" onRetry={refetch} />;
+  if (isError && !data) return <ErrorState message="Could not load stations" onRetry={refetch} />;
 
   const total = data?.length ?? 0;
 
@@ -143,13 +144,20 @@ export function LineStationsScreen() {
       style={{ backgroundColor: theme.colors.background }}
       contentContainerStyle={styles.list}
       ListHeaderComponent={
-        total > 0 ? (
-          <Text
-            variant="labelMedium"
-            style={[styles.count, { color: theme.colors.onSurfaceVariant }]}
-          >
-            {total} stations
-          </Text>
+        total > 0 || isOfflineCopy ? (
+          <View>
+            {isOfflineCopy ? (
+              <OfflineNote inset message="Saved station list for this line." />
+            ) : null}
+            {total > 0 ? (
+              <Text
+                variant="labelMedium"
+                style={[styles.count, { color: theme.colors.onSurfaceVariant }]}
+              >
+                {total} stations
+              </Text>
+            ) : null}
+          </View>
         ) : null
       }
       renderItem={({ item, index }) => (

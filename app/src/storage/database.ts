@@ -25,6 +25,11 @@ async function openDb(): Promise<SQLite.SQLiteDatabase> {
       key TEXT PRIMARY KEY NOT NULL,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS offline_documents (
+      cache_key TEXT PRIMARY KEY NOT NULL,
+      payload_json TEXT NOT NULL,
+      saved_at INTEGER NOT NULL
+    );
   `);
   return db;
 }

@@ -2,7 +2,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Linking, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { ActivityIndicator, Button, Divider, Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -242,7 +242,7 @@ export const NotificationCard = memo(function NotificationCard({ notification }:
                 </Text>
               </View>
             ) : null}
-            {pageSlug && detailQuery.isError ? (
+            {pageSlug && detailQuery.isError && !detailQuery.data ? (
               <View style={styles.detailState}>
                 <Text
                   variant="bodySmall"
