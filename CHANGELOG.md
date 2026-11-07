@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] — 2026-11-08
+
+### Added
+
+- Lines, line station lists, station pages, alerts, and the journeys already planned stay available when the network fails. The screen says when it is showing a saved copy.
+- The Delhi network map still opens with no signal. It ships inside the app.
+
+### Changed
+
+- The web build ships one icon font instead of nineteen, and the Delhi map is a WebP. The exported site is about 4.2 MB, down from about 10 MB.
+- Station search keeps a prepared index and filters it on each keystroke. The saved station list no longer stores facility details it never shows.
+- Catalog JSON is cached at the edge for five minutes. Journey plans are not.
+
 ## [1.6.0] — 2026-09-11
 
 ### Added
@@ -199,7 +212,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.6.0...v1.7.0
 [1.5.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.4.1...v1.5.0
