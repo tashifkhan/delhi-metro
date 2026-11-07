@@ -152,6 +152,18 @@ export default {
         headers: new Headers(upstream.headers),
       });
 
+      // Station lists, line lists and map metadata change rarely and the app
+      // already keeps its own copy. A short shared cache keeps a cold visit
+      // from waiting on the origin for the same JSON the last visitor fetched.
+      if (
+        request.method === 'GET' &&
+        response.ok &&
+        response.headers.get('content-type')?.includes('application/json') &&
+        !pathname.includes('/journeys/')
+      ) {
+        response.headers.set('Cache-Control', 'public, max-age=60, s-maxage=300');
+      }
+
       // Only the documentation pages carry links to fix. Endpoint responses are
       // JSON or map images and must not be parsed as HTML.
       const isDocument = response.headers.get('content-type')?.includes('text/html') ?? false;

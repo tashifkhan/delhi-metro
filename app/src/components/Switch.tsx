@@ -1,7 +1,7 @@
 import { useHaptics } from '../hooks/useHaptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from 'react-native-paper';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spring } from '../theme/motion';

@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LineBadge } from './LineBadge';
 import { OperatorMark } from './OperatorMark';
 import { Touchable } from './Touchable';
@@ -29,7 +30,7 @@ interface Props {
   network?: MetroNetwork;
 }
 
-export function StationCard({
+export const StationCard = memo(function StationCard({
   station,
   onPress,
   showChevron = true,
@@ -135,7 +136,7 @@ export function StationCard({
       </Card>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrapper: {

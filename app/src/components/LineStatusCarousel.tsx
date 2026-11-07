@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Animated, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Card } from './Card';
 import { useNetworkLinesQuery } from '../hooks';
 import { useAppTheme } from '../theme/ThemeContext';

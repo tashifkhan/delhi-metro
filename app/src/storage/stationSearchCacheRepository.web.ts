@@ -1,4 +1,5 @@
 import { readJson, writeJson } from './webStore';
+import { asSearchResult, toStoredStation, type StoredStation } from './stationCatalog';
 import type { StationSearchResult } from '../types';
 import type { MetroNetwork } from '../network';
 
@@ -11,10 +12,11 @@ export const stationSearchCacheRepository = {
     stations: StationSearchResult[],
     network: MetroNetwork = 'dmrc',
   ): Promise<void> {
-    writeJson(stationsCacheKey(network), stations);
+    writeJson(stationsCacheKey(network), stations.map(toStoredStation));
   },
 
   async getStations(network: MetroNetwork = 'dmrc'): Promise<StationSearchResult[] | null> {
-    return readJson<StationSearchResult[]>(stationsCacheKey(network));
+    const stored = readJson<StoredStation[]>(stationsCacheKey(network));
+    return stored?.map(asSearchResult) ?? null;
   },
 };

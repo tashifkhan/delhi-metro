@@ -40,7 +40,12 @@
       "display": "standalone"
     },
     "plugins": [
-      "expo-sqlite",
+      [
+        "expo-sqlite",
+        {
+          "enableFTS": false
+        }
+      ],
       [
         "expo-media-library",
         {

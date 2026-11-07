@@ -6,7 +6,7 @@ import { IconButton, Searchbar, Text, useTheme } from 'react-native-paper';
 import { StationCard } from './StationCard';
 import { StationListSkeleton } from './StationListSkeleton';
 import { EmptyState } from './EmptyState';
-import { useDebounce, useStationSearchQuery } from '../hooks';
+import { useStationSearchQuery } from '../hooks';
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis } from '../theme';
@@ -27,8 +27,9 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
   const insets = useSafeAreaInsets();
   const isDesktop = useIsDesktop();
   const [searchText, setSearchText] = useState('');
-  const debouncedQuery = useDebounce(searchText, 300);
-  const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
+  // Filtering runs against the catalog already in memory, so waiting out a
+  // debounce only makes the list lag behind the keys.
+  const { data: results, isLoading } = useStationSearchQuery(searchText);
 
   const handleSelect = (station: StationSearchResult) => {
     onSelect({ code: station.station_code, name: station.station_name });
@@ -108,8 +109,8 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
               <EmptyState
                 title="No stations found"
                 subtitle={
-                  debouncedQuery.trim()
-                    ? `Nothing matches "${debouncedQuery.trim()}"`
+                  searchText.trim()
+                    ? `Nothing matches "${searchText.trim()}"`
                     : 'Try a different station name or code'
                 }
                 icon="search-outline"

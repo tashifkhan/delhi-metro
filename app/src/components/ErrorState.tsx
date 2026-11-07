@@ -1,7 +1,7 @@
 import { useHaptics } from '../hooks/useHaptics';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { spacing, radius, emphasis } from '../theme';
 
 interface Props {
