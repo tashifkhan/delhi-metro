@@ -4,6 +4,7 @@
     "strict": true
   },
   "exclude": [
+    "dist",
     "worker"
   ]
 }

@@ -4,7 +4,7 @@ import { Animated, PanResponder, ScrollView, StyleSheet, View } from 'react-nati
 import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import { useJourneyPlanCachedQuery, useMetroLinesQuery, useStationSearchQuery } from '../hooks';
 import { StrategyToggle } from '../components/StrategyToggle';
@@ -13,6 +13,7 @@ import { RouteSegmentView } from '../components/RouteSegmentView';
 import { TransferSegmentView } from '../components/TransferSegmentView';
 import { FirstLastTrainCard } from '../components/FirstLastTrainCard';
 import { LoadingState } from '../components/LoadingState';
+import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
 import { StationPicker } from '../components/StationPicker';
 import { Touchable } from '../components/Touchable';
@@ -77,7 +78,8 @@ export function JourneyResultsScreen() {
     [editing, navigation, fromCode, toCode, handleSwapStations],
   );
 
-  const { data: plan, isPending, isError, isPlaceholderData, refetch } = useJourneyPlanCachedQuery(
+  const { data: plan, isPending, isError, isPlaceholderData, savedAt, refetch } =
+    useJourneyPlanCachedQuery(
     fromCode,
     toCode,
     strategy,
@@ -169,6 +171,15 @@ export function JourneyResultsScreen() {
     plan.interchanges.length,
     Math.max(0, rideCount - 1),
   );
+  const savedLabel = savedAt
+    ? `Saved plan from ${new Date(savedAt).toLocaleString(undefined, {
+        day: 'numeric',
+        month: 'short',
+        hour: 'numeric',
+        minute: '2-digit',
+      })}. Fares may have changed.`
+    : 'Saved plan. Fares may have changed.';
+
   const sourceLabel =
     plan.source === 'combined'
       ? 'Delhi Metro and Noida Metro'
@@ -261,6 +272,7 @@ export function JourneyResultsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        {savedAt !== null && !isPlaceholderData ? <OfflineNote message={savedLabel} /> : null}
         {/* Journey hero */}
         <Reveal index={0} replayOnFocus={false}>
         <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>

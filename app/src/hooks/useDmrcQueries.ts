@@ -1,7 +1,14 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import {
+  hashKey,
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+  type QueryFunctionContext,
+} from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
 
 import { useDI } from '../di/DIContext';
+import { catalogStaleTime, type Cached } from '../storage/catalogCache';
 import type {
   JourneyScope,
   MetroNetwork,
@@ -12,6 +19,57 @@ import { queryKeys } from './queryKeys';
 import { useMetroNetwork } from '../network';
 
 const NON_ALPHANUMERIC_REGEX = /[^A-Z0-9]/g;
+
+/**
+ * Run a catalog query and hand screens the payload, not the cache envelope.
+ *
+ * `isOfflineCopy` is true only when the payload was served from storage
+ * because the network failed. Screens use it to say the copy may be old.
+ */
+function useCachedQuery<T>(
+  options: Omit<Parameters<typeof useQuery<Cached<T>>>[0], 'queryFn'> & {
+    /** Read the copy already on disk so the screen paints before the network answers. */
+    readCache: () => Promise<Cached<T> | null>;
+    /** Loads the catalog. Receives the copy already on screen, if there is one. */
+    load: (shown: Cached<T> | undefined) => Promise<Cached<T>>;
+  },
+) {
+  const { readCache, load, queryKey, ...queryOptions } = options;
+  const client = useQueryClient();
+  const key = hashKey(queryKey);
+
+  // The disk read is async, and `initialData` is only consulted when a query
+  // is first created, which is before this read resolves. Set the data once
+  // it arrives, but never over a response that landed in the meantime.
+  useEffect(() => {
+    let cancelled = false;
+    void readCache().then((stored) => {
+      if (cancelled || !stored) return;
+      if (client.getQueryData(queryKey) !== undefined) return;
+      client.setQueryData<Cached<T>>(queryKey, stored, { updatedAt: stored.savedAt });
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `readCache` closes over the arguments of this render, and the effect
+    // re-runs exactly when those arguments change the key.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client, key]);
+
+  const query = useQuery<Cached<T>>({
+    ...queryOptions,
+    queryKey,
+    queryFn: (context: QueryFunctionContext) =>
+      load(context.client.getQueryData<Cached<T>>(context.queryKey)),
+    staleTime: catalogStaleTime,
+  });
+
+  return {
+    ...query,
+    data: query.data?.data,
+    isOfflineCopy: query.data?.fromCache === true,
+  };
+}
 
 function normalizeForFuzzyMatch(value: string): string {
   return value.toUpperCase().replace(NON_ALPHANUMERIC_REGEX, '');
@@ -89,17 +147,12 @@ function computeSubsequenceScore(query: string, target: string): number | null {
   return score >= 45 ? score : null;
 }
 
-function computeTypoScore(query: string, value: string): number | null {
+function computeTypoScore(query: string, tokens: readonly string[]): number | null {
   if (query.length < 4) {
     return null;
   }
 
   const maxDistance = Math.max(1, Math.floor(query.length / 4));
-  const tokens = value
-    .toUpperCase()
-    .split(/[^A-Z0-9]+/)
-    .map((token) => normalizeForFuzzyMatch(token))
-    .filter((token) => token.length > 0);
 
   let bestDistance: number | null = null;
 
@@ -124,25 +177,32 @@ function computeTypoScore(query: string, value: string): number | null {
   return 58 - bestDistance * 12;
 }
 
-function scoreFuzzyCandidate(query: string, candidate: string): number | null {
-  const uppercaseCandidate = candidate.toUpperCase();
-  const uppercaseQuery = query.toUpperCase();
-
-  if (uppercaseCandidate === uppercaseQuery) {
+/**
+ * Score one prepared field against an already-uppercased query.
+ *
+ * The name, its normalized form and its tokens are computed once per catalog
+ * (`indexStations`), so a keystroke only does the comparisons.
+ */
+function scorePrepared(
+  query: string,
+  candidate: string,
+  normalizedCandidate: string,
+  tokens: readonly string[],
+): number | null {
+  if (candidate === query) {
     return 140;
   }
 
-  if (uppercaseCandidate.startsWith(uppercaseQuery)) {
-    return 120 - Math.min(20, uppercaseCandidate.length - uppercaseQuery.length);
+  if (candidate.startsWith(query)) {
+    return 120 - Math.min(20, candidate.length - query.length);
   }
 
-  const includesIndex = uppercaseCandidate.indexOf(uppercaseQuery);
+  const includesIndex = candidate.indexOf(query);
   if (includesIndex >= 0) {
     return 95 - Math.min(30, includesIndex);
   }
 
-  const normalizedCandidate = normalizeForFuzzyMatch(uppercaseCandidate);
-  const normalizedQuery = normalizeForFuzzyMatch(uppercaseQuery);
+  const normalizedQuery = normalizeForFuzzyMatch(query);
 
   if (!normalizedCandidate || !normalizedQuery) {
     return null;
@@ -166,12 +226,43 @@ function scoreFuzzyCandidate(query: string, candidate: string): number | null {
     return subsequenceScore;
   }
 
-  return computeTypoScore(normalizedQuery, candidate);
+  return computeTypoScore(normalizedQuery, tokens);
 }
 
-function scoreStation(station: StationSearchResult, query: string): number | null {
-  const nameScore = scoreFuzzyCandidate(query, station.station_name);
-  const codeScore = scoreFuzzyCandidate(query, station.station_code);
+interface IndexedStation {
+  station: StationSearchResult;
+  name: string;
+  code: string;
+  nameNormalized: string;
+  codeNormalized: string;
+  tokens: string[];
+}
+
+/**
+ * Uppercasing and splitting a name is most of the cost of a keystroke, and
+ * the catalog does not change while someone is typing. Done once per catalog.
+ */
+function indexStations(stations: StationSearchResult[]): IndexedStation[] {
+  return stations.map((station) => {
+    const name = station.station_name.toUpperCase();
+    const code = station.station_code.toUpperCase();
+    return {
+      station,
+      name,
+      code,
+      nameNormalized: normalizeForFuzzyMatch(name),
+      codeNormalized: normalizeForFuzzyMatch(code),
+      tokens: name
+        .split(/[^A-Z0-9]+/)
+        .map((token) => normalizeForFuzzyMatch(token))
+        .filter((token) => token.length > 0),
+    };
+  });
+}
+
+function scoreIndexed(entry: IndexedStation, query: string): number | null {
+  const nameScore = scorePrepared(query, entry.name, entry.nameNormalized, entry.tokens);
+  const codeScore = scorePrepared(query, entry.code, entry.codeNormalized, entry.tokens);
 
   if (nameScore === null && codeScore === null) {
     return null;
@@ -180,23 +271,16 @@ function scoreStation(station: StationSearchResult, query: string): number | nul
   return Math.max(nameScore ?? Number.NEGATIVE_INFINITY, codeScore ?? Number.NEGATIVE_INFINITY);
 }
 
-function filterStations(
-  stations: StationSearchResult[] | undefined,
-  query: string,
-): StationSearchResult[] {
-  if (!stations) {
-    return [];
-  }
-
-  const normalizedQuery = query.trim();
+function filterStations(index: IndexedStation[], query: string): StationSearchResult[] {
+  const normalizedQuery = query.trim().toUpperCase();
   if (!normalizedQuery) {
-    return stations;
+    return index.map((entry) => entry.station);
   }
 
-  return stations
-    .map((station) => ({
-      station,
-      score: scoreStation(station, normalizedQuery),
+  return index
+    .map((entry) => ({
+      station: entry.station,
+      score: scoreIndexed(entry, normalizedQuery),
     }))
     .filter((entry): entry is { station: StationSearchResult; score: number } => entry.score !== null)
     .sort((left, right) => {
@@ -300,9 +384,10 @@ export function useJourneyNetworks(fromStationCode: string, toStationCode: strin
  */
 export function useMetroLinesQuery() {
   const { dmrcService } = useDI();
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.linesUnified(),
-    queryFn: () => dmrcService.getAllLinesAcrossNetworks(),
+    load: (shown) => dmrcService.getAllLinesAcrossNetworks(shown),
+    readCache: () => dmrcService.getCachedLines(),
   });
 }
 
@@ -310,9 +395,10 @@ export function useMetroLinesQuery() {
 export function useNetworkLinesQuery() {
   const { dmrcService } = useDI();
   const { network } = useMetroNetwork();
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.lines(network),
-    queryFn: () => dmrcService.getLines(network),
+    load: (shown) => dmrcService.getLines(network, shown),
+    readCache: () => dmrcService.getCachedLinesFor(network),
   });
 }
 
@@ -335,9 +421,10 @@ export function useLineNetworkLookup() {
 export function useNotificationsQuery() {
   const { dmrcService } = useDI();
   const { network } = useMetroNetwork();
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.notifications(network),
-    queryFn: () => dmrcService.getNotifications(network),
+    load: (shown) => dmrcService.getNotifications(network, shown),
+    readCache: () => dmrcService.getCachedNotifications(network),
   });
 }
 
@@ -348,16 +435,19 @@ export function useNotificationDetailQuery(
   const { dmrcService } = useDI();
   const { network } = useMetroNetwork();
 
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.notificationDetail(network, pageSlug ?? ''),
-    queryFn: () => {
+    load: (shown) => {
       if (pageSlug === null) {
         throw new Error('Notification detail slug is unavailable');
       }
-      return dmrcService.getNotificationDetail(pageSlug);
+      return dmrcService.getNotificationDetail(pageSlug, shown);
     },
     enabled: enabled && pageSlug !== null,
-    staleTime: 30 * 60_000,
+    readCache: () =>
+      pageSlug === null
+        ? Promise.resolve(null)
+        : dmrcService.getCachedNotificationDetail(pageSlug),
   });
 }
 
@@ -365,9 +455,14 @@ export function useStationSearchQuery(query: string) {
   const normalizedQuery = query.trim();
   const allStationsQuery = useAllStationsQuery();
 
+  const index = useMemo(
+    () => indexStations(allStationsQuery.data ?? []),
+    [allStationsQuery.data],
+  );
+
   const filteredResults = useMemo(
-    () => filterStations(allStationsQuery.data, normalizedQuery),
-    [allStationsQuery.data, normalizedQuery],
+    () => filterStations(index, normalizedQuery),
+    [index, normalizedQuery],
   );
 
   return {
@@ -450,7 +545,7 @@ export function useJourneyPlanCachedQuery(
 ) {
   const { dmrcService } = useDI();
   const { scope, hint } = useJourneyNetworks(fromStationCode, toStationCode);
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.journeyPlanCached(
       scope,
       fromStationCode,
@@ -458,20 +553,33 @@ export function useJourneyPlanCachedQuery(
       strategy,
       journeyTime,
     ),
-    queryFn: () =>
-      dmrcService.planJourneyWithLocalCache({
-        fromStationCode,
-        toStationCode,
-        strategy,
-        journeyTime,
-        network: hint,
-        scope,
-      }),
+    queryFn: (context) =>
+      dmrcService.planJourneyWithLocalCache(
+        {
+          fromStationCode,
+          toStationCode,
+          strategy,
+          journeyTime,
+          network: hint,
+          scope,
+        },
+        context.client.getQueryData(context.queryKey),
+      ),
     enabled: fromStationCode.length > 1 && toStationCode.length > 1,
-    staleTime: 2 * 60_000,
+    // A stored plan is shown because the network failed, so it stays stale
+    // and refetches as soon as a connection is back. A live plan keeps the
+    // short window it had before.
+    staleTime: (query) => (query.state.data?.fromCache ? 0 : 2 * 60_000),
     // Keep the last strategy's plan on screen while the other strategy loads.
     placeholderData: keepPreviousData,
   });
+
+  return {
+    ...query,
+    data: query.data?.data,
+    /** Set when this plan was read from storage rather than planned just now. */
+    savedAt: query.data?.fromCache ? query.data.savedAt : null,
+  };
 }
 
 export function usePopularRoutesQuery(limit = 5) {
@@ -491,10 +599,11 @@ export function useStationsByLineQuery(lineCode: string) {
   // stations are fetched from.
   const network = networkOf(lineCode) ?? selectedNetwork;
 
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.stationsByLine(network, lineCode),
-    queryFn: () => dmrcService.getStationsByLine(lineCode, network),
+    load: (shown) => dmrcService.getStationsByLine(lineCode, network, shown),
     enabled: lineCode.trim().length > 0,
+    readCache: () => dmrcService.getCachedStationsByLine(lineCode, network),
   });
 }
 
@@ -507,9 +616,10 @@ export function useStationDetailQuery(stationCode: string) {
   // its detail is fetched from — not whichever network happens to be selected.
   const network = networkOf(stationCode) ?? selectedNetwork;
 
-  return useQuery({
+  return useCachedQuery({
     queryKey: queryKeys.stationDetail(network, stationCode),
-    queryFn: () => dmrcService.getStationDetail(stationCode, network),
+    load: (shown) => dmrcService.getStationDetail(stationCode, network, shown),
     enabled: stationCode.trim().length > 0,
+    readCache: () => dmrcService.getCachedStationDetail(stationCode, network),
   });
 }

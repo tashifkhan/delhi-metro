@@ -1,4 +1,5 @@
 import { getDb } from './database';
+import { asSearchResult, toStoredStation, type StoredStation } from './stationCatalog';
 import type { StationSearchResult } from '../types';
 import type { MetroNetwork } from '../network';
 
@@ -18,7 +19,7 @@ export const stationSearchCacheRepository = {
     network: MetroNetwork = 'dmrc',
   ): Promise<void> {
     const db = await getDb();
-    const payloadJson = JSON.stringify(stations);
+    const payloadJson = JSON.stringify(stations.map(toStoredStation));
     const timestamp = Date.now();
 
     await db.runAsync(
@@ -46,7 +47,8 @@ export const stationSearchCacheRepository = {
     }
 
     try {
-      return JSON.parse(row.payload_json) as StationSearchResult[];
+      const stored = JSON.parse(row.payload_json) as StoredStation[];
+      return stored.map(asSearchResult);
     } catch {
       return null;
     }

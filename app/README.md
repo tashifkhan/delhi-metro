@@ -17,7 +17,9 @@ the site is live at https://ncr-metro.tashif.codes.
 - Local SQLite-backed popular route cache (`localStorage` on web)
 - Noida Aqua Line route/fare/distance planning and first/last trains
 - NMRC stations, line view, network map, and press-release archive
-- Separate offline station and route caches for each network
+- Offline catalogs for each network: stations, lines, line station lists,
+  station pages, alerts, and the journeys already planned. A screen says when
+  it is showing a saved copy.
 
 ## Tech Stack
 

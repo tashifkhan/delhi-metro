@@ -26,6 +26,8 @@ function toEntry(record: PopularRouteRecord): PopularRouteEntry {
   };
 }
 
+import type { StoredJourney } from './storedJourney';
+
 function isPlannedJourney(value: unknown): value is PlannedJourney {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -85,7 +87,7 @@ export const popularRoutesRepository = {
     toStationCode: string,
     strategy: RouteStrategy,
     scope: JourneyScope = 'dmrc',
-  ): Promise<PlannedJourney | null> {
+  ): Promise<StoredJourney | null> {
     const db = await getDb();
     const routeKey = buildRouteKey(fromStationCode, toStationCode, strategy, scope);
 
@@ -111,7 +113,7 @@ export const popularRoutesRepository = {
 
     try {
       const parsed: unknown = JSON.parse(row.payload_json);
-      return isPlannedJourney(parsed) ? parsed : null;
+      return isPlannedJourney(parsed) ? { plan: parsed, savedAt: row.last_fetched_at } : null;
     } catch {
       return null;
     }

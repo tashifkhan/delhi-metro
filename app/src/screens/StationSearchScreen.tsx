@@ -4,7 +4,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Searchbar, Text, useTheme } from 'react-native-paper';
-import { useDebounce, useStationSearchQuery } from '../hooks';
+import { useStationSearchQuery } from '../hooks';
 import { StationCard } from '../components/StationCard';
 import { StationListSkeleton } from '../components/StationListSkeleton';
 import { Reveal } from '../components/Reveal';
@@ -19,6 +19,18 @@ type Route = RouteProp<ExploreStackParamList, 'StationSearch'>;
 /** How many rows stagger before results simply appear. */
 const STAGGER_LIMIT = 8;
 
+/** The address bar follows the field, a beat behind the typing. */
+function useDebouncedUrlQuery(value: string): string {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), 300);
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  return debounced;
+}
+
 export function StationSearchScreen() {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -27,8 +39,11 @@ export function StationSearchScreen() {
   // Deep links arrive with ?q= already set; typing updates it below so the
   // URL stays shareable.
   const [searchText, setSearchText] = useState(route.params?.q ?? '');
-  const debouncedQuery = useDebounce(searchText, 300);
-  const { data: results, isLoading } = useStationSearchQuery(debouncedQuery);
+  const { data: results, isLoading } = useStationSearchQuery(searchText);
+
+  // The URL stays shareable, but it follows the field after a pause. Updating
+  // it on every keystroke rewrites the history entry per character.
+  const debouncedQuery = useDebouncedUrlQuery(searchText);
 
   useEffect(() => {
     const q = debouncedQuery.trim() || undefined;
@@ -70,10 +85,11 @@ export function StationSearchScreen() {
               </Text>
             ) : null
           }
-          renderItem={({ item, index }) => (
-            // Only the first screenful staggers; further rows appear as they
-            // scroll into view, where a delay would read as lag.
-            <Reveal index={index < STAGGER_LIMIT ? index : 0} replayOnFocus={false}>
+          renderItem={({ item, index }) => {
+            // Only the first screenful staggers. Past that the row is the
+            // card on its own, so a long result list is not one animated
+            // view per row.
+            const card = (
               <StationCard
                 station={item}
                 network={item.network}
@@ -84,15 +100,22 @@ export function StationSearchScreen() {
                   })
                 }
               />
-            </Reveal>
-          )}
+            );
+            return index < STAGGER_LIMIT ? (
+              <Reveal index={index} replayOnFocus={false}>
+                {card}
+              </Reveal>
+            ) : (
+              card
+            );
+          }}
           ListEmptyComponent={
             <EmptyState
               title="No stations found"
               icon="search-outline"
               subtitle={
-                debouncedQuery.trim()
-                  ? `Nothing matches "${debouncedQuery.trim()}"`
+                searchText.trim()
+                  ? `Nothing matches "${searchText.trim()}"`
                   : 'No stations available right now'
               }
             />

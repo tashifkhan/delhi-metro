@@ -12,11 +12,12 @@ import { useIsFocused } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMapFamilyPrimaryQuery } from '../hooks';
 import { LoadingState } from '../components/LoadingState';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
+import { OfflineNote } from '../components/OfflineNote';
 import { Touchable } from '../components/Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius } from '../theme';
@@ -31,7 +32,7 @@ import {
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
-const DELHI_NETWORK_MAP_SOURCE = require('../../assets/delhi-metro-network-map-2026-07.jpg');
+const DELHI_NETWORK_MAP_SOURCE = require('../../assets/delhi-metro-network-map-2026-07.webp');
 
 function getDistance(touches: { pageX: number; pageY: number }[]) {
   const dx = touches[0].pageX - touches[1].pageX;
@@ -142,7 +143,8 @@ export function MetroMapScreen() {
   const { width } = useWindowDimensions();
   const { network, networkName } = useMetroNetwork();
   const insets = useSafeAreaInsets();
-  const { data, isLoading, isError, refetch } = useMapFamilyPrimaryQuery('network');
+  const { data, isLoading, isError, isOfflineCopy, refetch } =
+    useMapFamilyPrimaryQuery('network');
   const [downloading, setDownloading] = useState(false);
   const downloadInFlight = useRef(false);
   const [canvasSize, setCanvasSize] = useState({ width, height: width });
@@ -294,8 +296,12 @@ export function MetroMapScreen() {
     }
   };
 
-  if (isLoading) return <LoadingState message="Loading map..." />;
-  if (isError) return <ErrorState message="Could not load map data" onRetry={refetch} />;
+  // The Delhi map ships inside the app, so a failed metadata request must not
+  // hide it. Noida has no bundled copy and does need the response.
+  if (isLoading && network !== 'dmrc') return <LoadingState message="Loading map..." />;
+  if (isError && !data && network !== 'dmrc') {
+    return <ErrorState message="Could not load map data" onRetry={refetch} />;
+  }
 
   const remoteImageUrl =
     network === 'nmrc' && data?.image
@@ -312,6 +318,9 @@ export function MetroMapScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {network === 'nmrc' && isOfflineCopy ? (
+        <OfflineNote inset message="Saved map. It opens from the copy stored on this device." />
+      ) : null}
       {/* Canvas — fills all space between header and tab bar */}
       <View
         style={styles.canvas}

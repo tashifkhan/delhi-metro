@@ -1,4 +1,5 @@
 import { apiClient } from '../api/client';
+import { catalogCache, type Cached } from '../storage/catalogCache';
 import type {
   MapAsset,
   MapAssetByFormatResponse,
@@ -25,11 +26,33 @@ export const mapService = {
     });
   },
 
+  /** The last network-map metadata this device stored, if any. */
+  async getCachedFamilyPrimaryMaps(
+    family: MapFamily,
+    network: MetroNetwork = 'dmrc',
+  ): Promise<Cached<MapAssetByFormatResponse> | null> {
+    if (family !== 'network') return null;
+    const stored = await catalogCache.readMap(network);
+    if (!stored) return null;
+    return { data: stored.payload, savedAt: stored.savedAt, fromCache: true };
+  },
+
+  /**
+   * The network map's metadata is cached so the Noida map still opens from
+   * the last URL `expo-image` stored on disk. Other families are not shown
+   * offline and stay live.
+   */
   getFamilyPrimaryMaps(
     family: MapFamily,
     network: MetroNetwork = 'dmrc',
-  ): Promise<MapAssetByFormatResponse> {
-    return apiClient.get<MapAssetByFormatResponse>(`${API_V1}/${network}/maps/${family}`);
+    shown?: Cached<MapAssetByFormatResponse>,
+  ): Promise<Cached<MapAssetByFormatResponse> | MapAssetByFormatResponse> {
+    const load = () =>
+      apiClient.get<MapAssetByFormatResponse>(`${API_V1}/${network}/maps/${family}`);
+    if (family === 'network') {
+      return catalogCache.map(network, load, shown);
+    }
+    return load();
   },
 
   getAssetById(assetId: string): Promise<MapAsset> {

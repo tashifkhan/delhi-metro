@@ -192,9 +192,9 @@ test('the worker handles fetches, or it is not installable at all', () => {
 
 test('live metro data is never answered from the cache', async () => {
   const worker = loadWorker();
-  worker.stored.set(`${worker.origin}/api/v1/dmrc/lines`, { from: 'cache' });
 
-  for (const pathname of ['/api', '/api/v1/dmrc/lines']) {
+  for (const pathname of ['/api', '/api/v1/dmrc/lines', '/api/v2/journeys/plan']) {
+    worker.stored.set(`${worker.origin}${pathname}`, { from: 'cache' });
     const answer = worker.handle({ method: 'GET', mode: 'cors', url: worker.origin + pathname });
     assert.equal(answer, null, `${pathname} was answered by the worker`);
   }

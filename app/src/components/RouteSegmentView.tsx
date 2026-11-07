@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Touchable } from './Touchable';
 import type { PlannedLeg } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';

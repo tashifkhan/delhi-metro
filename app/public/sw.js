@@ -86,9 +86,10 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // The app reads timetables, fares and alerts live from the operators. A
-  // cached answer would put a wrong number in front of someone at a gate, so
-  // these go straight to the network and the app handles its own failures.
+  // The app keeps its own copy of the catalogs and the journeys it planned,
+  // and says so on screen. Caching the responses here as well would hand it
+  // a stored payload with a success status, and it would present that as
+  // live. These go straight to the network.
   if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return;
 
   if (isImmutable(url) || isStaticAsset(url)) {

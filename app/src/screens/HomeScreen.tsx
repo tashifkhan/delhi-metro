@@ -3,7 +3,7 @@ import { Animated, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import {
   usePopularRoutesQuery,
@@ -19,6 +19,7 @@ import { NotificationCard } from '../components/NotificationCard';
 import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { Card } from '../components/Card';
+import { OfflineNote } from '../components/OfflineNote';
 import { GetTheApp } from '../components/web/GetTheApp';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/types';
@@ -54,6 +55,15 @@ export function HomeScreen() {
   const popularRoutes = usePopularRoutesQuery(5);
   const notifications = useNotificationsQuery();
   const linesQuery = useMetroLinesQuery();
+  const savedAlerts = notifications.isOfflineCopy;
+  const savedLines = linesQuery.isOfflineCopy;
+  let savedNote = 'Line status is from your last visit.';
+  if (savedAlerts && savedLines) {
+    savedNote =
+      'You are offline. Search and saved journeys still work. Alerts and line status are from your last visit.';
+  } else if (savedAlerts) {
+    savedNote = 'Alerts are from your last visit.';
+  }
   const { data: allStations } = useStationSearchQuery('');
   const disruptedLines = (linesQuery.data ?? []).filter(
     (l) => l.status.trim().toLowerCase() !== 'normal service',
@@ -341,6 +351,8 @@ export function HomeScreen() {
           </Touchable>
         </View>
       </Reveal>
+
+      {savedAlerts || savedLines ? <OfflineNote message={savedNote} /> : null}
 
       {/* Journey planner */}
       <Reveal index={1}>
