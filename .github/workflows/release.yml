@@ -5,8 +5,9 @@ name: Build and Release APK
 #
 # Required secrets:
 #   EXPO_TOKEN                    — Expo account token for EAS builds
-#   TASHIF_CODES_WORKFLOW_TOKEN   — PAT with actions:write on tashifkhan/tashif.codes
-#                                   (optional; skip F-Droid if unset)
+#   TASHIF_CODES_WORKFLOW_TOKEN   — PAT with actions:write on tashifkhan/tashif.codes.
+#                                   The run fails without it, so a release can't
+#                                   skip F-Droid and still pass.
 
 on:
   push:
@@ -26,6 +27,16 @@ jobs:
       RELEASE_TAG: ${{ github.ref_name }}
 
     steps:
+      # Fail before the EAS build. The F-Droid step used to be skipped when the
+      # token was unset, which is how v1.7.0 released green but missed F-Droid.
+      - name: Check F-Droid token
+        run: |
+          if [ -z "$TASHIF_CODES_WORKFLOW_TOKEN" ]; then
+            echo "::error::TASHIF_CODES_WORKFLOW_TOKEN is not set on this repo."
+            echo "Add a fine-grained PAT with Actions read/write on tashifkhan/tashif.codes."
+            exit 1
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -119,7 +130,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Trigger tashif.codes F-Droid publish
-        if: ${{ env.TASHIF_CODES_WORKFLOW_TOKEN != '' }}
         env:
           GH_TOKEN: ${{ env.TASHIF_CODES_WORKFLOW_TOKEN }}
         run: |
