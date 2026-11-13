@@ -509,6 +509,17 @@ export function useFirstLastTrainQuery(
   });
 }
 
+/** The operator's WhatsApp ticket link. It does not depend on a station pair. */
+export function useBookingQuery(network: MetroNetwork, enabled = true) {
+  const { dmrcService } = useDI();
+  return useQuery({
+    queryKey: queryKeys.booking(network),
+    queryFn: () => dmrcService.getBooking(network),
+    enabled,
+    staleTime: 24 * 60 * 60 * 1000,
+  });
+}
+
 export function useJourneyPlanQuery(
   fromStationCode: string,
   toStationCode: string,

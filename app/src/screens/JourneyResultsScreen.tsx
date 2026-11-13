@@ -6,12 +6,18 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
-import { useJourneyPlanCachedQuery, useMetroLinesQuery, useStationSearchQuery } from '../hooks';
+import {
+  useBookingQuery,
+  useJourneyPlanCachedQuery,
+  useMetroLinesQuery,
+  useStationSearchQuery,
+} from '../hooks';
 import { StrategyToggle } from '../components/StrategyToggle';
 import { JourneyFareSummary } from '../components/JourneyFareSummary';
 import { RouteSegmentView } from '../components/RouteSegmentView';
 import { TransferSegmentView } from '../components/TransferSegmentView';
 import { FirstLastTrainCard } from '../components/FirstLastTrainCard';
+import { WhatsAppBookingCard } from '../components/WhatsAppBookingCard';
 import { LoadingState } from '../components/LoadingState';
 import { OfflineNote } from '../components/OfflineNote';
 import { ErrorState } from '../components/ErrorState';
@@ -20,7 +26,7 @@ import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
-import type { RouteStrategy } from '../types';
+import type { MetroNetwork, RouteStrategy, WhatsAppBooking } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, radius, emphasis } from '../theme';
 
@@ -85,6 +91,17 @@ export function JourneyResultsScreen() {
     strategy,
     journeyTime,
   );
+  // Plans saved before booking links existed have none. Fetch the operator
+  // link instead of hiding the button. A fresh plan already carries them.
+  const planBookings = plan?.bookings ?? [];
+  const fallbackNetwork: MetroNetwork =
+    plan?.networks[0] ?? (plan?.source === 'nmrc' ? 'nmrc' : 'dmrc');
+  const { data: fallbackBooking } = useBookingQuery(
+    fallbackNetwork,
+    Boolean(plan) && planBookings.length === 0,
+  );
+  const bookings: WhatsAppBooking[] =
+    planBookings.length > 0 ? planBookings : fallbackBooking ? [fallbackBooking] : [];
   // One outcome per requested journey, including cached results. Refetches stay quiet.
   const journeyKey = JSON.stringify([fromCode, toCode, strategy, journeyTime]);
   useEffect(() => {
@@ -380,8 +397,12 @@ export function JourneyResultsScreen() {
           <JourneyFareSummary fare={plan.fare} separateTickets={plan.separate_tickets} />
         </Reveal>
 
-        {/* Route visualization */}
         <Reveal index={4} replayOnFocus={false}>
+          <WhatsAppBookingCard bookings={bookings} />
+        </Reveal>
+
+        {/* Route visualization */}
+        <Reveal index={5} replayOnFocus={false}>
         <Card radius={radius.hero} style={styles.routeCard}>
           <View style={styles.routeHeader}>
             <View style={[styles.routeHeaderIcon, { backgroundColor: fills.accentSubtle }]}>
@@ -433,7 +454,7 @@ export function JourneyResultsScreen() {
         </Card>
         </Reveal>
 
-        <Reveal index={5} replayOnFocus={false}>
+        <Reveal index={6} replayOnFocus={false}>
           <FirstLastTrainCard data={plan.metro_service} />
         </Reveal>
       </ScrollView>

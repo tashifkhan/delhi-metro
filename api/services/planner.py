@@ -37,6 +37,7 @@ from schemas.planner import (
     PlannedStation,
 )
 from services import nmrc as nmrc_planner
+from services.booking import bookings_for
 from services.dmrc import journey as dmrc_planner
 from services.dmrc import sarthi as sarthi_planner
 from services.interchange import NetworkInterchange, find_interchange
@@ -164,6 +165,7 @@ def _stamp_network(plan: PlannedJourney, network: MetroNetwork) -> PlannedJourne
     return plan.model_copy(
         update={
             "networks": [network],
+            "bookings": bookings_for([network]),
             "legs": [
                 leg.model_copy(update={"network": network, "source": plan.source})
                 for leg in plan.legs
@@ -375,6 +377,7 @@ async def _plan_cross_network(
             if half is not None
         ),
         ticket_available=False,
+        bookings=bookings_for([from_network, to_network]),
     )
 
 

@@ -6,9 +6,12 @@ domains; `routes/nmrc/` mirrors this shape for Noida Metro.
 
 from fastapi import APIRouter
 
+from routes.booking import mount_booking
 from routes.dmrc import journeys, lines, maps, notifications, stations
+from schemas.planner import MetroNetwork
 
 router = APIRouter(prefix="/dmrc")
+mount_booking(router, MetroNetwork.DMRC)
 router.include_router(lines.router)
 router.include_router(stations.router)
 router.include_router(journeys.router)

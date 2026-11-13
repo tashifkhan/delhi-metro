@@ -68,4 +68,5 @@ export const queryKeys = {
     [network, 'stations-by-line', lineCode] as const,
   stationDetail: (network: MetroNetwork, stationCode: string) =>
     [network, 'station-detail', stationCode] as const,
+  booking: (network: MetroNetwork) => [network, 'booking'] as const,
 };

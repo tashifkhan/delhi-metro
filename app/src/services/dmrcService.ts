@@ -12,6 +12,7 @@ import type {
   PassengerNotificationDetail,
   PlannedJourney,
   RouteStrategy,
+  WhatsAppBooking,
   StationByLineItem,
   StationDetail,
   StationSearchResult,
@@ -270,6 +271,11 @@ export class DmrcService {
    * Plan one journey via the v2 planner (Sarthi first, DMRC fallback).
    * Station codes may be in either upstream's vocabulary.
    */
+  /** The operator's WhatsApp ticket link. Stations are not included. */
+  getBooking(network: MetroNetwork): Promise<WhatsAppBooking> {
+    return this.apiClient.get<WhatsAppBooking>(`${API_V1}/${network}/booking`);
+  }
+
   planJourney(request: PlanJourneyRequest): Promise<PlannedJourney> {
     return this.apiClient.get<PlannedJourney>(`${API_V2}/journeys/plan`, {
       query: {

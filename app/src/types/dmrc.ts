@@ -231,6 +231,15 @@ export interface ServiceTimes {
   last: string | null;
 }
 
+/** Opens an operator's WhatsApp chatbot. The URL only pre-fills Hi. */
+export interface WhatsAppBooking {
+  network: MetroNetwork;
+  label: string;
+  phone: string;
+  url: string;
+  note: string;
+}
+
 /** Normalized journey plan from GET /api/v2/journeys/plan. */
 export interface PlannedJourney {
   source: JourneySource;
@@ -252,6 +261,11 @@ export interface PlannedJourney {
   metro_service: ServiceTimes | null;
   service_available: boolean | null;
   ticket_available: boolean | null;
+  /**
+   * One link per network the journey rides. Missing on plans saved before
+   * this field existed.
+   */
+  bookings?: WhatsAppBooking[];
 }
 
 export interface StationByLineItem {

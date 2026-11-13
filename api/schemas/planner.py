@@ -191,6 +191,23 @@ class ServiceTimes(BaseModel):
     last: str | None = None
 
 
+class WhatsAppBooking(BaseModel):
+    """A link that opens an operator's WhatsApp ticket chatbot.
+
+    The URL only pre-fills "Hi". It does not carry the station pair, because
+    neither chatbot accepts one in the first message.
+    """
+
+    network: MetroNetwork
+    label: str = Field(..., description="Short name shown on the booking button.")
+    phone: str = Field(..., description="E.164 number, including the leading plus.")
+    url: str = Field(..., description="wa.me link with the greeting already set.")
+    note: str = Field(
+        ...,
+        description="What the passenger still has to do after WhatsApp opens.",
+    )
+
+
 class PlannedJourney(BaseModel):
     """A journey plan normalized across both upstreams."""
 
@@ -249,4 +266,11 @@ class PlannedJourney(BaseModel):
     ticket_available: bool | None = Field(
         default=None,
         description="Whether the upstream offers ticketing. Sarthi only.",
+    )
+    bookings: list[WhatsAppBooking] = Field(
+        default_factory=list,
+        description=(
+            "WhatsApp ticket links for the networks this journey rides, in "
+            "travel order. A cross-network trip has one link per operator."
+        ),
     )
