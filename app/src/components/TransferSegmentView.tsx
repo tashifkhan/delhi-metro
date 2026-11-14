@@ -3,69 +3,49 @@ import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { PlannedLeg } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, radius, emphasis } from '../theme';
+import { spacing, shape, emphasis } from '../theme';
 
 interface Props {
   leg: PlannedLeg;
 }
 
 const RAIL_WIDTH = 28;
+const DASHES = 6;
 
 /**
  * The walk between the two operators' networks.
  *
- * Rendered as a dashed break rather than a coloured line: nothing is running
- * here, the traveller leaves one system and buys a ticket in the other, and
- * that break is the part most worth noticing in the route list.
+ * Drawn as a dotted break in the rail rather than a coloured line: nothing is
+ * running here, the traveller leaves one system and buys a ticket in the
+ * other, and that break is the part most worth noticing in the route list.
  */
 export function TransferSegmentView({ leg }: Props) {
   const theme = useTheme();
   const { fills } = useAppTheme();
 
   const metaBits: string[] = [];
-  if (leg.duration) {
-    metaBits.push(leg.duration);
-  }
-  if (leg.walk_metres) {
-    metaBits.push(`about ${leg.walk_metres} m`);
-  }
+  if (leg.walk_metres) metaBits.push(`about ${leg.walk_metres} m`);
+  if (leg.duration) metaBits.push(leg.duration);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={[styles.pill, { backgroundColor: fills.inset }]}>
-          <Ionicons name="walk" size={13} color={theme.colors.onSurfaceVariant} />
-          <Text
-            variant="labelMedium"
-            style={[emphasis.heavy, { color: theme.colors.onSurfaceVariant }]}
-          >
-            Change networks
-          </Text>
-        </View>
-        {metaBits.length > 0 ? (
-          <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            {metaBits.join(' · ')}
-          </Text>
-        ) : null}
+    <View style={styles.row}>
+      <View style={styles.rail}>
+        {Array.from({ length: DASHES }, (_, index) => (
+          <View key={index} style={[styles.dash, { backgroundColor: theme.colors.outline }]} />
+        ))}
       </View>
 
-      <View style={styles.body}>
-        <View style={styles.rail}>
-          {[0, 1, 2, 3].map((index) => (
-            <View
-              key={index}
-              style={[styles.dash, { backgroundColor: theme.colors.outlineVariant }]}
-            />
-          ))}
-        </View>
-
-        <View style={styles.content}>
-          <Text
-            variant="bodyMedium"
-            style={[emphasis.strong, { color: theme.colors.onSurface }]}
-          >
-            {leg.from_station} → {leg.to_station}
+      <View style={[styles.box, { backgroundColor: fills.containerHigh }]}>
+        <Ionicons name="walk" size={20} color={theme.colors.primary} />
+        <View style={styles.text}>
+          <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+            Walk to {leg.to_station}
           </Text>
+          {metaBits.length > 0 ? (
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {metaBits.join(', ')}
+            </Text>
+          ) : null}
           {leg.note ? (
             <Text
               variant="bodySmall"
@@ -81,40 +61,33 @@ export function TransferSegmentView({ leg }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingBottom: spacing.base,
-  },
-  header: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  body: {
-    flexDirection: 'row',
+    gap: spacing.md,
+    paddingRight: spacing.sm,
+    paddingBottom: spacing.md,
   },
   rail: {
     width: RAIL_WIDTH,
     alignItems: 'center',
-    paddingTop: 4,
-    gap: 4,
+    justifyContent: 'space-evenly',
   },
   dash: {
-    width: 3,
-    height: 6,
+    width: 4,
+    height: 4,
     borderRadius: 2,
   },
-  content: {
+  box: {
     flex: 1,
-    paddingBottom: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: shape.lg,
+  },
+  text: {
+    flex: 1,
+    gap: 2,
   },
   note: {
     marginTop: 2,

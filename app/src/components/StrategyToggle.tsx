@@ -4,8 +4,7 @@ import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Touchable } from './Touchable';
 import type { RouteStrategy } from '../types';
-import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, shape, emphasis } from '../theme';
+import { spacing, radius, emphasis } from '../theme';
 import { spring } from '../theme/motion';
 
 interface Props {
@@ -15,22 +14,22 @@ interface Props {
 
 const OPTIONS: { value: RouteStrategy; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { value: 'least-distance', label: 'Shortest', icon: 'git-commit-outline' },
-  { value: 'minimum-interchange', label: 'Fewest Changes', icon: 'swap-horizontal-outline' },
+  { value: 'minimum-interchange', label: 'Fewer changes', icon: 'git-merge-outline' },
 ];
 
-const PADDING = 4;
+const HEIGHT = 40;
+const BORDER = 1;
 
 /**
- * Segmented control whose selection indicator travels between options.
+ * M3 outlined segmented button.
  *
- * The indicator is one moving view rather than a background toggled per
- * segment: sliding shows the relationship between the two choices, where a
- * hard swap just blinks. The results screen also changes this by swipe, so the
- * movement doubles as a report of which way the gesture went.
+ * The selected fill is one view that slides between segments instead of a
+ * background toggled per segment. The results screen also switches strategy
+ * by swipe, so the movement shows which way the gesture went. The selected
+ * segment swaps its icon for a check mark, as the M3 spec does.
  */
 export function StrategyToggle({ active, onChange }: Props) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
   const [trackWidth, setTrackWidth] = useState(0);
 
   const activeIndex = Math.max(0, OPTIONS.findIndex((o) => o.value === active));
@@ -44,13 +43,13 @@ export function StrategyToggle({ active, onChange }: Props) {
     }).start();
   }, [activeIndex, offset]);
 
-  const segmentWidth = trackWidth > 0 ? (trackWidth - PADDING * 2) / OPTIONS.length : 0;
+  const segmentWidth = trackWidth > 0 ? (trackWidth - BORDER * 2) / OPTIONS.length : 0;
 
   const handleLayout = (e: LayoutChangeEvent) => setTrackWidth(e.nativeEvent.layout.width);
 
   return (
     <View
-      style={[styles.container, { backgroundColor: fills.subtleStrong }]}
+      style={[styles.container, { borderColor: theme.colors.outline }]}
       onLayout={handleLayout}
       accessibilityRole="radiogroup"
     >
@@ -61,7 +60,7 @@ export function StrategyToggle({ active, onChange }: Props) {
             styles.indicator,
             {
               width: segmentWidth,
-              backgroundColor: fills.selected,
+              backgroundColor: theme.colors.secondaryContainer,
               transform: [
                 {
                   translateX: offset.interpolate({
@@ -75,14 +74,22 @@ export function StrategyToggle({ active, onChange }: Props) {
         />
       )}
 
-      {OPTIONS.map((option) => {
+      {OPTIONS.map((option, index) => {
         const isActive = active === option.value;
-        const foreground = isActive ? theme.colors.primary : theme.colors.onSurfaceVariant;
+        const foreground = isActive
+          ? theme.colors.onSecondaryContainer
+          : theme.colors.onSurface;
 
         return (
-          <View key={option.value} style={styles.slot}>
+          <View
+            key={option.value}
+            style={[
+              styles.slot,
+              index > 0 && { borderLeftWidth: BORDER, borderLeftColor: theme.colors.outline },
+            ]}
+          >
             <Touchable
-              radius={shape.md}
+              radius={0}
               haptic="select"
               onPress={() => onChange(option.value)}
               accessibilityRole="radio"
@@ -90,10 +97,14 @@ export function StrategyToggle({ active, onChange }: Props) {
               accessibilityLabel={`Route preference: ${option.label}`}
             >
               <View style={styles.option}>
-                <Ionicons name={option.icon} size={18} color={foreground} />
+                <Ionicons
+                  name={isActive ? 'checkmark' : option.icon}
+                  size={18}
+                  color={foreground}
+                />
                 <Text
                   variant="labelLarge"
-                  style={[isActive ? emphasis.heavy : emphasis.medium, { color: foreground }]}
+                  style={[emphasis.strong, { color: foreground }]}
                   numberOfLines={1}
                 >
                   {option.label}
@@ -110,15 +121,15 @@ export function StrategyToggle({ active, onChange }: Props) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    borderRadius: shape.lg,
-    padding: PADDING,
+    borderRadius: radius.pill,
+    borderWidth: BORDER,
+    overflow: 'hidden',
   },
   indicator: {
     position: 'absolute',
-    top: PADDING,
-    bottom: PADDING,
-    left: PADDING,
-    borderRadius: shape.md,
+    top: 0,
+    bottom: 0,
+    left: 0,
   },
   slot: {
     flex: 1,
@@ -128,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingVertical: 12,
-    paddingHorizontal: spacing.sm,
+    height: HEIGHT - BORDER * 2,
+    paddingHorizontal: spacing.md,
   },
 });

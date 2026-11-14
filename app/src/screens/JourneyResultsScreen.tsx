@@ -25,6 +25,7 @@ import { StationPicker } from '../components/StationPicker';
 import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { Card } from '../components/Card';
+import { JourneyFields } from '../components/JourneyFields';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { MetroNetwork, RouteStrategy, WhatsAppBooking } from '../types';
 import type { HomeStackParamList } from '../navigation/types';
@@ -47,7 +48,7 @@ export function JourneyResultsScreen() {
   const navigation = useNavigation<Nav>();
   const { fromCode, toCode, fromName, toName, journeyTime } = route.params;
   const theme = useTheme();
-  const { semantic, fills, isDark } = useAppTheme();
+  const { fills } = useAppTheme();
   const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
   const [editing, setEditing] = useState<'from' | 'to' | null>(null);
 
@@ -205,78 +206,33 @@ export function JourneyResultsScreen() {
           ? 'NMRC website'
           : 'DMRC';
 
-  const heroIconColor = isDark ? theme.colors.primary : theme.colors.onPrimaryContainer;
-
-  /**
-   * The edit target and the details link are siblings rather than nested
-   * touchables — a pressable inside a pressable swallows the inner ripple on
-   * Android and makes the details button feel dead.
-   */
-  const renderEndpoint = (kind: 'from' | 'to', name: string, code: string) => {
-    const isFrom = kind === 'from';
-    const label = isFrom ? 'departure' : 'destination';
-
-    return (
-      <View style={styles.heroStationRow}>
-        <View style={styles.heroStationMain}>
-          <Touchable
-            radius={radius.iconSmall}
-            onPress={() => setEditing(kind)}
-            accessibilityLabel={`Change ${label}, currently ${name}`}
-          >
-            <View style={styles.heroStationPress}>
-              {/* Same vertical rail as the planner on Home, so a journey looks
-                  like the same object before and after it is planned. */}
-              <View style={styles.heroRail}>
-                <View
-                  style={[
-                    styles.heroRailLine,
-                    { backgroundColor: fills.onHeroText },
-                    isFrom ? styles.heroRailFromCenter : styles.heroRailToCenter,
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.heroDot,
-                    {
-                      backgroundColor: isFrom ? semantic.success : theme.colors.error,
-                      borderColor: fills.hero,
-                    },
-                  ]}
-                />
-              </View>
-              <Text
-                variant="titleLarge"
-                style={[emphasis.heavy, styles.heroStationName, { color: fills.onHeroText }]}
-                numberOfLines={2}
-              >
-                {name}
-              </Text>
-              <Ionicons
-                name="pencil"
-                size={13}
-                color={fills.onHeroText}
-                style={styles.heroEditIcon}
-              />
-            </View>
-          </Touchable>
-        </View>
-
-        <Touchable
-          radius={radius.pill}
-          onPress={() =>
-            navigation.navigate('StationDetail', { stationCode: code, stationName: name })
-          }
-          accessibilityLabel={`Station details for ${name}`}
-          style={{ backgroundColor: fills.onHero }}
-        >
-          <View style={styles.heroInfoBtn}>
-            <Ionicons name="information-circle-outline" size={18} color={heroIconColor} />
-          </View>
-        </Touchable>
+  const detailsButton = (name: string, code: string) => (
+    <Touchable
+      radius={radius.pill}
+      onPress={() => navigation.navigate('StationDetail', { stationCode: code, stationName: name })}
+      accessibilityLabel={`Station details for ${name}`}
+    >
+      <View style={styles.infoBtn}>
+        <Ionicons
+          name="information-circle-outline"
+          size={20}
+          color={theme.colors.onSurfaceVariant}
+        />
       </View>
-    );
-  };
+    </Touchable>
+  );
+
+  const stats: { key: string; icon: keyof typeof Ionicons.glyphMap; text: string; accent?: boolean }[] =
+    [
+      { key: 'time', icon: 'time-outline', text: plan.total_time, accent: true },
+      {
+        key: 'changes',
+        icon: 'swap-horizontal-outline',
+        text: `${interchanges} ${interchanges === 1 ? 'change' : 'changes'}`,
+      },
+      { key: 'stops', icon: 'git-commit-outline', text: `${plan.station_count} stops` },
+      { key: 'depart', icon: 'calendar-outline', text: `Leaving ${selectedTimeLabel.toLowerCase() === 'now' ? 'now' : selectedTimeLabel}` },
+    ];
 
   return (
     <View
@@ -289,61 +245,66 @@ export function JourneyResultsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {savedAt !== null && !isPlaceholderData ? <OfflineNote message={savedLabel} /> : null}
-        {/* Journey hero */}
+        {/* Journey header: the same fields as the Home planner, so the plan
+            reads as the same object, then the summary chips. */}
         <Reveal index={0} replayOnFocus={false}>
-        <View style={[styles.heroCard, { backgroundColor: fills.hero }]}>
-          <View>
-            {renderEndpoint('from', fromName, fromCode)}
-
-            <View style={styles.heroConnector}>
-              <View style={styles.heroRail}>
-                <View style={[styles.heroRailLine, { backgroundColor: fills.onHeroText }]} />
-              </View>
-              <View style={[styles.heroLine, { backgroundColor: fills.onHeroText }]} />
-              <Touchable
-                radius={radius.pill}
-                haptic="press"
-                onPress={handleSwapStations}
-                accessibilityLabel="Reverse this journey"
-                style={[styles.heroSwapBtn, { backgroundColor: fills.onHero }]}
-              >
-                <View style={styles.heroSwapInner}>
-                  <Ionicons name="swap-vertical" size={18} color={heroIconColor} />
-                </View>
-              </Touchable>
-            </View>
-
-            {renderEndpoint('to', toName, toCode)}
-          </View>
-
-          {/* Journey stats */}
-          <View style={styles.heroStats}>
-            {[
-              {
-                key: 'stops',
-                icon: 'git-commit-outline' as const,
-                text: `${plan.station_count} stops`,
-              },
-              { key: 'time', icon: 'time-outline' as const, text: plan.total_time },
-              {
-                key: 'changes',
-                icon: 'swap-horizontal-outline' as const,
-                text: `${interchanges} ${interchanges === 1 ? 'change' : 'changes'}`,
-              },
-            ].map((stat) => (
-              <View key={stat.key} style={[styles.heroStat, { backgroundColor: fills.onHero }]}>
-                <Ionicons name={stat.icon} size={14} color={heroIconColor} />
-                <Text
-                  variant="labelMedium"
-                  style={[emphasis.heavy, styles.heroStatText, { color: fills.onHeroText }]}
-                  numberOfLines={1}
+          <View style={[styles.header, { backgroundColor: fills.container }]}>
+            <JourneyFields
+              from={{
+                name: fromName,
+                placeholder: 'Choose departure',
+                onPress: () => setEditing('from'),
+                accessibilityLabel: `Change departure, currently ${fromName}`,
+                trailing: detailsButton(fromName, fromCode),
+              }}
+              to={{
+                name: toName,
+                placeholder: 'Choose destination',
+                onPress: () => setEditing('to'),
+                accessibilityLabel: `Change destination, currently ${toName}`,
+                trailing: detailsButton(toName, toCode),
+              }}
+              onSwap={handleSwapStations}
+              swapLabel="Reverse this journey"
+            />
+            <View style={styles.chips}>
+              {stats.map((stat) => (
+                <View
+                  key={stat.key}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: stat.accent
+                        ? theme.colors.primaryContainer
+                        : fills.containerHigh,
+                    },
+                  ]}
                 >
-                  {stat.text}
-                </Text>
-              </View>
-            ))}
+                  <Ionicons
+                    name={stat.icon}
+                    size={16}
+                    color={
+                      stat.accent ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant
+                    }
+                  />
+                  <Text
+                    variant="labelLarge"
+                    numberOfLines={1}
+                    style={[
+                      emphasis.strong,
+                      {
+                        color: stat.accent
+                          ? theme.colors.onPrimaryContainer
+                          : theme.colors.onSurface,
+                      },
+                    ]}
+                  >
+                    {stat.text}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
         </Reveal>
 
         {hasStrategyChoice && (
@@ -371,27 +332,6 @@ export function JourneyResultsScreen() {
           </Reveal>
         )}
 
-        {/* Departure time */}
-        <Reveal index={2} replayOnFocus={false}>
-        <Card style={styles.timePill}>
-          <Ionicons name="calendar-outline" size={18} color={theme.colors.primary} />
-          <Text
-            variant="bodyMedium"
-            style={[styles.timeLabel, { color: theme.colors.onSurfaceVariant }]}
-          >
-            Departure
-          </Text>
-          <View style={[styles.timeValue, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Text
-              variant="labelLarge"
-              style={[emphasis.strong, { color: theme.colors.onPrimaryContainer }]}
-            >
-              {selectedTimeLabel}
-            </Text>
-          </View>
-        </Card>
-        </Reveal>
-
         <Reveal index={3} replayOnFocus={false}>
           <JourneyFareSummary fare={plan.fare} separateTickets={plan.separate_tickets} />
         </Reveal>
@@ -404,11 +344,8 @@ export function JourneyResultsScreen() {
         <Reveal index={5} replayOnFocus={false}>
         <Card radius={radius.hero} style={styles.routeCard}>
           <View style={styles.routeHeader}>
-            <View style={[styles.routeHeaderIcon, { backgroundColor: fills.accentSubtle }]}>
-              <Ionicons name="navigate-outline" size={15} color={theme.colors.primary} />
-            </View>
             <Text
-              variant="titleSmall"
+              variant="titleMedium"
               style={[emphasis.heavy, styles.routeTitle, { color: theme.colors.onSurface }]}
             >
               Route
@@ -475,99 +412,32 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing['3xl'],
   },
-  heroCard: {
-    borderRadius: radius.hero,
-    padding: spacing.base,
-    gap: spacing.base,
+  header: {
+    borderRadius: radius.hero + 4,
+    padding: spacing.sm,
+    gap: spacing.md,
+    marginHorizontal: -spacing.xs,
   },
-  heroStationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  heroStationMain: {
-    flex: 1,
-  },
-  heroStationPress: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    paddingRight: spacing.sm,
-  },
-  heroRail: {
-    width: 26,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroRailLine: {
-    position: 'absolute',
-    width: 2,
-    top: 0,
-    bottom: 0,
-    opacity: 0.25,
-  },
-  heroRailFromCenter: {
-    top: '50%',
-  },
-  heroRailToCenter: {
-    bottom: '50%',
-  },
-  heroDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 3,
-  },
-  heroStationName: {
-    flex: 1,
-  },
-  heroEditIcon: {
-    opacity: 0.5,
-  },
-  heroInfoBtn: {
+  infoBtn: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  heroConnector: {
+  chips: {
     flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-  },
-  heroLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    marginLeft: spacing.sm,
-    opacity: 0.3,
-  },
-  heroSwapBtn: {
-    marginLeft: spacing.md,
-  },
-  heroSwapInner: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroStats: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  heroStat: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: 10,
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     paddingHorizontal: spacing.xs,
-    borderRadius: radius.iconSmall,
+    paddingBottom: spacing.xs,
   },
-  heroStatText: {
-    flexShrink: 1,
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 32,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.badge + 2,
   },
   swipeDots: {
     flexDirection: 'row',
@@ -580,23 +450,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  timePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: radius.card,
-    paddingLeft: spacing.base,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  timeLabel: {
-    flex: 1,
-  },
-  timeValue: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-  },
   routeCard: {
     borderRadius: radius.hero,
     padding: spacing.base,
@@ -607,18 +460,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  routeHeaderIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.badge,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   routeTitle: {
     flex: 1,
   },
   routeSegments: {
-    gap: spacing.base,
+    gap: 0,
   },
   sourceRow: {
     flexDirection: 'row',

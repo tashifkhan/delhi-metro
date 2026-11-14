@@ -120,6 +120,19 @@ export interface SurfaceFills {
    * would just add noise, so this goes transparent.
    */
   hairline: string;
+  /**
+   * M3 surface container ladder, lowest to highest.
+   *
+   * Paper still models tonal surfaces as `elevation.level*`, so these map the
+   * newer roles onto that ramp. Cards rest on `containerLow`, grouped panels on
+   * `container`, controls inside a panel on `containerLowest` or `containerHigh`.
+   * Every palette, wallpaper colour and AMOLED mode produces the same steps.
+   */
+  containerLowest: string;
+  containerLow: string;
+  container: string;
+  containerHigh: string;
+  containerHighest: string;
 }
 
 function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
@@ -137,6 +150,11 @@ function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
     selected: isDark ? colors.primaryContainer : colors.surface,
     floating: isDark ? colors.elevation.level4 : colors.surface,
     hairline: isDark ? rgba(colors.outlineVariant, 0.55) : 'transparent',
+    containerLowest: isDark ? colors.background : colors.surface,
+    containerLow: colors.elevation.level1,
+    container: colors.elevation.level2,
+    containerHigh: colors.elevation.level3,
+    containerHighest: colors.elevation.level5,
   };
 }
 
