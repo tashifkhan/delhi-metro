@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
-import Ionicons from '@expo/vector-icons/Ionicons';
+import type Ionicons from '@expo/vector-icons/Ionicons';
 import { Touchable } from './Touchable';
-import { spacing, radius, emphasis, overline } from '../theme';
+import { spacing, radius, emphasis } from '../theme';
 
 interface Props {
   title: string;
@@ -17,23 +17,21 @@ interface Props {
 }
 
 /**
- * Section label.
+ * Section heading.
  *
- * The glyph is bare rather than sitting in a tinted tile: stacked down a
- * screen those tiles compete with the content they are supposed to introduce.
- * Emphasis comes from tracked capitals instead, which stays quiet at any size.
+ * A sentence-case title in the M3 title size with a plain text action on the
+ * right. `icon` is still accepted so call sites don't churn, but headings no
+ * longer draw it: a glyph on every heading competed with the content below.
  */
-export function SectionHeader({ title, icon, count, action, onAction, inset = false }: Props) {
+export function SectionHeader({ title, count, action, onAction, inset = false }: Props) {
   const theme = useTheme();
 
   return (
     <View style={[styles.container, inset && styles.insetContainer]}>
-      {icon && (
-        <Ionicons name={icon} size={14} color={theme.colors.onSurfaceVariant} />
-      )}
       <Text
-        variant="labelMedium"
-        style={[overline, styles.title, { color: theme.colors.onSurfaceVariant }]}
+        variant="titleMedium"
+        accessibilityRole="header"
+        style={[emphasis.strong, styles.title, { color: theme.colors.onSurface }]}
       >
         {title}
       </Text>
@@ -52,10 +50,9 @@ export function SectionHeader({ title, icon, count, action, onAction, inset = fa
           accessibilityLabel={`${action}, ${title}`}
         >
           <View style={styles.action}>
-            <Text variant="labelMedium" style={[emphasis.strong, { color: theme.colors.primary }]}>
+            <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.primary }]}>
               {action}
             </Text>
-            <Ionicons name="chevron-forward" size={13} color={theme.colors.primary} />
           </View>
         </Touchable>
       ) : null}
@@ -81,6 +78,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 1,
     paddingVertical: spacing.xs,
-    paddingLeft: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
 });

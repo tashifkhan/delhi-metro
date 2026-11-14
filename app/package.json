@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
+    "@material/material-color-utilities": "0.3.0",
     "@pchmn/expo-material3-theme": "^1.4.0",
     "@react-navigation/bottom-tabs": "^7.15.9",
     "@react-navigation/native": "^7.2.2",

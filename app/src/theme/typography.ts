@@ -20,7 +20,8 @@ export const weights = {
 export const emphasis = {
   medium: { fontWeight: weights.medium },
   strong: { fontWeight: weights.semibold },
-  heavy: { fontWeight: weights.bold },
+  // Semibold, not bold: M3 titles sit at 500 to 600, and 700 reads as shouting.
+  heavy: { fontWeight: weights.semibold },
 } as const satisfies Record<string, TextStyle>;
 
 /**

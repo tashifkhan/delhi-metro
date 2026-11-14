@@ -71,6 +71,9 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
               {title}
             </Text>
             {showSwitcher ? <NetworkSwitcher compact /> : null}
+            {options.headerRight
+              ? options.headerRight({ canGoBack: Boolean(back), tintColor: theme.colors.onSurface })
+              : null}
           </View>
         );
       }
@@ -79,7 +82,7 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
 
       return (
         <Appbar.Header
-          style={{ backgroundColor: theme.colors.elevation.level2 }}
+          style={{ backgroundColor: theme.colors.background }}
           elevated={false}
         >
           {back ? (
@@ -113,11 +116,14 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
             <Appbar.Content
               title={title}
               color={theme.colors.onSurface}
-              titleStyle={{ fontWeight: '700' }}
+              titleStyle={{ fontWeight: '600' }}
             />
           )}
 
           {showSwitcher ? <NetworkSwitcher compact /> : null}
+          {options.headerRight
+            ? options.headerRight({ canGoBack: Boolean(back), tintColor: theme.colors.onSurface })
+            : null}
         </Appbar.Header>
       );
     },

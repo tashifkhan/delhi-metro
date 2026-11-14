@@ -3,27 +3,29 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
-import { Card } from './Card';
 import { OperatorMark } from './OperatorMark';
 import { Touchable } from './Touchable';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAppTheme } from '../theme/ThemeContext';
-import type { WhatsAppBooking } from '../types';
-import { emphasis, radius, shape, spacing } from '../theme';
+import { NETWORK_NAMES } from '../network';
+import type { MetroNetwork, WhatsAppBooking } from '../types';
+import { emphasis, radius, spacing } from '../theme';
 
 interface Props {
   bookings: WhatsAppBooking[];
+  /** "Rajiv Chowk to Noida Sector 52" per operator, shown under its name. */
+  routes?: Partial<Record<MetroNetwork, string>>;
 }
 
 /**
- * Opens the operator's WhatsApp chatbot, one entry per operator.
+ * One card per operator, each opening that operator's WhatsApp ticket bot.
  *
- * A cross-network trip needs a ticket from each operator, so the entries are
- * numbered steps in riding order. The current step gets the filled button and
- * an outline; opening it moves the highlight to the next one. The link only
- * pre-fills Hi, so each entry says the stations have to be picked again.
+ * A cross-network trip needs a ticket from each operator, so the cards are
+ * numbered steps in riding order. The current step gets the outline and the
+ * filled button; opening it moves both to the next step. The link only
+ * pre-fills Hi, so the note under the cards says to pick the stations again.
  */
-export function WhatsAppBookingCard({ bookings }: Props) {
+export function WhatsAppBookingCard({ bookings, routes }: Props) {
   const theme = useTheme();
   const { fills } = useAppTheme();
   const haptics = useHaptics();
@@ -41,44 +43,31 @@ export function WhatsAppBookingCard({ bookings }: Props) {
 
   return (
     <View style={styles.column}>
-      <View style={styles.header}>
-        <Text variant="titleMedium" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
-          {multi ? 'Book tickets' : 'Book a ticket'}
-        </Text>
-        {multi ? (
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            One ticket per operator, in the order you ride.
-          </Text>
-        ) : null}
-      </View>
-
       {bookings.map((booking, index) => {
         const isCurrent = !multi || index === current;
+        const highlighted = multi && isCurrent;
         return (
-          <Card
+          <View
             key={booking.network}
-            radius={radius.hero}
-            tone={isCurrent && multi ? 'default' : 'low'}
             style={[
-              styles.entry,
-              isCurrent && multi && styles.entryCurrent,
-              isCurrent && multi && { borderColor: theme.colors.primary },
+              styles.card,
+              { backgroundColor: highlighted ? fills.container : fills.containerLow },
+              highlighted && [styles.cardCurrent, { borderColor: theme.colors.primary }],
             ]}
           >
-            <View style={styles.entryHead}>
-              <View style={[styles.markTile, { backgroundColor: fills.containerLowest }]}>
-                <OperatorMark network={booking.network} size={32} />
+            <View style={styles.head}>
+              <View style={[styles.logo, { backgroundColor: fills.containerLowest }]}>
+                <OperatorMark network={booking.network} size={30} />
               </View>
-              <View style={styles.entryText}>
-                <Text
-                  variant="titleMedium"
-                  style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                >
-                  {booking.label}
+              <View style={styles.headText}>
+                <Text variant="titleMedium" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+                  {NETWORK_NAMES[booking.network] ?? booking.label}
                 </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {booking.note}
-                </Text>
+                {routes?.[booking.network] ? (
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    {routes[booking.network]}
+                  </Text>
+                ) : null}
               </View>
               {multi ? (
                 <View
@@ -93,7 +82,7 @@ export function WhatsAppBookingCard({ bookings }: Props) {
                   <Text
                     variant="labelLarge"
                     style={[
-                      emphasis.heavy,
+                      emphasis.strong,
                       { color: isCurrent ? theme.colors.onPrimary : theme.colors.onSurfaceVariant },
                     ]}
                   >
@@ -116,14 +105,14 @@ export function WhatsAppBookingCard({ bookings }: Props) {
                   : { borderWidth: 1, borderColor: theme.colors.outline }
               }
             >
-              <View style={styles.buttonLabel}>
+              <View style={styles.button}>
                 <Ionicons
                   name="logo-whatsapp"
                   size={20}
                   color={isCurrent ? theme.colors.onPrimary : theme.colors.primary}
                 />
                 <Text
-                  variant="labelLarge"
+                  variant="titleSmall"
                   style={[
                     emphasis.strong,
                     { color: isCurrent ? theme.colors.onPrimary : theme.colors.primary },
@@ -133,9 +122,16 @@ export function WhatsAppBookingCard({ bookings }: Props) {
                 </Text>
               </View>
             </Touchable>
-          </Card>
+          </View>
         );
       })}
+
+      <View style={styles.note}>
+        <Ionicons name="information-circle-outline" size={18} color={theme.colors.onSurfaceVariant} />
+        <Text variant="bodySmall" style={[styles.noteText, { color: theme.colors.onSurfaceVariant }]}>
+          The chat opens with "Hi". Pick the same stations again inside WhatsApp.
+        </Text>
+      </View>
     </View>
   );
 }
@@ -144,34 +140,31 @@ const styles = StyleSheet.create({
   column: {
     gap: spacing.sm,
   },
-  header: {
-    gap: 2,
-    paddingHorizontal: spacing.xs,
-    paddingTop: spacing.xs,
-  },
-  entry: {
+  card: {
+    borderRadius: 24,
     padding: spacing.base,
-    gap: spacing.md,
+    gap: 14,
+    borderWidth: 0,
   },
-  // The thicker outline eats one point of padding so the content doesn't shift
-  // when the highlight moves to the next step.
-  entryCurrent: {
+  // The outline replaces two points of padding so content doesn't shift when
+  // the highlight moves to the next step.
+  cardCurrent: {
     borderWidth: 2,
-    padding: spacing.base - 1,
+    padding: spacing.base - 2,
   },
-  entryHead: {
+  head: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
-  markTile: {
-    width: 44,
-    height: 44,
-    borderRadius: shape.lg - 2,
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  entryText: {
+  headText: {
     flex: 1,
     gap: 2,
   },
@@ -182,11 +175,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonLabel: {
+  button: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    height: 48,
+    height: 52,
+  },
+  note: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.xs,
+  },
+  noteText: {
+    flex: 1,
   },
 });

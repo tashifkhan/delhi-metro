@@ -1,3 +1,4 @@
+import type { RouteStrategy } from '../types';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type HomeStackParamList = {
@@ -8,6 +9,7 @@ export type HomeStackParamList = {
     fromName: string;
     toName: string;
     journeyTime?: string;
+    strategy?: RouteStrategy;
   };
   StationDetail: { stationCode: string; stationName: string };
   Appearance: undefined;

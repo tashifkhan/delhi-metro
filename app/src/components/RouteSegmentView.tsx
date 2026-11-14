@@ -6,6 +6,7 @@ import { Touchable } from './Touchable';
 import type { PlannedLeg, PlannedStop } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, shape, emphasis, tabular, onColor } from '../theme';
+import { clockTime, durationLabel, stationName } from '../utils/format';
 
 interface Props {
   leg: PlannedLeg;
@@ -15,13 +16,21 @@ interface Props {
   onStationPress?: (stationCode: string, stationName: string) => void;
 }
 
-const RAIL_WIDTH = 28;
-const RAIL_THICKNESS = 8;
+/** Shared with `TransferSegmentView` so the walk leg lines up with the rails. */
+export const TIMELINE = {
+  timeWidth: 44,
+  railWidth: 22,
+  gap: 10,
+} as const;
 
-type RowKind = 'start' | 'middle' | 'end';
+const RAIL_THICKNESS = 8;
+const MARKER = 20;
+
+type RowKind = 'start' | 'middle' | 'end' | 'fold';
 
 /**
- * One ride on one line, drawn as a thick rail in the line colour.
+ * One ride on one line: times on the left, a thick rail in the line colour,
+ * stations on the right.
  *
  * The stops between boarding and alighting are folded by default. Most
  * people only need where to get on and where to get off, and a 17-stop leg
@@ -49,16 +58,15 @@ export function RouteSegmentView({
   const first = stops[0];
   const last = stops[stops.length - 1];
   const middle = stops.slice(1, -1);
+  const rideStops = middle.length + 1;
 
   const metaBits: string[] = [];
-  if (leg.platform_name) metaBits.push(leg.platform_name);
-  if (leg.towards_station) metaBits.push(`towards ${leg.towards_station}`);
+  if (leg.platform_name) metaBits.push(leg.platform_name.replace(/^Platform No\.\s*/i, 'Platform '));
+  if (leg.towards_station) metaBits.push(`to ${stationName(leg.towards_station)}`);
 
-  const foldBits: string[] = [`${middle.length + 1} ${middle.length === 0 ? 'stop' : 'stops'}`];
-  if (leg.duration) foldBits.push(leg.duration);
-  if (leg.distance_km != null && leg.distance_km > 0) {
-    foldBits.push(`${leg.distance_km.toFixed(1)} km`);
-  }
+  const foldBits: string[] = [`${rideStops} ${rideStops === 1 ? 'stop' : 'stops'}`];
+  const legDuration = durationLabel(leg.duration);
+  if (legDuration) foldBits.push(legDuration);
 
   const codeFor = (point: PlannedStop, index: number): string | undefined =>
     stationCodeMap?.get(point.name.trim().toLowerCase()) ??
@@ -66,66 +74,58 @@ export function RouteSegmentView({
     (index === stops.length - 1 ? leg.to_station_code : null) ??
     undefined;
 
-  const rail = (kind: RowKind, marker: 'terminus' | 'stop' | 'none') => (
+  const rail = (kind: RowKind) => (
     <View style={styles.rail}>
       <View
         style={[
           styles.railLine,
           { backgroundColor: lineColor },
-          kind === 'start'
-            ? styles.railFromCenter
-            : kind === 'end'
-              ? styles.railToCenter
-              : styles.railThrough,
+          kind === 'start' ? styles.railFromMarker : kind === 'end' ? styles.railToMarker : styles.railThrough,
         ]}
       />
-      {marker === 'terminus' ? (
+      {kind === 'start' || kind === 'end' ? (
         <View
-          style={[
-            styles.terminus,
-            { borderColor: lineColor, backgroundColor: fills.containerLowest },
-          ]}
+          style={[styles.marker, { borderColor: lineColor, backgroundColor: fills.containerLowest }]}
         />
-      ) : marker === 'stop' ? (
+      ) : kind === 'middle' ? (
         <View style={[styles.stopDot, { backgroundColor: fills.containerLowest }]} />
       ) : null}
     </View>
   );
 
-  const stationRow = (
-    point: PlannedStop,
-    index: number,
-    kind: RowKind,
-    detail?: ReactNode,
-  ) => {
+  const timeCell = (value: string | null) => (
+    <View style={styles.timeCell}>
+      {value ? (
+        <Text
+          variant="labelLarge"
+          style={[emphasis.strong, tabular, styles.time, { color: theme.colors.onSurface }]}
+        >
+          {value}
+        </Text>
+      ) : null}
+    </View>
+  );
+
+  const stationRow = (point: PlannedStop, index: number, kind: 'start' | 'middle' | 'end', detail?: ReactNode) => {
     const isTerminus = kind !== 'middle';
     const code = codeFor(point, index);
-    const time = kind === 'start' ? leg.start_time : kind === 'end' ? leg.end_time : null;
+    const time = kind === 'start' ? clockTime(leg.start_time) : kind === 'end' ? clockTime(leg.end_time) : null;
+    const name = stationName(point.name);
 
     const row = (
-      <View style={[styles.row, isTerminus && styles.rowTerminus]}>
-        {rail(kind, isTerminus ? 'terminus' : 'stop')}
-        <View style={styles.rowBody}>
-          <View style={styles.nameLine}>
-            <Text
-              variant={isTerminus ? 'titleMedium' : 'bodyMedium'}
-              style={[
-                isTerminus ? emphasis.strong : undefined,
-                styles.stationName,
-                { color: isTerminus ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
-              ]}
-            >
-              {point.name}
-            </Text>
-            {time ? (
-              <Text
-                variant="labelLarge"
-                style={[emphasis.strong, tabular, { color: theme.colors.onSurfaceVariant }]}
-              >
-                {time}
-              </Text>
-            ) : null}
-          </View>
+      <View style={styles.row}>
+        {timeCell(time)}
+        {rail(kind)}
+        <View style={[styles.body, kind === 'middle' && styles.bodyMiddle]}>
+          <Text
+            variant={isTerminus ? 'titleMedium' : 'bodyMedium'}
+            style={[
+              isTerminus ? emphasis.strong : undefined,
+              { color: isTerminus ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+            ]}
+          >
+            {name}
+          </Text>
           {detail}
         </View>
       </View>
@@ -135,8 +135,8 @@ export function RouteSegmentView({
       <Touchable
         key={`${point.name}-${index}`}
         radius={shape.md}
-        onPress={() => onStationPress(code, point.name)}
-        accessibilityLabel={`${point.name}, view station details`}
+        onPress={() => onStationPress(code, name)}
+        accessibilityLabel={`${name}, view station details`}
       >
         {row}
       </Touchable>
@@ -151,18 +151,15 @@ export function RouteSegmentView({
         first,
         0,
         'start',
-        <View style={styles.boardLine}>
+        <View style={styles.info}>
           <View style={[styles.linePill, { backgroundColor: lineColor }]}>
             <Ionicons name="train" size={12} color={pillText} />
             <Text variant="labelMedium" style={[emphasis.heavy, { color: pillText }]}>
-              {leg.line_name}
+              {leg.line_name.replace(/\s+line$/i, '')}
             </Text>
           </View>
           {metaBits.length > 0 ? (
-            <Text
-              variant="bodySmall"
-              style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}
-            >
+            <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
               {metaBits.join(', ')}
             </Text>
           ) : null}
@@ -171,8 +168,9 @@ export function RouteSegmentView({
 
       {/* The fold toggle sits on the rail, so the line visibly runs through it. */}
       <View style={styles.row}>
-        {rail('middle', 'none')}
-        <View style={styles.rowBody}>
+        {timeCell(null)}
+        {rail('fold')}
+        <View style={[styles.body, styles.bodyFold]}>
           {middle.length > 0 ? (
             <Touchable
               radius={shape.md}
@@ -194,10 +192,7 @@ export function RouteSegmentView({
               </View>
             </Touchable>
           ) : (
-            <Text
-              variant="labelMedium"
-              style={[styles.foldPlain, { color: theme.colors.onSurfaceVariant }]}
-            >
+            <Text variant="labelMedium" style={[styles.foldPlain, { color: theme.colors.onSurfaceVariant }]}>
               {foldBits.join(', ')}
             </Text>
           )}
@@ -211,10 +206,7 @@ export function RouteSegmentView({
         stops.length - 1,
         'end',
         !isLast ? (
-          <Text
-            variant="bodySmall"
-            style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}
-          >
+          <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
             Get off here
           </Text>
         ) : null,
@@ -224,10 +216,7 @@ export function RouteSegmentView({
       {!isLast && (leg.interchange_minutes ?? 0) > 0 ? (
         <View style={[styles.interchange, { backgroundColor: semantic.interchangeContainer }]}>
           <Ionicons name="git-compare" size={15} color={semantic.onInterchangeContainer} />
-          <Text
-            variant="labelMedium"
-            style={[emphasis.strong, { color: semantic.onInterchangeContainer }]}
-          >
+          <Text variant="labelMedium" style={[emphasis.strong, { color: semantic.onInterchangeContainer }]}>
             Change here, {leg.interchange_minutes} min
           </Text>
         </View>
@@ -239,62 +228,61 @@ export function RouteSegmentView({
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: spacing.md,
-    paddingRight: spacing.sm,
+    gap: TIMELINE.gap,
   },
-  rowTerminus: {
-    minHeight: 44,
+  timeCell: {
+    width: TIMELINE.timeWidth,
+    alignItems: 'flex-end',
+  },
+  time: {
+    marginTop: 2,
   },
   rail: {
-    width: RAIL_WIDTH,
+    width: TIMELINE.railWidth,
     alignItems: 'center',
   },
+  // Square ends: rounded ends left notches where one row's rail met the next.
   railLine: {
     position: 'absolute',
     width: RAIL_THICKNESS,
-    borderRadius: RAIL_THICKNESS / 2,
   },
-  /** First row: the rail starts at the marker, so nothing is drawn above it. */
-  railFromCenter: {
-    top: 12,
+  railFromMarker: {
+    top: MARKER / 2,
     bottom: 0,
   },
   railThrough: {
     top: 0,
     bottom: 0,
   },
-  /** Last row: the rail ends under the marker. */
-  railToCenter: {
+  railToMarker: {
     top: 0,
-    height: 22,
+    height: MARKER / 2,
   },
-  terminus: {
-    marginTop: 3,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  marker: {
+    width: MARKER,
+    height: MARKER,
+    borderRadius: MARKER / 2,
     borderWidth: 4,
   },
   stopDot: {
-    marginTop: 9,
+    marginTop: 8,
     width: 6,
     height: 6,
     borderRadius: 3,
   },
-  rowBody: {
+  body: {
     flex: 1,
+    paddingBottom: spacing.base,
+    paddingRight: spacing.sm,
+    gap: 6,
+  },
+  bodyMiddle: {
     paddingBottom: spacing.md,
-    gap: spacing.xs,
   },
-  nameLine: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+  bodyFold: {
+    paddingBottom: spacing.md,
   },
-  stationName: {
-    flex: 1,
-  },
-  boardLine: {
+  info: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
@@ -303,11 +291,10 @@ const styles = StyleSheet.create({
   linePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: shape.sm - 2,
-    flexShrink: 1,
+    height: 22,
+    borderRadius: 6,
   },
   meta: {
     flexShrink: 1,
@@ -330,8 +317,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginLeft: RAIL_WIDTH + spacing.md,
-    marginBottom: spacing.md,
+    marginLeft: TIMELINE.timeWidth + TIMELINE.railWidth + TIMELINE.gap * 2,
+    marginBottom: spacing.base,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.iconSmall,

@@ -1,8 +1,10 @@
 /**
  * Material 3 color schemes for Delhi Metro.
  *
- * Dark palette: deep true-blacks with cool-blue tonal surfaces
- * like Metrolist — moody, layered, premium feel.
+ * The accent and surface roles are generated from the Metro blue seed by
+ * material-color-utilities (see `materialScheme`), so light and dark get the
+ * real M3 tonal surfaces instead of hand-picked values over pure black. The
+ * AMOLED setting still turns dark surfaces black when someone wants that.
  *
  * Alongside the standard M3 roles each scheme carries app-specific semantic
  * roles (success / warning / interchange). They follow the same
@@ -12,45 +14,12 @@
  * wallpaper. Never hardcode a status color at the call site; use these.
  */
 
+import { materialScheme } from './materialScheme';
+
+export const METRO_SEED = '#005FAF';
+
 export const lightScheme = {
-  primary: 'rgb(0, 95, 175)',
-  onPrimary: 'rgb(255, 255, 255)',
-  primaryContainer: 'rgb(212, 227, 255)',
-  onPrimaryContainer: 'rgb(0, 28, 58)',
-  secondary: 'rgb(84, 95, 113)',
-  onSecondary: 'rgb(255, 255, 255)',
-  secondaryContainer: 'rgb(216, 227, 248)',
-  onSecondaryContainer: 'rgb(17, 28, 43)',
-  tertiary: 'rgb(110, 86, 118)',
-  onTertiary: 'rgb(255, 255, 255)',
-  tertiaryContainer: 'rgb(248, 216, 255)',
-  onTertiaryContainer: 'rgb(39, 19, 47)',
-  error: 'rgb(186, 26, 26)',
-  onError: 'rgb(255, 255, 255)',
-  errorContainer: 'rgb(255, 218, 214)',
-  onErrorContainer: 'rgb(65, 0, 2)',
-  background: 'rgb(253, 252, 255)',
-  onBackground: 'rgb(26, 28, 30)',
-  surface: 'rgb(253, 252, 255)',
-  onSurface: 'rgb(26, 28, 30)',
-  surfaceVariant: 'rgb(224, 226, 236)',
-  onSurfaceVariant: 'rgb(67, 71, 78)',
-  outline: 'rgb(116, 119, 127)',
-  outlineVariant: 'rgb(196, 198, 208)',
-  inverseSurface: 'rgb(47, 48, 51)',
-  inverseOnSurface: 'rgb(241, 240, 244)',
-  inversePrimary: 'rgb(165, 200, 255)',
-  elevation: {
-    level0: 'transparent',
-    level1: 'rgb(240, 244, 251)',
-    level2: 'rgb(233, 239, 249)',
-    level3: 'rgb(225, 235, 247)',
-    level4: 'rgb(223, 233, 246)',
-    level5: 'rgb(218, 230, 245)',
-  },
-  surfaceDisabled: 'rgba(26, 28, 30, 0.12)',
-  onSurfaceDisabled: 'rgba(26, 28, 30, 0.38)',
-  backdrop: 'rgba(45, 49, 56, 0.4)',
+  ...materialScheme(METRO_SEED, false),
 
   // App-specific semantic roles
   success: 'rgb(27, 109, 48)',
@@ -68,44 +37,7 @@ export const lightScheme = {
 };
 
 export const darkScheme = {
-  primary: 'rgb(165, 200, 255)',
-  onPrimary: 'rgb(0, 49, 95)',
-  primaryContainer: 'rgb(0, 71, 134)',
-  onPrimaryContainer: 'rgb(212, 227, 255)',
-  secondary: 'rgb(188, 199, 220)',
-  onSecondary: 'rgb(38, 49, 65)',
-  secondaryContainer: 'rgb(61, 71, 88)',
-  onSecondaryContainer: 'rgb(216, 227, 248)',
-  tertiary: 'rgb(219, 188, 227)',
-  onTertiary: 'rgb(62, 40, 70)',
-  tertiaryContainer: 'rgb(86, 62, 94)',
-  onTertiaryContainer: 'rgb(248, 216, 255)',
-  error: 'rgb(255, 180, 171)',
-  onError: 'rgb(105, 0, 5)',
-  errorContainer: 'rgb(147, 0, 10)',
-  onErrorContainer: 'rgb(255, 218, 214)',
-  background: 'rgb(0, 0, 0)',
-  onBackground: 'rgb(227, 226, 230)',
-  surface: 'rgb(0, 0, 0)',
-  onSurface: 'rgb(227, 226, 230)',
-  surfaceVariant: 'rgb(67, 71, 78)',
-  onSurfaceVariant: 'rgb(196, 198, 208)',
-  outline: 'rgb(142, 144, 153)',
-  outlineVariant: 'rgb(67, 71, 78)',
-  inverseSurface: 'rgb(227, 226, 230)',
-  inverseOnSurface: 'rgb(47, 48, 51)',
-  inversePrimary: 'rgb(0, 95, 175)',
-  elevation: {
-    level0: 'transparent',
-    level1: 'rgb(21, 22, 28)',
-    level2: 'rgb(27, 29, 36)',
-    level3: 'rgb(33, 36, 44)',
-    level4: 'rgb(35, 38, 46)',
-    level5: 'rgb(39, 42, 51)',
-  },
-  surfaceDisabled: 'rgba(227, 226, 230, 0.12)',
-  onSurfaceDisabled: 'rgba(227, 226, 230, 0.38)',
-  backdrop: 'rgba(45, 49, 56, 0.4)',
+  ...materialScheme(METRO_SEED, true),
 
   // App-specific semantic roles
   success: 'rgb(135, 217, 142)',
@@ -121,4 +53,3 @@ export const darkScheme = {
   interchangeContainer: 'rgb(102, 55, 0)',
   onInterchangeContainer: 'rgb(255, 220, 186)',
 };
-

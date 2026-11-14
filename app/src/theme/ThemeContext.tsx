@@ -16,6 +16,7 @@ import {
   MD3DarkTheme,
   MD3LightTheme,
   adaptNavigationTheme,
+  configureFonts,
   type MD3Theme,
 } from 'react-native-paper';
 import {
@@ -24,7 +25,7 @@ import {
   type Theme as NavigationTheme,
 } from '@react-navigation/native';
 import { lightScheme, darkScheme } from './colors';
-import { rgba } from './colorMath';
+import { darken, rgba } from './colorMath';
 import {
   DYNAMIC_PALETTE_ID,
   buildScheme,
@@ -47,6 +48,18 @@ const IS_ANDROID_12_PLUS =
 const DYNAMIC_THEME_AVAILABLE = IS_ANDROID_12_PLUS && isDynamicThemeSupported;
 const FALLBACK_SOURCE_COLOR = '#005FAF';
 
+/**
+ * Roboto Flex on the web, the system face elsewhere. Android already renders
+ * Roboto; the browser would otherwise fall back to Helvetica or Arial, which
+ * sets far heavier than the M3 type scale assumes.
+ */
+const WEB_FONTS =
+  Platform.OS === 'web'
+    ? configureFonts({
+        config: { fontFamily: '"Roboto Flex", Roboto, system-ui, -apple-system, sans-serif' },
+      })
+    : undefined;
+
 function createPaperTheme(
   isDark: boolean,
   scheme: Partial<MD3Theme['colors']>,
@@ -54,6 +67,7 @@ function createPaperTheme(
   const baseTheme = isDark ? MD3DarkTheme : MD3LightTheme;
   return {
     ...baseTheme,
+    ...(WEB_FONTS ? { fonts: WEB_FONTS } : null),
     colors: {
       ...baseTheme.colors,
       ...scheme,
@@ -150,7 +164,9 @@ function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
     selected: isDark ? colors.primaryContainer : colors.surface,
     floating: isDark ? colors.elevation.level4 : colors.surface,
     hairline: isDark ? rgba(colors.outlineVariant, 0.55) : 'transparent',
-    containerLowest: isDark ? colors.background : colors.surface,
+    // M3 puts the lowest step just below the page in dark mode and at pure
+    // white in light mode, so fields set into a panel read as wells.
+    containerLowest: isDark ? darken(colors.background, 0.3) : '#FFFFFF',
     containerLow: colors.elevation.level1,
     container: colors.elevation.level2,
     containerHigh: colors.elevation.level3,

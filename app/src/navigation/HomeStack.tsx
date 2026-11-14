@@ -24,7 +24,7 @@ export function HomeStack() {
       screenOptions={screenOptions}
     >
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="JourneyResults" component={JourneyResultsScreen} options={{ title: 'Route Details' }} />
+      <Stack.Screen name="JourneyResults" component={JourneyResultsScreen} options={{ title: '' }} />
       <Stack.Screen
         name="StationDetail"
         component={StationDetailScreen}

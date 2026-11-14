@@ -4,12 +4,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import type { PlannedLeg } from '../types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, shape, emphasis } from '../theme';
+import { TIMELINE } from './RouteSegmentView';
+import { durationLabel, stationName } from '../utils/format';
 
 interface Props {
   leg: PlannedLeg;
 }
 
-const RAIL_WIDTH = 28;
 const DASHES = 6;
 
 /**
@@ -25,10 +26,12 @@ export function TransferSegmentView({ leg }: Props) {
 
   const metaBits: string[] = [];
   if (leg.walk_metres) metaBits.push(`about ${leg.walk_metres} m`);
-  if (leg.duration) metaBits.push(leg.duration);
+  const walk = durationLabel(leg.duration);
+  if (walk) metaBits.push(walk);
 
   return (
     <View style={styles.row}>
+      <View style={styles.timeCell} />
       <View style={styles.rail}>
         {Array.from({ length: DASHES }, (_, index) => (
           <View key={index} style={[styles.dash, { backgroundColor: theme.colors.outline }]} />
@@ -39,7 +42,7 @@ export function TransferSegmentView({ leg }: Props) {
         <Ionicons name="walk" size={20} color={theme.colors.primary} />
         <View style={styles.text}>
           <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
-            Walk to {leg.to_station}
+            Walk to {stationName(leg.to_station)}
           </Text>
           {metaBits.length > 0 ? (
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
@@ -63,12 +66,15 @@ export function TransferSegmentView({ leg }: Props) {
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: TIMELINE.gap,
     paddingRight: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.base,
+  },
+  timeCell: {
+    width: TIMELINE.timeWidth,
   },
   rail: {
-    width: RAIL_WIDTH,
+    width: TIMELINE.railWidth,
     alignItems: 'center',
     justifyContent: 'space-evenly',
   },
