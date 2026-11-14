@@ -24,7 +24,10 @@ interface Env {
 const FORWARDED_REQUEST_HEADERS = [
   'accept',
   'accept-language',
+  'cache-control',
   'content-type',
+  // Lets an EventSource resume `/maps/layout` progress after a reconnect.
+  'last-event-id',
   'range',
   'user-agent',
 ];
@@ -151,6 +154,21 @@ export default {
         statusText: upstream.statusText,
         headers: new Headers(upstream.headers),
       });
+
+      // `/maps/layout` answers JSON or a Server-Sent Event stream from the same
+      // URL, chosen by `Accept`. Streams must reach the client as they are
+      // written: no edge or browser caching, no transform, no buffering. The
+      // body already streams through untouched above.
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('text/event-stream')) {
+        response.headers.set('Cache-Control', 'no-cache, no-transform');
+        response.headers.set('X-Accel-Buffering', 'no');
+        response.headers.set('Vary', 'Accept');
+        return response;
+      }
+      if (pathname.endsWith('/maps/layout')) {
+        response.headers.set('Vary', 'Accept');
+      }
 
       // Station lists, line lists and map metadata change rarely and the app
       // already keeps its own copy. A short shared cache keeps a cold visit

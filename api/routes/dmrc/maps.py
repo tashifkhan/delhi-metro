@@ -6,6 +6,9 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query
 from fastapi.responses import RedirectResponse, Response
 
+from routes.map_layout import mount_map_layout
+from schemas.planner import MetroNetwork
+
 from schemas.map_asset import (
     MapAsset,
     MapAssetByFormatResponse,
@@ -16,6 +19,9 @@ from schemas.map_asset import (
 from services.dmrc import map_asset as map_service
 
 router = APIRouter(prefix="/maps", tags=["maps"])
+
+# Before `/{family}`, which would otherwise capture `layout` as a family.
+mount_map_layout(router, MetroNetwork.DMRC)
 
 FamilyPath = Annotated[
     MapFamily,

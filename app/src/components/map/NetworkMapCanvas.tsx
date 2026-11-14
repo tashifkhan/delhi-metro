@@ -19,13 +19,8 @@ import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-nat
 import { useTheme } from 'react-native-paper';
 import { useAppTheme } from '../../theme/ThemeContext';
 import { stationName } from '../../utils/format';
-import {
-  MAP_BOUNDS,
-  MAP_LINES,
-  MAP_STATIONS,
-  STATION_BY_CODE,
-  type MapStation,
-} from './networkData';
+import type { MapStation } from './networkData';
+import { useNetworkGeometry } from './NetworkGeometryContext';
 
 export interface NetworkMapHandle {
   /** Centre on a station and zoom in far enough to read its neighbours. */
@@ -82,6 +77,12 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
 ) {
   const theme = useTheme();
   const { fills, isDark } = useAppTheme();
+  // Official-map layouts can move stations after the first render, so the
+  // geometry comes from context; callbacks created once read it through a ref.
+  const geometry = useNetworkGeometry();
+  const geoRef = useRef(geometry);
+  geoRef.current = geometry;
+  const { lines: MAP_LINES, stations: MAP_STATIONS, stationByCode: STATION_BY_CODE } = geometry;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<Viewport>({ cx: 0, cy: 0, k: 0 });
   const viewRef = useRef(view);
@@ -94,6 +95,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
 
   const limits = useCallback(() => {
     const { width, height } = sizeRef.current;
+    const MAP_BOUNDS = geoRef.current.bounds;
     const spanX = MAP_BOUNDS.maxX - MAP_BOUNDS.minX;
     const spanY = MAP_BOUNDS.maxY - MAP_BOUNDS.minY;
     const minK = Math.min(width / spanX, height / spanY) / MIN_SPAN_FACTOR;
@@ -105,6 +107,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
     (next: Viewport) => {
       const { minK, maxK } = limits();
       const k = Math.min(maxK, Math.max(minK, next.k));
+      const MAP_BOUNDS = geoRef.current.bounds;
       // Keep some of the network on screen however far it is dragged.
       const cx = Math.min(MAP_BOUNDS.maxX, Math.max(MAP_BOUNDS.minX, next.cx));
       const cy = Math.min(MAP_BOUNDS.maxY, Math.max(MAP_BOUNDS.minY, next.cy));
@@ -162,7 +165,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
     ref,
     () => ({
       focusStation: (code) => {
-        const station = STATION_BY_CODE.get(code);
+        const station = geoRef.current.stationByCode.get(code);
         if (!station) return;
         const k = Math.max(viewRef.current.k, sizeRef.current.width / 6_000);
         centreOn(station.x, station.y, k);
@@ -197,7 +200,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
       const p = toMap(sx, sy, v);
       let best: MapStation | null = null;
       let bestDist = HIT_RADIUS / v.k;
-      for (const station of MAP_STATIONS) {
+      for (const station of geoRef.current.stations) {
         const d = Math.hypot(station.x - p.x, station.y - p.y);
         if (d < bestDist) {
           best = station;
@@ -329,7 +332,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
   // band between them. The zoom stays where the user left it.
   useEffect(() => {
     if (!selectedCode || sizeRef.current.height === 0) return;
-    const station = STATION_BY_CODE.get(selectedCode);
+    const station = geoRef.current.stationByCode.get(selectedCode);
     if (!station) return;
     const v = viewRef.current;
     const sy = sizeRef.current.height / 2 + (station.y - v.cy) * v.k;
@@ -374,7 +377,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
 
   const linePoints = useMemo(
     () => MAP_LINES.map((line) => line.points.map((p) => `${p.x},${p.y}`).join(' ')),
-    [],
+    [MAP_LINES],
   );
 
   const dim = (lineCodes: string[]) =>

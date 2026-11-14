@@ -1,5 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Keyboard,
   Platform,
   ScrollView,
@@ -14,19 +15,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import { useStationSearchQuery } from '../hooks';
+import { useMapLayout } from '../hooks/useMapLayout';
 import { useHaptics } from '../hooks/useHaptics';
 import { Touchable } from '../components/Touchable';
 import { NetworkSwitcher } from '../components/NetworkSwitcher';
 import { NetworkMapCanvas, type NetworkMapHandle } from '../components/map/NetworkMapCanvas';
 import { StationSheet } from '../components/map/StationSheet';
 import { OfficialMapView } from '../components/map/OfficialMapView';
+import { LINE_BY_CODE, project, type MapStation } from '../components/map/networkData';
 import {
-  LINE_BY_CODE,
-  MAP_STATIONS,
-  STATION_BY_CODE,
-  project,
-  type MapStation,
-} from '../components/map/networkData';
+  BASE_GEOMETRY,
+  LAYOUT_REGISTRY,
+  applyLayouts,
+  type NetworkGeometry,
+} from '../components/map/geometry';
+import { NetworkGeometryProvider } from '../components/map/NetworkGeometryContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { emphasis, onColor, radius, spacing } from '../theme';
 import { stationName } from '../utils/format';
@@ -39,12 +42,15 @@ const FAB_SIZE = 56;
 const MAX_RESULTS = 6;
 
 /** Station codes differ between the search catalog and the map snapshot only in case and spacing. */
-function mapStationFor(code: string, name: string): MapStation | null {
-  const byCode = STATION_BY_CODE.get(code.trim().toUpperCase());
+function mapStationFor(geo: NetworkGeometry, code: string, name: string): MapStation | null {
+  const byCode = geo.stationByCode.get(code.trim().toUpperCase());
   if (byCode) return byCode;
   const wanted = name.trim().toLowerCase();
-  return MAP_STATIONS.find((s) => s.name.trim().toLowerCase() === wanted) ?? null;
+  return geo.stations.find((s) => s.name.trim().toLowerCase() === wanted) ?? null;
 }
+
+/** How long a "couldn't refresh" note stays up before it gets out of the way. */
+const NOTE_MS = 4_000;
 
 /**
  * The network map.
@@ -70,22 +76,42 @@ export function MetroMapScreen() {
   const [locating, setLocating] = useState(false);
   const [sheetHeight, setSheetHeight] = useState(0);
 
+  // Official-map layouts (see components/map/geometry). One hook per network,
+  // gated by the registry, so Delhi makes no request while it is switched off.
+  const nmrcLayout = useMapLayout('nmrc', LAYOUT_REGISTRY.nmrc.enabled);
+  const dmrcLayout = useMapLayout('dmrc', LAYOUT_REGISTRY.dmrc.enabled);
+  const geometry = useMemo(
+    () => applyLayouts(BASE_GEOMETRY, { nmrc: nmrcLayout.layout, dmrc: dmrcLayout.layout }),
+    [nmrcLayout.layout, dmrcLayout.layout],
+  );
+  const reading = [nmrcLayout, dmrcLayout].find(
+    (state) => state.stage === 'extracting' || state.stage === 'progress',
+  );
+  const layoutError = nmrcLayout.error ?? dmrcLayout.error;
+  const [showError, setShowError] = useState(false);
+  useEffect(() => {
+    if (!layoutError) return;
+    setShowError(true);
+    const timer = setTimeout(() => setShowError(false), NOTE_MS);
+    return () => clearTimeout(timer);
+  }, [layoutError]);
+
   const { data: results } = useStationSearchQuery(query);
   const matches = useMemo(() => {
     if (!query.trim()) return [];
     const seen = new Set<string>();
     const out: { result: (typeof results)[number]; station: MapStation }[] = [];
     for (const result of results ?? []) {
-      const station = mapStationFor(result.station_code, result.station_name);
+      const station = mapStationFor(geometry, result.station_code, result.station_name);
       if (!station || seen.has(station.code)) continue;
       seen.add(station.code);
       out.push({ result, station });
       if (out.length >= MAX_RESULTS) break;
     }
     return out;
-  }, [query, results]);
+  }, [query, results, geometry]);
 
-  const selected = selectedCode ? STATION_BY_CODE.get(selectedCode) ?? null : null;
+  const selected = selectedCode ? geometry.stationByCode.get(selectedCode) ?? null : null;
 
   const select = useCallback(
     (code: string | null) => {
@@ -120,7 +146,7 @@ export function MetroMapScreen() {
         setUserPoint(point);
         let nearest: MapStation | null = null;
         let best = Infinity;
-        for (const station of MAP_STATIONS) {
+        for (const station of geometry.stations) {
           const d = Math.hypot(station.x - point.x, station.y - point.y);
           if (d < best) {
             best = d;
@@ -183,7 +209,22 @@ export function MetroMapScreen() {
     );
   }
 
+  const banner = reading
+    ? {
+        busy: true,
+        text:
+          reading.message ??
+          'The official map changed. Reading it again, this takes about a minute.',
+        count: reading.progress ? `${reading.progress.done} of ${reading.progress.total}` : null,
+      }
+    : showError
+      ? { busy: false, text: "Couldn't check the official map. Showing the saved layout.", count: null }
+      : null;
+  // Sits above whatever occupies the bottom edge: the sheet, else the line key.
+  const bannerBottom = sheetOpen ? sheetHeight + spacing.sm : spacing.base + 32 + spacing.sm;
+
   return (
+    <NetworkGeometryProvider value={geometry}>
     <View style={[styles.fill, { backgroundColor: fills.containerLow }]}>
       <NetworkMapCanvas
         ref={mapRef}
@@ -338,7 +379,35 @@ export function MetroMapScreen() {
           />
         </View>
       ) : null}
+
+      {banner ? (
+        <View
+          style={[styles.bannerWrap, { bottom: bannerBottom }]}
+          pointerEvents="none"
+          accessibilityLiveRegion="polite"
+        >
+          <View style={[styles.banner, { backgroundColor: theme.colors.inverseSurface }]}>
+            {banner.busy ? (
+              <ActivityIndicator size="small" color={theme.colors.inversePrimary} />
+            ) : (
+              <Ionicons name="cloud-offline-outline" size={18} color={theme.colors.inverseOnSurface} />
+            )}
+            <Text
+              variant="bodyMedium"
+              style={[styles.bannerText, { color: theme.colors.inverseOnSurface }]}
+            >
+              {banner.text}
+            </Text>
+            {banner.count ? (
+              <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.inversePrimary }]}>
+                {banner.count}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
     </View>
+    </NetworkGeometryProvider>
   );
 }
 
@@ -458,6 +527,28 @@ const styles = StyleSheet.create({
     width: 14,
     height: 6,
     borderRadius: 3,
+  },
+  bannerWrap: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+  },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 48,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.base,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  bannerText: {
+    flex: 1,
   },
   sheetWrap: {
     position: 'absolute',

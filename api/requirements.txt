@@ -37,6 +37,8 @@ idna==3.11
     #   httpx
 lxml==6.1.1
     # via api
+pillow==13.0.0
+    # via api
 pydantic==2.12.5
     # via
     #   fastapi

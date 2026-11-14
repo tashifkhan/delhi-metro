@@ -242,6 +242,22 @@ DMRC_ENDPOINTS: list[Endpoint] = [
     ),
     (
         "GET",
+        "/api/v1/dmrc/maps/layout",
+        "Station positions on the official map (off by default)",
+        "dmrc",
+        [],
+        [
+            (
+                "stream",
+                "boolean",
+                False,
+                "Send Server-Sent Events (`status`, `error`, `layout`) instead of waiting for JSON.",
+            )
+        ],
+        None,
+    ),
+    (
+        "GET",
         "/api/v1/dmrc/maps/assets",
         "List map assets",
         "dmrc",
@@ -411,6 +427,22 @@ NMRC_ENDPOINTS: list[Endpoint] = [
         "nmrc",
         [],
         [],
+        None,
+    ),
+    (
+        "GET",
+        "/api/v1/nmrc/maps/layout",
+        "Station positions on the official Aqua Line map",
+        "nmrc",
+        [],
+        [
+            (
+                "stream",
+                "boolean",
+                False,
+                "Send Server-Sent Events (`status`, `error`, `layout`) instead of waiting for JSON.",
+            )
+        ],
         None,
     ),
     (
