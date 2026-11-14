@@ -62,6 +62,7 @@ export function StationListSkeleton({ rows = 5 }: Props) {
                 style={[styles.bar, styles.barNarrow, { opacity, backgroundColor: fills.containerHigh }]}
               />
             </View>
+            <Animated.View style={[styles.chip, { opacity, backgroundColor: fills.containerHigh }]} />
           </View>
         );
       })}
@@ -78,14 +79,21 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingLeft: spacing.base,
+    paddingRight: spacing.md,
+    paddingVertical: 14,
     gap: spacing.md,
   },
+  // Same slim line bar as the real row.
   icon: {
-    width: 40,
+    width: 5,
     height: 40,
-    borderRadius: 14,
+    borderRadius: 3,
+  },
+  chip: {
+    width: 44,
+    height: 22,
+    borderRadius: 8,
   },
   lines: {
     flex: 1,

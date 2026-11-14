@@ -1,8 +1,8 @@
 import { StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, radius, emphasis } from '../theme';
+import { StateLayout } from './loading/StateLayout';
 
 interface Props {
   title: string;
@@ -10,50 +10,38 @@ interface Props {
   icon?: keyof typeof Ionicons.glyphMap;
 }
 
+/**
+ * Empty state on the loading layout. Sits inside lists, so it centres in its
+ * parent rather than painting a full-screen background.
+ */
 export function EmptyState({ title, subtitle, icon = 'folder-open-outline' }: Props) {
   const theme = useTheme();
   const { fills } = useAppTheme();
 
   return (
-    <View style={styles.container}>
-      <View style={[styles.iconWrap, { backgroundColor: fills.subtle }]}>
-        <Ionicons name={icon} size={32} color={theme.colors.onSurfaceVariant} />
-      </View>
-      <Text
-        variant="titleMedium"
-        style={[emphasis.strong, styles.text, { color: theme.colors.onSurface }]}
-      >
-        {title}
-      </Text>
-      {subtitle ? (
-        <Text
-          variant="bodyMedium"
-          style={[styles.text, { color: theme.colors.onSurfaceVariant }]}
-        >
-          {subtitle}
-        </Text>
-      ) : null}
-    </View>
+    <StateLayout
+      fullScreen={false}
+      style={styles.fill}
+      visual={
+        <View style={[styles.circle, { backgroundColor: fills.containerHigh }]}>
+          <Ionicons name={icon} size={40} color={theme.colors.onSurfaceVariant} />
+        </View>
+      }
+      title={title}
+      subtitle={subtitle}
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  fill: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
   },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.hero,
-    justifyContent: 'center',
+  circle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  text: {
-    textAlign: 'center',
+    justifyContent: 'center',
   },
 });

@@ -22,7 +22,7 @@ const TAB_ICONS: Record<
   keyof RootTabParamList,
   { focused: keyof typeof Ionicons.glyphMap; default: keyof typeof Ionicons.glyphMap }
 > = {
-  HomeTab: { focused: 'train', default: 'train-outline' },
+  HomeTab: { focused: 'navigate', default: 'navigate-outline' },
   SearchTab: { focused: 'search', default: 'search-outline' },
   LinesTab: { focused: 'git-branch', default: 'git-branch-outline' },
   MapTab: { focused: 'map', default: 'map-outline' },

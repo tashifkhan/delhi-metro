@@ -1,75 +1,42 @@
-import { useHaptics } from '../hooks/useHaptics';
 import { StyleSheet, View } from 'react-native';
-import { Button, Text, useTheme } from 'react-native-paper';
+import { useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { spacing, radius, emphasis } from '../theme';
+import { StateLayout } from './loading/StateLayout';
+import { StateButton } from './loading/StateButton';
 
 interface Props {
   message: string;
   onRetry?: () => void;
 }
 
+/** Error state on the same layout and 96pt circle as the loading indicator. */
 export function ErrorState({ message, onRetry }: Props) {
   const theme = useTheme();
-  const haptics = useHaptics();
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.iconWrap, { backgroundColor: theme.colors.errorContainer }]}>
-        <Ionicons name="cloud-offline-outline" size={32} color={theme.colors.onErrorContainer} />
-      </View>
-      <Text
-        variant="titleMedium"
-        style={[emphasis.strong, styles.text, { color: theme.colors.onSurface }]}
-      >
-        Something went wrong
-      </Text>
-      <Text
-        variant="bodyMedium"
-        style={[styles.text, { color: theme.colors.onSurfaceVariant }]}
-      >
-        {message}
-      </Text>
-      {onRetry ? (
-        <Button
-          mode="contained"
-          onPress={() => { haptics.press(); onRetry(); }}
-          icon="refresh"
-          style={styles.button}
-          contentStyle={styles.buttonContent}
-        >
-          Try Again
-        </Button>
-      ) : null}
-    </View>
+    <StateLayout
+      visual={
+        <View style={[styles.circle, { backgroundColor: theme.colors.errorContainer }]}>
+          <Ionicons name="cloud-offline-outline" size={40} color={theme.colors.onErrorContainer} />
+        </View>
+      }
+      title={message}
+      // Only failures that can be retried are about the connection; "Station
+      // not found" is not.
+      subtitle={onRetry ? 'Check your connection and try again.' : undefined}
+      actions={
+        onRetry ? <StateButton label="Try again" icon="refresh" onPress={onRetry} /> : null
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
+  circle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
-    padding: spacing.xl,
-    gap: spacing.sm,
-  },
-  iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.hero,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  text: {
-    textAlign: 'center',
-  },
-  button: {
-    marginTop: spacing.md,
-    borderRadius: radius.pill,
-  },
-  buttonContent: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
   },
 });

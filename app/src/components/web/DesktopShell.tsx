@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { BrandMark } from '../BrandMark';
 import { Text, useTheme } from 'react-native-paper';
 
 import type { RootTabParamList } from '../../navigation/types';
@@ -16,7 +17,7 @@ const NAV_ITEMS: {
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
 }[] = [
-  { key: 'HomeTab', label: 'Plan', icon: 'train-outline', activeIcon: 'train' },
+  { key: 'HomeTab', label: 'Plan', icon: 'navigate-outline', activeIcon: 'navigate' },
   { key: 'SearchTab', label: 'Search', icon: 'search-outline', activeIcon: 'search' },
   { key: 'LinesTab', label: 'Lines', icon: 'git-branch-outline', activeIcon: 'git-branch' },
   { key: 'MapTab', label: 'Map', icon: 'map-outline', activeIcon: 'map' },
@@ -48,9 +49,7 @@ export function DesktopShell({ active, onSelect }: Props) {
       ]}
     >
       <View style={styles.brand}>
-        <View style={[styles.brandMark, { backgroundColor: theme.colors.primary }]}>
-          <Ionicons name="train" size={20} color={theme.colors.onPrimary} />
-        </View>
+        <BrandMark size={40} />
         <View style={styles.brandText}>
           <Text variant="titleMedium" style={[emphasis.heavy, { color: theme.colors.onSurface }]}>
             NCR Metro

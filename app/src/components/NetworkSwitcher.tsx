@@ -1,93 +1,37 @@
 import { StyleSheet, View } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
 
 import { NETWORK_NAMES, useMetroNetwork, type MetroNetwork } from '../network';
-import { OperatorMark } from './OperatorMark';
-import { Touchable } from './Touchable';
-import { emphasis, radius, spacing } from '../theme';
+import { PillSegmented, type PillOption } from './PillSegmented';
 
-const OPTIONS: { value: MetroNetwork; label: string }[] = [
-  { value: 'dmrc', label: 'DMRC' },
-  { value: 'nmrc', label: 'NMRC' },
+const OPTIONS: PillOption<MetroNetwork>[] = [
+  { value: 'dmrc', label: 'Delhi', accessibilityLabel: `Show ${NETWORK_NAMES.dmrc}` },
+  { value: 'nmrc', label: 'Noida', accessibilityLabel: `Show ${NETWORK_NAMES.nmrc}` },
 ];
 
+/**
+ * Delhi / Noida switch for screens that show one operator at a time (alerts,
+ * the official map). The pill segmented track needs a fixed width: its options
+ * share the track equally, and the app bar would otherwise give it none.
+ */
 export function NetworkSwitcher({ compact = false }: { compact?: boolean }) {
-  const theme = useTheme();
   const { network, setNetwork } = useMetroNetwork();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.surfaceVariant,
-          padding: compact ? 2 : 3,
-        },
-      ]}
-      accessibilityRole="radiogroup"
-    >
-      {OPTIONS.map((option) => {
-        const selected = option.value === network;
-        return (
-          <Touchable
-            key={option.value}
-            radius={radius.pill}
-            haptic="select"
-            onPress={() => setNetwork(option.value)}
-            accessibilityRole="radio"
-            accessibilityState={{ selected }}
-            // The operator's initials are the label; the full name belongs in
-            // the spoken description rather than on screen.
-            accessibilityLabel={`Show ${NETWORK_NAMES[option.value]} first`}
-            accessibilityHint="Station search covers both networks either way"
-            style={{
-              backgroundColor: selected ? theme.colors.primary : 'transparent',
-            }}
-          >
-            <View style={[styles.option, compact && styles.compactOption]}>
-              <OperatorMark network={option.value} size={compact ? 14 : 17} />
-              <Text
-                variant={compact ? 'labelSmall' : 'labelMedium'}
-                style={[
-                  emphasis.strong,
-                  {
-                    color: selected
-                      ? theme.colors.onPrimary
-                      : theme.colors.onSurfaceVariant,
-                  },
-                ]}
-              >
-                {option.label}
-              </Text>
-            </View>
-          </Touchable>
-        );
-      })}
+    <View style={[styles.wrap, { width: compact ? 168 : 220 }]}>
+      <PillSegmented
+        options={OPTIONS}
+        value={network}
+        onChange={setNetwork}
+        compact={compact}
+        accessibilityLabel="Network"
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    // The app bar is taller than the pill, so the pill has to opt out of the
-    // row's stretch — centred rather than `flex-start`, which pinned it to the
-    // top edge with the title sitting below it.
+  wrap: {
+    // The app bar is taller than the track; centre it instead of stretching.
     alignSelf: 'center',
-    borderRadius: radius.pill,
-    gap: 2,
-  },
-  option: {
-    minHeight: 36,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  compactOption: {
-    minHeight: 28,
-    paddingHorizontal: 6,
-    gap: 3,
   },
 });

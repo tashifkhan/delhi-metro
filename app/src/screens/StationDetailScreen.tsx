@@ -1,5 +1,5 @@
-import { useLayoutEffect, useMemo, useState, type ReactNode } from 'react';
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Animated, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,10 +13,11 @@ import { Touchable } from '../components/Touchable';
 import { SectionHeader } from '../components/SectionHeader';
 import { Reveal } from '../components/Reveal';
 import { StationLineChip, shortLineName } from '../components/StationLineChip';
+import { LineGlyph, lineGlyph } from '../components/LineGlyph';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { StationDetail } from '../types';
-import { spacing, shape, radius, emphasis, tabular } from '../theme';
+import { spacing, shape, radius, emphasis, tabular, duration, easing } from '../theme';
 import { clockTime, stationName } from '../utils/format';
 
 type Route = RouteProp<HomeStackParamList, 'StationDetail'>;
@@ -429,8 +430,33 @@ export function StationDetailScreen() {
   const navigation = useNavigation<Nav>();
   const { stationCode } = route.params;
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, animationStyle } = useAppTheme();
   const { data, isLoading, isError, isOfflineCopy, refetch } = useStationDetailQuery(stationCode);
+
+  // The page opens on the summary card. Everything else waits behind "More
+  // details", and the choice lasts only for this visit to this station.
+  const [expanded, setExpanded] = useState(false);
+  const reveal = useRef(new Animated.Value(0)).current;
+  const animate = animationStyle !== 'none';
+  useEffect(() => {
+    setExpanded(false);
+  }, [stationCode]);
+  useEffect(() => {
+    if (!expanded) {
+      reveal.setValue(0);
+      return;
+    }
+    if (!animate) {
+      reveal.setValue(1);
+      return;
+    }
+    Animated.timing(reveal, {
+      toValue: 1,
+      duration: duration.medium2,
+      easing: easing.emphasizedDecelerate,
+      useNativeDriver: true,
+    }).start();
+  }, [expanded, animate, reveal]);
   const station = data as StationWithHours | undefined;
 
   // The station name leads the page in large type, so the app bar stays empty
@@ -526,10 +552,17 @@ export function StationDetailScreen() {
     });
   }
   if (hasCoords) {
+    aboutRows.unshift({
+      icon: 'navigate-outline',
+      title: 'Directions',
+      subtitle: 'Open this station in maps',
+      onPress: openMaps,
+      accessibilityLabel: 'Directions to this station',
+    });
     aboutRows.push({
       icon: 'location-outline',
       title: `${station.latitude!.toFixed(5)}, ${station.longitude!.toFixed(5)}`,
-      subtitle: 'Open in maps',
+      subtitle: 'Coordinates',
       onPress: openMaps,
       accessibilityLabel: 'Open this station in maps',
     });
@@ -549,13 +582,21 @@ export function StationDetailScreen() {
       <Reveal index={0} replayOnFocus={false}>
         <View style={[styles.header, { backgroundColor: fills.containerLow }]}>
           <View style={styles.headTop}>
-            <View style={[styles.mark, { backgroundColor: theme.colors.primary }]}>
-              <Ionicons
-                name={isInterchange ? 'swap-horizontal' : 'train'}
-                size={24}
-                color={theme.colors.onPrimary}
+            {isInterchange || !station.metro_lines[0] ? (
+              <View style={[styles.mark, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Ionicons
+                  name={isInterchange ? 'swap-horizontal' : 'location-outline'}
+                  size={26}
+                  color={theme.colors.onPrimaryContainer}
+                />
+              </View>
+            ) : (
+              <LineGlyph
+                color={station.metro_lines[0].primary_color_code}
+                glyph={lineGlyph(station.metro_lines[0])}
+                size={52}
               />
-            </View>
+            )}
             <View style={styles.headText}>
               <Text variant="labelMedium" style={[styles.overline, { color: theme.colors.primary }]}>
                 {isInterchange ? 'Interchange' : 'Station'}
@@ -633,43 +674,63 @@ export function StationDetailScreen() {
           ) : null}
 
           <View style={styles.actions}>
-            {hasCoords ? (
-              <View style={styles.actionTonal}>
+            <View style={styles.actionTonal}>
               <Touchable
                 radius={radius.pill}
-                onPress={openMaps}
-                accessibilityLabel="Directions to this station"
+                haptic="select"
+                onPress={() => setExpanded((v) => !v)}
+                accessibilityState={{ expanded }}
+                accessibilityLabel={expanded ? 'Show fewer details' : 'Show more details'}
                 style={{ backgroundColor: theme.colors.secondaryContainer }}
               >
                 <View style={styles.actionInner}>
-                  <Ionicons name="navigate-outline" size={20} color={theme.colors.onSecondaryContainer} />
-                  <Text variant="titleSmall" style={[emphasis.strong, { color: theme.colors.onSecondaryContainer }]}>
-                    Directions
+                  <Ionicons
+                    name={expanded ? 'chevron-up' : 'information-circle-outline'}
+                    size={20}
+                    color={theme.colors.onSecondaryContainer}
+                  />
+                  <Text
+                    variant="titleSmall"
+                    numberOfLines={1}
+                    style={[emphasis.strong, { color: theme.colors.onSecondaryContainer }]}
+                  >
+                    {expanded ? 'Fewer details' : 'More details'}
                   </Text>
                 </View>
               </Touchable>
-              </View>
-            ) : null}
+            </View>
             <View style={styles.actionFilled}>
-            <Touchable
-              radius={radius.pill}
-              haptic="press"
-              onPress={routeFromHere}
-              accessibilityLabel={`Plan a route from ${name}`}
-              style={{ backgroundColor: theme.colors.primary }}
-            >
-              <View style={styles.actionInner}>
-                <Ionicons name="git-branch-outline" size={20} color={theme.colors.onPrimary} />
-                <Text variant="titleSmall" style={[emphasis.strong, { color: theme.colors.onPrimary }]}>
-                  Route from here
-                </Text>
-              </View>
-            </Touchable>
+              <Touchable
+                radius={radius.pill}
+                haptic="press"
+                onPress={routeFromHere}
+                accessibilityLabel={`Plan a route from ${name}`}
+                style={{ backgroundColor: theme.colors.primary }}
+              >
+                <View style={styles.actionInner}>
+                  <Ionicons name="navigate-outline" size={20} color={theme.colors.onPrimary} />
+                  <Text variant="titleSmall" numberOfLines={1} style={[emphasis.strong, { color: theme.colors.onPrimary }]}>
+                    Route from here
+                  </Text>
+                </View>
+              </Touchable>
             </View>
           </View>
         </View>
       </Reveal>
 
+      {expanded ? (
+        <Animated.View
+          style={[
+            styles.details,
+            {
+              opacity: reveal,
+              transform: [
+                { translateY: reveal.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) },
+              ],
+            },
+          ]}
+        >
       {derived.neighbours.length > 0 ? (
         <Section title="Next stops">
           <View style={styles.group}>
@@ -866,6 +927,8 @@ export function StationDetailScreen() {
         ) : null}
         <Group rows={aboutRows} limit={8} />
       </Section>
+        </Animated.View>
+      ) : null}
     </ScrollView>
   );
 }
@@ -940,8 +1003,8 @@ const styles = StyleSheet.create({
     marginHorizontal: -spacing.base,
   },
   chips: {
-    gap: spacing.sm,
-    paddingHorizontal: spacing.base,
+    gap: 6,
+    paddingHorizontal: spacing.md,
   },
   chip: {
     flexDirection: 'row',
@@ -957,6 +1020,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
+  details: {
+    gap: spacing.lg,
+  },
   actions: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -965,7 +1031,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionFilled: {
-    flex: 1.4,
+    flex: 1.15,
   },
   actionInner: {
     height: 52,

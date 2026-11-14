@@ -16,7 +16,6 @@ import { useIsDesktop } from '../hooks/useIsDesktop';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
 import { NotificationCard } from '../components/NotificationCard';
-import { StrategyToggle } from '../components/StrategyToggle';
 import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { JourneyFields } from '../components/JourneyFields';
@@ -25,7 +24,7 @@ import { GetTheApp } from '../components/web/GetTheApp';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
-import type { MetroLine, RouteStrategy } from '../types';
+import type { MetroLine } from '../types';
 import { stationName } from '../utils/format';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
@@ -81,7 +80,6 @@ export function HomeScreen() {
     return [...all.filter((l) => !isNormal(l.status)), ...all.filter((l) => isNormal(l.status))];
   }, [linesQuery.data]);
   const [departureOffsetMinutes, setDepartureOffsetMinutes] = useState(0);
-  const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
 
   // "Route from here" on a station or the map lands here with the From field
   // already filled. Clear the param so a later visit doesn't refill it.
@@ -128,7 +126,6 @@ export function HomeScreen() {
       fromName: fromPicker.station.name,
       toName: toPicker.station.name,
       journeyTime: departureTime,
-      strategy,
     });
   };
 
@@ -179,7 +176,6 @@ export function HomeScreen() {
       />
 
       <View style={styles.plannerControls}>
-        <StrategyToggle active={strategy} onChange={setStrategy} />
 
         <ScrollView
           horizontal

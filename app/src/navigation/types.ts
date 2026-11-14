@@ -29,7 +29,8 @@ export type LinesStackParamList = {
 };
 
 export type MapStackParamList = {
-  MetroMap: undefined;
+  /** `focusCode` opens the map on that station, e.g. from a route's "Open in Map". */
+  MetroMap: { focusCode?: string } | undefined;
   StationDetail: { stationCode: string; stationName: string };
 };
 
