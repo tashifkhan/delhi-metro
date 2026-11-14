@@ -6,6 +6,8 @@ import { Appbar, Text, useTheme } from 'react-native-paper';
 import { duration } from '../theme/motion';
 import { NetworkSwitcher } from '../components/NetworkSwitcher';
 import { emphasis, spacing } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
+import { animationPreference } from '../theme/animationPreferences';
 
 type OptionsFactory = (props: {
   navigation: { goBack: () => void };
@@ -40,9 +42,10 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
   const theme = useTheme();
   const haptics = useHaptics();
   const isDesktop = useIsDesktop();
+  const { animationStyle } = useAppTheme();
 
   return ({ navigation }) => ({
-    animation: 'slide_from_right',
+    animation: animationPreference(animationStyle, false).stack,
     animationDuration: duration.medium2,
     header: ({ options, back }) => {
       const title = options.title ?? '';

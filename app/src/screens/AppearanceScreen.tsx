@@ -25,6 +25,11 @@ const THEME_MODES: { id: ThemeMode; label: string; icon: keyof typeof Ionicons.g
 
 /** How many palettes to show before the list collapses behind "Show more". */
 const FEATURED_COUNT = 4;
+const PAGE_ANIMATIONS = [
+  { id: 'slide', label: 'Slide', icon: 'swap-horizontal-outline' },
+  { id: 'fade', label: 'Fade', icon: 'contrast-outline' },
+  { id: 'none', label: 'Off', icon: 'pause-outline' },
+] as const;
 
 function PaletteCard({
   palette,
@@ -159,7 +164,7 @@ function ToggleCard({
 
 export function AppearanceScreen() {
   const theme = useTheme();
-  const { settings, updateSettings, isDark, fills, dynamicAvailable } = useAppTheme();
+  const { settings, updateSettings, isDark, fills, dynamicAvailable, reduceMotionEnabled } = useAppTheme();
 
   const availablePalettes = useMemo(
     () => PALETTES.filter((p) => p.id !== DYNAMIC_PALETTE_ID || dynamicAvailable),
@@ -289,6 +294,41 @@ export function AppearanceScreen() {
             onChange={(hapticsEnabled) => updateSettings({ hapticsEnabled })}
           />
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <SectionHeader title="Page animations" icon="play-outline" />
+        <View style={styles.modeRow} accessibilityRole="radiogroup">
+          {PAGE_ANIMATIONS.map((option) => {
+            const active = settings.animationStyle === option.id;
+            const color = active ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
+            return (
+              <View key={option.id} style={styles.modeSlot}>
+                <Touchable
+                  radius={radius.hero}
+                  haptic="select"
+                  accessibilityRole="radio"
+                  accessibilityLabel={`${option.label} page animations`}
+                  accessibilityState={{ selected: active }}
+                  onPress={() => updateSettings({ animationStyle: option.id })}
+                  style={{ backgroundColor: active ? theme.colors.primaryContainer : fills.subtle }}
+                >
+                  <View style={styles.modeCard}>
+                    <Ionicons name={option.icon} size={20} color={color} />
+                    <Text variant="labelLarge" style={[emphasis.strong, { color }]}>
+                      {option.label}
+                    </Text>
+                  </View>
+                </Touchable>
+              </View>
+            );
+          })}
+        </View>
+        <Text variant="bodySmall" style={[styles.note, { color: theme.colors.onSurfaceVariant }]}>
+          {reduceMotionEnabled
+            ? 'Your device has Reduce Motion enabled. Page animations stay off.'
+            : 'Controls page transitions, tab changes and content reveals.'}
+        </Text>
       </View>
     </ScrollView>
   );

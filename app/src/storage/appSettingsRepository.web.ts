@@ -1,5 +1,6 @@
 import { readJson, writeJson } from './webStore';
 import { DEFAULT_PALETTE_ID } from '../theme/palettes';
+import { readAnimationStyle, type AnimationStyle } from '../theme/animationPreferences';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -9,6 +10,7 @@ export interface AppSettings {
   amoledDark: boolean;
   highContrast: boolean;
   hapticsEnabled: boolean;
+  animationStyle: AnimationStyle;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   amoledDark: false,
   highContrast: false,
   hapticsEnabled: true,
+  animationStyle: 'slide',
 };
 
 const STORAGE_KEY = 'dmrc:appSettings';
@@ -36,6 +39,7 @@ function decode(stored: Partial<AppSettings> | null): AppSettings {
     // Absent key means settings written before this option existed; haptics
     // were on then, so they stay on.
     hapticsEnabled: stored.hapticsEnabled !== false,
+    animationStyle: readAnimationStyle(stored.animationStyle),
   };
 }
 

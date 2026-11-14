@@ -13,6 +13,8 @@ import { AlertsStack } from './AlertsStack';
 import { useHaptics } from '../hooks/useHaptics';
 import { spring } from '../theme/motion';
 import type { RootTabParamList } from './types';
+import { useAppTheme } from '../theme/ThemeContext';
+import { animationPreference } from '../theme/animationPreferences';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -61,14 +63,21 @@ function TabBarIcon({
   indicatorColor: string;
 }) {
   const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
+  const { animationStyle } = useAppTheme();
 
   useEffect(() => {
-    Animated.spring(progress, {
+    if (animationStyle === 'none') {
+      progress.setValue(focused ? 1 : 0);
+      return;
+    }
+    const animation = Animated.spring(progress, {
       toValue: focused ? 1 : 0,
       useNativeDriver: true,
       ...spring.spatial,
-    }).start();
-  }, [focused, progress]);
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [focused, progress, animationStyle]);
 
   return (
     <View style={styles.iconSlot}>
@@ -82,7 +91,7 @@ function TabBarIcon({
               {
                 scaleX: progress.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.45, 1],
+                  outputRange: [animationStyle === 'slide' ? 0.45 : 1, 1],
                 }),
               },
             ],
@@ -95,7 +104,7 @@ function TabBarIcon({
             {
               scale: progress.interpolate({
                 inputRange: [0, 1],
-                outputRange: [0.92, 1],
+                outputRange: [animationStyle === 'slide' ? 0.92 : 1, 1],
               }),
             },
           ],
@@ -109,6 +118,7 @@ function TabBarIcon({
 
 export function RootTabs() {
   const theme = useTheme();
+  const { animationStyle } = useAppTheme();
   const insets = useSafeAreaInsets();
   const haptics = useHaptics();
 
@@ -127,7 +137,7 @@ export function RootTabs() {
         headerShown: false,
         // Tabs are siblings, so they cross-fade and shift rather than sliding
         // in a direction — Material's shared axis for lateral navigation.
-        animation: 'shift',
+        animation: animationPreference(animationStyle, false).tabs,
         tabBarActiveTintColor: theme.colors.onSecondaryContainer,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {

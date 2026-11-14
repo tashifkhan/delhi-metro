@@ -1,5 +1,6 @@
 import { getDb } from './database';
 import { DEFAULT_PALETTE_ID } from '../theme/palettes';
+import { readAnimationStyle, type AnimationStyle } from '../theme/animationPreferences';
 
 export type ThemeMode = 'system' | 'light' | 'dark';
 
@@ -9,6 +10,7 @@ export interface AppSettings {
   amoledDark: boolean;
   highContrast: boolean;
   hapticsEnabled: boolean;
+  animationStyle: AnimationStyle;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -17,6 +19,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   amoledDark: false,
   highContrast: false,
   hapticsEnabled: true,
+  animationStyle: 'slide',
 };
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
@@ -47,6 +50,7 @@ function decode(rows: SettingRow[]): AppSettings {
     // Absent key means a settings row written before this option existed;
     // haptics were on then, so they stay on.
     hapticsEnabled: map.get('hapticsEnabled') !== 'false',
+    animationStyle: readAnimationStyle(map.get('animationStyle')),
   };
 }
 
@@ -70,6 +74,7 @@ export const appSettingsRepository = {
       ['amoledDark', String(settings.amoledDark)],
       ['highContrast', String(settings.highContrast)],
       ['hapticsEnabled', String(settings.hapticsEnabled)],
+      ['animationStyle', settings.animationStyle],
     ];
 
     await db.withTransactionAsync(async () => {

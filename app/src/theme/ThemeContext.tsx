@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { AccessibilityInfo, Platform, useColorScheme } from 'react-native';
 import {
   isDynamicThemeSupported,
   useMaterial3Theme,
@@ -38,6 +38,7 @@ import {
   type AppSettings,
 } from '../storage/appSettingsRepository';
 import { setHapticsEnabled } from '../hooks/useHaptics';
+import { animationPreference, type AnimationStyle } from './animationPreferences';
 
 const IS_ANDROID_12_PLUS =
   Platform.OS === 'android' &&
@@ -151,6 +152,8 @@ interface AppTheme {
   settingsLoaded: boolean;
   /** Whether this device can source colors from the wallpaper. */
   dynamicAvailable: boolean;
+  animationStyle: AnimationStyle;
+  reduceMotionEnabled: boolean;
 }
 
 const ThemeContext = createContext<AppTheme>({
@@ -163,6 +166,8 @@ const ThemeContext = createContext<AppTheme>({
   updateSettings: () => {},
   settingsLoaded: false,
   dynamicAvailable: DYNAMIC_THEME_AVAILABLE,
+  animationStyle: 'slide',
+  reduceMotionEnabled: false,
 });
 
 function createNavigationTheme(
@@ -191,6 +196,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [reduceMotionEnabled, setReduceMotionEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotionEnabled(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      setReduceMotionEnabled(enabled);
+    });
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -247,6 +267,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
 
     const activeTheme = createPaperTheme(isDark, scheme);
+    const animationStyle = animationPreference(settings.animationStyle, reduceMotionEnabled).style;
+    activeTheme.animation = { ...activeTheme.animation, scale: animationStyle === 'none' ? 0 : 1 };
 
     // adaptNavigationTheme wants both, so pair the active theme with a plain
     // counterpart rather than rebuilding the unused side from the palette.
@@ -267,6 +289,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       updateSettings,
       settingsLoaded,
       dynamicAvailable: DYNAMIC_THEME_AVAILABLE,
+      animationStyle,
+      reduceMotionEnabled,
     };
   }, [
     materialTheme.dark,
@@ -275,6 +299,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     settings,
     settingsLoaded,
     updateSettings,
+    reduceMotionEnabled,
   ]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { Animated, type StyleProp, type ViewStyle } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { duration as md3Duration, easing } from '../theme/motion';
+import { useAppTheme } from '../theme/ThemeContext';
 
 interface Props {
   children: ReactNode;
@@ -29,8 +30,13 @@ export function Reveal({ children, index = 0, style, replayOnFocus = true }: Pro
   const progress = useRef(new Animated.Value(0)).current;
   const isFocused = useIsFocused();
   const active = replayOnFocus ? isFocused : true;
+  const { animationStyle } = useAppTheme();
 
   useEffect(() => {
+    if (animationStyle === 'none') {
+      progress.setValue(1);
+      return;
+    }
     if (!active) {
       // Reset while off-screen so the next focus animates from the start
       // rather than snapping in already-complete.
@@ -48,19 +54,19 @@ export function Reveal({ children, index = 0, style, replayOnFocus = true }: Pro
     });
     animation.start();
     return () => animation.stop();
-  }, [progress, index, active]);
+  }, [progress, index, active, animationStyle]);
 
   return (
     <Animated.View
       style={[
         style,
         {
-          opacity: progress,
+          opacity: animationStyle === 'none' ? 1 : progress,
           transform: [
             {
               translateY: progress.interpolate({
                 inputRange: [0, 1],
-                outputRange: [RISE, 0],
+                outputRange: [animationStyle === 'slide' ? RISE : 0, 0],
               }),
             },
           ],
