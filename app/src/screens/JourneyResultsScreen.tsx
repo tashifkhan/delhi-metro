@@ -184,10 +184,9 @@ export function JourneyResultsScreen() {
   // the Aqua Line has one, so an NMRC-only journey has a single route.
   const hasStrategyChoice = plan.networks.length === 0 || plan.networks.includes('dmrc');
   const rideCount = rideLegs.length;
-  const interchanges = Math.max(
-    plan.interchanges.length,
-    Math.max(0, rideCount - 1),
-  );
+  // Upstream interchange metadata also contains the destination. Count the
+  // changes between trains so the terminal stop does not add a fake change.
+  const interchanges = Math.max(0, rideCount - 1);
   const savedLabel = savedAt
     ? `Saved plan from ${new Date(savedAt).toLocaleString(undefined, {
         day: 'numeric',
