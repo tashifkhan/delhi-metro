@@ -187,6 +187,9 @@ Shorthand routes also exist:
 - `GET /api/v1/dmrc/maps/assets/{asset_id}`
   - Metadata for a single discovered asset id.
 
+- `GET /api/v1/dmrc/maps/layout`
+  - Station positions on the official map. Off for Delhi by default; see [Map layouts](#map-layouts).
+
 ### NMRC (Noida Metro)
 
 Every DMRC resource has an NMRC counterpart at the same path shape and with the same response schema, so you can switch networks without a second contract:
@@ -202,6 +205,7 @@ Every DMRC resource has an NMRC counterpart at the same path shape and with the 
 - `GET /api/v1/nmrc/maps/{family}/assets?format=image|pdf|any`
 - `GET /api/v1/nmrc/maps/{family}/download?format=image|pdf|any`
 - `GET /api/v1/nmrc/maps/{family}/file?format=image|pdf|any`
+- `GET /api/v1/nmrc/maps/layout` (see [Map layouts](#map-layouts))
 
 NMRC does not publish an API, so `services/nmrc/` reads the operator's public HTML:
 
@@ -215,6 +219,114 @@ NMRC does not publish an API, so `services/nmrc/` reads the operator's public HT
 Parsing lives in `services/nmrc/parsing.py` as pure functions over HTML, so fixtures can be tested without hitting the network. That is covered in `tests/`. When a page cannot be fetched, the service falls back to checked in tables in `services/nmrc/data.py` with station names, timings, adjacent distances, and published fare slabs. A journey that used that fallback says so in `fallback_reason`.
 
 NMRC runs one line, so `line_code` is always `AQUA`, there are no interchanges, and `format=pdf` returns an empty list because no PDF map is currently published.
+
+## Map layouts
+
+`GET /api/v1/{dmrc|nmrc}/maps/layout` says where each station sits on the
+operator's official map image. Neither operator publishes coordinates for its
+map, and NMRC publishes none for its stations at all, so the API reads them off
+the image with Gemini.
+
+The work happens on request, not on a schedule:
+
+1. Fetch the official network image (the same one `/maps/network` returns) and
+   take its SHA-256. A process re-fetches at most every
+   `DMRC_MAP_LAYOUT_RECHECK_SECONDS` (6 hours by default).
+2. If the hash matches the layout already held in memory, or the one checked in
+   under `api/data/map_layouts/{network}.json`, return it. No Gemini call.
+3. Otherwise ask Gemini (`GEMINI_MODEL`, default `gemini-4-hydrogen`) for the
+   marker centre of every catalogue station it can see. Images bigger than
+   `DMRC_MAP_LAYOUT_TILE_PX` are decoded at a reduced size and cut into
+   overlapping tiles; a station seen in two tiles keeps the sighting furthest
+   from a tile edge. A failed tile is retried twice, then skipped.
+4. Drop stations that sit off their own line. For each run of three stations
+   along a line, the path through the middle one is compared with the direct
+   hop between its neighbours; a station that detours by more than 1.8 times on
+   every line it has two placed neighbours on is left out and listed in
+   `dropped`. Interchanges on sharp turns survive because at least one of their
+   lines runs straight through them. Clients keep their own position for
+   dropped stations.
+5. Keep the new layout only if it found at least
+   `DMRC_MAP_LAYOUT_MIN_COVERAGE` of the stations. Otherwise keep the last good
+   one and say why in `detail`.
+
+Requests that arrive while a read is running join it instead of starting
+another, and the read finishes and is kept even if the request that started it
+disconnects.
+
+### Response
+
+```json
+{
+  "network": "nmrc",
+  "status": "ready",
+  "detail": null,
+  "image": {
+    "url": "https://www.nmrcnoida.com/assets/images/Route-Map-aqua-line.jpg",
+    "sha256": "e24eba61…",
+    "width": 1200,
+    "height": 701
+  },
+  "model": "gemini-4-hydrogen",
+  "extracted_at": "2026-11-15T…Z",
+  "coverage": { "expected": 21, "found": 21 },
+  "stations": [{ "code": "NM01", "name": "Noida Sector 51", "x": 0.205, "y": 0.025 }],
+  "dropped": []
+}
+```
+
+`x` and `y` are fractions of the image's width and height from the top left.
+`status` is `ready`, `disabled` (the network's switch is off) or `unavailable`
+(no layout could be produced yet; `detail` says why).
+
+### Waiting for a read
+
+A changed map takes from a few seconds (the Aqua Line image) to about four
+minutes (the full Delhi map, 20 tiles). Send `Accept: text/event-stream` or add
+`?stream=true` to receive Server-Sent Events:
+
+```text
+event: status
+data: {"stage":"checking","message":"Checking the official Noida Metro map.","done":null,"total":null}
+
+event: status
+data: {"stage":"extracting","message":"The official Noida Metro map changed. Reading it again, this takes about a minute.","done":null,"total":null}
+
+event: status
+data: {"stage":"saved","message":"Placed 21 of 21 stations.","done":null,"total":null}
+
+event: layout
+data: {"network":"nmrc","status":"ready",…}
+```
+
+- `status.stage` is `checking`, `unchanged`, `extracting`, `progress` (tiled
+  reads, with `done` and `total`) or `saved`. `message` is written to be shown
+  as is.
+- `error` carries `{"detail"}` when the image can't be fetched or read; a
+  `layout` event with the last good layout still follows.
+- `layout` is always the last event.
+- Comment lines (`: still working`) arrive every 15 seconds during a long read
+  so proxies keep the connection open.
+
+Without the stream, the request waits and returns the final layout as JSON.
+
+### Switches
+
+| Variable | Default | Effect |
+|---|---|---|
+| `MAP_LAYOUT_NMRC_ENABLED` | `true` | Read the Aqua Line map. |
+| `MAP_LAYOUT_DMRC_ENABLED` | `false` | Read the full Delhi map. Delhi station coordinates already come from DMRC, so this is opt-in. |
+| `GEMINI_API_KEY` | none | Required to read a changed map. Without it the saved layout is served with a `detail` note. |
+| `GEMINI_MODEL` | `gemini-4-hydrogen` | Model used for reads. |
+| `GEMINI_THINKING_LEVEL` | `high` | Sent as `thinkingConfig.thinkingLevel`. Empty uses the model default. |
+
+A switched-off network answers `status: "disabled"` without fetching anything.
+Adding another operator means one more `LayoutSource` entry in
+`services/map_layout.py`: how to fetch its image, its station list, and its
+switch.
+
+The web app's Worker passes the event stream through without buffering or edge
+caching (see `app/worker/index.ts`).
 
 ## Journey planning (v2)
 

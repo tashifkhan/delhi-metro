@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 import time
 from dataclasses import dataclass
 from pathlib import PurePosixPath
@@ -34,6 +35,7 @@ _PATTERNS: tuple[_MapPattern, ...] = (
         label="DMRC Network Map",
         tokens=(
             "dmrc-nmrc-ncrtc-map",
+            "dmrc-nmrc-and-ncrtc-map",
             "network-map",
             "dmrc-network-map",
             "mapimg",
@@ -97,16 +99,31 @@ def _clean_name(path: str) -> str:
     return stem.replace("-", " ").replace("_", " ").strip()
 
 
+def _compact(text: str) -> str:
+    """Lowercase and drop everything but letters and digits.
+
+    DMRC renames the full map with every revision, for example
+    `DMRC-NMRC-and-NCRTC-MAP-10.09.2026.jpg`. Comparing compacted strings
+    keeps a changed separator or casing from hiding it behind the preview.
+    """
+
+    return re.sub(r"[^a-z0-9]", "", text.lower())
+
+
+def _matches_token(blob: str, token: str) -> bool:
+    return _compact(token) in _compact(blob)
+
+
 def _stable_rank(path: str) -> int:
     """Rank candidates so the full-resolution map wins over the preview."""
 
-    lowered = path.lower()
+    compact = _compact(path)
     rank = 0
-    if "dmrc-nmrc-ncrtc-map" in lowered:
+    if "dmrcnmrcncrtcmap" in compact or "dmrcnmrcandncrtcmap" in compact:
         rank -= 100
-    if "dmrc-network-map" in lowered:
+    if "dmrcnetworkmap" in compact:
         rank -= 80
-    if "mapimg" in lowered:
+    if "mapimg" in compact:
         rank += 100
     return rank
 
@@ -123,7 +140,7 @@ async def _discover_map_assets() -> MapAssetListResponse:
             continue
 
         for pattern in _PATTERNS:
-            if not any(token in lowered_blob for token in pattern.tokens):
+            if not any(_matches_token(lowered_blob, token) for token in pattern.tokens):
                 continue
 
             if source_path in seen_paths:

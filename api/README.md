@@ -164,6 +164,18 @@ Environment variables (optional):
 - `DMRC_SARTHI_ENABLED` (default: `true`; set `false` to serve `/api/v2` from
   DMRC only)
 - `DMRC_STATION_CATALOG_PATH` (default: `data/stations.normalized.json`)
+- `GEMINI_API_KEY` (no default). Lets `/maps/layout` read a changed official
+  map. Without it the API serves the last saved layout and says why.
+- `GEMINI_MODEL` (default: `gemini-4-hydrogen`)
+- `GEMINI_THINKING_LEVEL` (default: `high`; empty uses the model's default)
+- `MAP_LAYOUT_NMRC_ENABLED` (default: `true`)
+- `MAP_LAYOUT_DMRC_ENABLED` (default: `false`; Delhi coordinates come from
+  DMRC's own data, so reading its map is opt-in)
+- `DMRC_MAP_LAYOUT_RECHECK_SECONDS` (default: `21600`, how long one process
+  trusts the last image hash before fetching the image again)
+- `DMRC_MAP_LAYOUT_MIN_COVERAGE` (default: `0.6`, the share of stations a new
+  read must find before it replaces the old layout)
+- `DMRC_MAP_LAYOUT_TILE_PX` (default: `2048`, the largest tile sent to Gemini)
 
 ## Station ID crosswalk
 

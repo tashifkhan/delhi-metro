@@ -1,0 +1,145 @@
+{
+  "network": "nmrc",
+  "status": "ready",
+  "detail": null,
+  "image": {
+    "url": "https://www.nmrcnoida.com/assets/images/Route-Map-aqua-line.jpg",
+    "sha256": "e24eba61c66dfc13e460b80fbb44ec9f886fac592b821749e8a40e1224e70fde",
+    "width": 1200,
+    "height": 701
+  },
+  "model": "gemini-4-hydrogen",
+  "extracted_at": "2026-11-14T19:35:40.931786Z",
+  "coverage": {
+    "expected": 21,
+    "found": 21
+  },
+  "stations": [
+    {
+      "code": "NM01",
+      "name": "Noida Sector 51",
+      "x": 0.205,
+      "y": 0.025
+    },
+    {
+      "code": "NM02",
+      "name": "Noida Sector 50",
+      "x": 0.215,
+      "y": 0.112
+    },
+    {
+      "code": "NM03",
+      "name": "Noida Sector 76",
+      "x": 0.22,
+      "y": 0.173
+    },
+    {
+      "code": "NM04",
+      "name": "Noida Sector 101",
+      "x": 0.24,
+      "y": 0.234
+    },
+    {
+      "code": "NM05",
+      "name": "Noida Sector 81",
+      "x": 0.255,
+      "y": 0.283
+    },
+    {
+      "code": "NM06",
+      "name": "NSEZ",
+      "x": 0.27,
+      "y": 0.39
+    },
+    {
+      "code": "NM07",
+      "name": "Noida Sector 83",
+      "x": 0.276,
+      "y": 0.457
+    },
+    {
+      "code": "NM08",
+      "name": "Noida Sector 137",
+      "x": 0.3,
+      "y": 0.53
+    },
+    {
+      "code": "NM09",
+      "name": "Noida Sector 142",
+      "x": 0.333,
+      "y": 0.612
+    },
+    {
+      "code": "NM10",
+      "name": "Noida Sector 143",
+      "x": 0.365,
+      "y": 0.642
+    },
+    {
+      "code": "NM11",
+      "name": "Noida Sector 144",
+      "x": 0.398,
+      "y": 0.695
+    },
+    {
+      "code": "NM12",
+      "name": "Noida Sector 145",
+      "x": 0.433,
+      "y": 0.743
+    },
+    {
+      "code": "NM13",
+      "name": "Noida Sector 146",
+      "x": 0.474,
+      "y": 0.81
+    },
+    {
+      "code": "NM14",
+      "name": "Noida Sector 147",
+      "x": 0.513,
+      "y": 0.874
+    },
+    {
+      "code": "NM15",
+      "name": "Noida Sector 148",
+      "x": 0.549,
+      "y": 0.947
+    },
+    {
+      "code": "NM16",
+      "name": "Knowledge Park",
+      "x": 0.628,
+      "y": 0.892
+    },
+    {
+      "code": "NM17",
+      "name": "Pari Chowk",
+      "x": 0.656,
+      "y": 0.85
+    },
+    {
+      "code": "NM18",
+      "name": "Alpha 1",
+      "x": 0.672,
+      "y": 0.791
+    },
+    {
+      "code": "NM19",
+      "name": "Delta 1",
+      "x": 0.714,
+      "y": 0.75
+    },
+    {
+      "code": "NM20",
+      "name": "GNIDA Office",
+      "x": 0.752,
+      "y": 0.711
+    },
+    {
+      "code": "NM21",
+      "name": "Depot Station",
+      "x": 0.777,
+      "y": 0.683
+    }
+  ]
+}

@@ -1,0 +1,1537 @@
+{
+ "network": "dmrc",
+ "status": "ready",
+ "detail": null,
+ "image": {
+  "url": "https://delhimetrorail.com/static/media/DMRC-NMRC-and-NCRTC-MAP-10.09.2026.3fc17df1.jpg",
+  "sha256": "0b560e7f737e42c13f6c0213241185a22618c73a3416c263e16358c7b7b80c98",
+  "width": 16237,
+  "height": 14438
+ },
+ "model": "gemini-4-hydrogen",
+ "extracted_at": "2026-11-14T19:40:25.108433Z",
+ "coverage": {
+  "expected": 254,
+  "found": 253
+ },
+ "stations": [
+  {
+   "code": "AHNR",
+   "name": "ADARSH NAGAR",
+   "x": 0.42652,
+   "y": 0.39884
+  },
+  {
+   "code": "AHRM",
+   "name": "ASHRAM",
+   "x": 0.59449,
+   "y": 0.68733
+  },
+  {
+   "code": "AIIMS",
+   "name": "AIIMS",
+   "x": 0.47946,
+   "y": 0.71343
+  },
+  {
+   "code": "AIT",
+   "name": "SECTOR-54 CHOWK",
+   "x": 0.33142,
+   "y": 0.91858
+  },
+  {
+   "code": "AJG",
+   "name": "ARJAN GARH",
+   "x": 0.37481,
+   "y": 0.85957
+  },
+  {
+   "code": "APMN",
+   "name": "ASHOK PARK MAIN",
+   "x": 0.36497,
+   "y": 0.5242
+  },
+  {
+   "code": "APOT",
+   "name": "AIRPORT (T-3)",
+   "x": 0.23282,
+   "y": 0.78382
+  },
+  {
+   "code": "ASDM",
+   "name": "AKSHARDHAM",
+   "x": 0.62123,
+   "y": 0.64052
+  },
+  {
+   "code": "ATHA",
+   "name": "ARTHALA",
+   "x": 0.79745,
+   "y": 0.52052
+  },
+  {
+   "code": "AVIT",
+   "name": "ANAND VIHAR ISBT",
+   "x": 0.69233,
+   "y": 0.59768
+  },
+  {
+   "code": "AZU",
+   "name": "AZADPUR",
+   "x": 0.43434,
+   "y": 0.40735
+  },
+  {
+   "code": "BACH",
+   "name": "BATA CHOWK",
+   "x": 0.59121,
+   "y": 0.89106
+  },
+  {
+   "code": "BAPB",
+   "name": "BADARPUR BORDER",
+   "x": 0.59121,
+   "y": 0.82411
+  },
+  {
+   "code": "BCGN",
+   "name": "BOTANICAL GARDEN",
+   "x": 0.69031,
+   "y": 0.78241
+  },
+  {
+   "code": "BEL",
+   "name": "BELVEDERE TOWERS",
+   "x": 0.30595,
+   "y": 0.83858
+  },
+  {
+   "code": "BIMR",
+   "name": "HAIDERPUR BADLI MOR",
+   "x": 0.40306,
+   "y": 0.37274
+  },
+  {
+   "code": "BJPU",
+   "name": "BHAJANPURA",
+   "x": 0.59373,
+   "y": 0.44537
+  },
+  {
+   "code": "BKCP",
+   "name": "BHIKAJI CAMA PLACE",
+   "x": 0.45301,
+   "y": 0.70548
+  },
+  {
+   "code": "BKMR",
+   "name": "BADKAL MOR",
+   "x": 0.59121,
+   "y": 0.8678
+  },
+  {
+   "code": "BLSW",
+   "name": "BHALASWA",
+   "x": 0.43106,
+   "y": 0.36707
+  },
+  {
+   "code": "BRKR",
+   "name": "BARAKHAMBA ROAD",
+   "x": 0.53345,
+   "y": 0.61612
+  },
+  {
+   "code": "BURI",
+   "name": "BURARI",
+   "x": 0.46206,
+   "y": 0.4031
+  },
+  {
+   "code": "BUSS",
+   "name": "BAHADURGARH CITY",
+   "x": 0.04868,
+   "y": 0.52364
+  },
+  {
+   "code": "BVHM",
+   "name": "RAJA NAHAR SINGH (BALLABHGARH)",
+   "x": 0.59121,
+   "y": 0.91631
+  },
+  {
+   "code": "CDLI",
+   "name": "CHIRAG DELHI",
+   "x": 0.48148,
+   "y": 0.7495
+  },
+  {
+   "code": "CHK",
+   "name": "CHANDNI CHOWK",
+   "x": 0.512,
+   "y": 0.53442
+  },
+  {
+   "code": "CHTP",
+   "name": "CHHATARPUR",
+   "x": 0.39777,
+   "y": 0.82808
+  },
+  {
+   "code": "CIPK",
+   "name": "BRIG. HOSHIAR SINGH",
+   "x": 0.0285,
+   "y": 0.52364
+  },
+  {
+   "code": "CL",
+   "name": "CIVIL LINES",
+   "x": 0.5115,
+   "y": 0.50097
+  },
+  {
+   "code": "CTST",
+   "name": "CENTRAL SECRETARIAT",
+   "x": 0.51781,
+   "y": 0.64789
+  },
+  {
+   "code": "CWBR",
+   "name": "CHAWRI BAZAR",
+   "x": 0.512,
+   "y": 0.55144
+  },
+  {
+   "code": "DACY",
+   "name": "DELHI AEROCITY",
+   "x": 0.28526,
+   "y": 0.78496
+  },
+  {
+   "code": "DBMR",
+   "name": "DABRI MOR-JANAKPURI SOUTH",
+   "x": 0.20911,
+   "y": 0.65215
+  },
+  {
+   "code": "DDSC",
+   "name": "DURGABAI DESHMUKH SOUTH CAMPUS",
+   "x": 0.40079,
+   "y": 0.70293
+  },
+  {
+   "code": "DKV",
+   "name": "DHAULA KUAN",
+   "x": 0.39196,
+   "y": 0.70605
+  },
+  {
+   "code": "DL2",
+   "name": "PHASE-2",
+   "x": 0.31906,
+   "y": 0.83489
+  },
+  {
+   "code": "DL3",
+   "name": "PHASE-3",
+   "x": 0.31906,
+   "y": 0.82411
+  },
+  {
+   "code": "DLIC",
+   "name": "DELHI CANTT.",
+   "x": 0.37733,
+   "y": 0.68818
+  },
+  {
+   "code": "DLIG",
+   "name": "DELHI GATE",
+   "x": 0.54732,
+   "y": 0.57073
+  },
+  {
+   "code": "DM",
+   "name": "DWARKA MOR",
+   "x": 0.1183,
+   "y": 0.67428
+  },
+  {
+   "code": "DNBT",
+   "name": "DHANSA BUS STAND",
+   "x": 0.04515,
+   "y": 0.69357
+  },
+  {
+   "code": "DPCK",
+   "name": "DEEPALI CHOWK",
+   "x": 0.32663,
+   "y": 0.46097
+  },
+  {
+   "code": "DSE",
+   "name": "DWARKA SECTOR-11",
+   "x": 0.15538,
+   "y": 0.7452
+  },
+  {
+   "code": "DSET",
+   "name": "DWARKA SECTOR-8",
+   "x": 0.20205,
+   "y": 0.78666
+  },
+  {
+   "code": "DSFN",
+   "name": "DWARKA SECTOR-14",
+   "x": 0.11957,
+   "y": 0.71229
+  },
+  {
+   "code": "DSG",
+   "name": "DILSHAD GARDEN",
+   "x": 0.71125,
+   "y": 0.51711
+  },
+  {
+   "code": "DSHP",
+   "name": "DASHRATHPURI",
+   "x": 0.23182,
+   "y": 0.66974
+  },
+  {
+   "code": "DSN",
+   "name": "DWARKA SECTOR-9",
+   "x": 0.18591,
+   "y": 0.77134
+  },
+  {
+   "code": "DST",
+   "name": "DWARKA SECTOR-10",
+   "x": 0.16901,
+   "y": 0.75659
+  },
+  {
+   "code": "DSTN",
+   "name": "DWARKA SECTOR-13",
+   "x": 0.1294,
+   "y": 0.72336
+  },
+  {
+   "code": "DSTO",
+   "name": "DWARKA SECTOR-21",
+   "x": 0.20255,
+   "y": 0.8068
+  },
+  {
+   "code": "DSW",
+   "name": "DWARKA SECTOR-12",
+   "x": 0.14403,
+   "y": 0.73414
+  },
+  {
+   "code": "DW",
+   "name": "DWARKA-KAKROLA",
+   "x": 0.10292,
+   "y": 0.69357
+  },
+  {
+   "code": "EANR",
+   "name": "EAST AZAD NAGAR",
+   "x": 0.64393,
+   "y": 0.53073
+  },
+  {
+   "code": "ECMJ",
+   "name": "ESCORTS MUJESAR",
+   "x": 0.59121,
+   "y": 0.90099
+  },
+  {
+   "code": "ESIH",
+   "name": "ESI-BASAIDARAPUR",
+   "x": 0.30998,
+   "y": 0.58435
+  },
+  {
+   "code": "GAT",
+   "name": "CYBER CITY",
+   "x": 0.29586,
+   "y": 0.82326
+  },
+  {
+   "code": "GDPI",
+   "name": "GOVINDPURI",
+   "x": 0.55161,
+   "y": 0.76113
+  },
+  {
+   "code": "GE",
+   "name": "GURU DRONACHARYA",
+   "x": 0.35135,
+   "y": 0.85957
+  },
+  {
+   "code": "GEC",
+   "name": "GOLF COURSE",
+   "x": 0.69965,
+   "y": 0.78439
+  },
+  {
+   "code": "GHEM",
+   "name": "GHEVRA",
+   "x": 0.11326,
+   "y": 0.52364
+  },
+  {
+   "code": "GKEI",
+   "name": "GREATER KAILASH",
+   "x": 0.51125,
+   "y": 0.7495
+  },
+  {
+   "code": "GKPR",
+   "name": "GOKULPURI",
+   "x": 0.63989,
+   "y": 0.44395
+  },
+  {
+   "code": "GNPK",
+   "name": "GREEN PARK",
+   "x": 0.46837,
+   "y": 0.72563
+  },
+  {
+   "code": "GTBR",
+   "name": "GURU TEG BAHADUR NAGAR",
+   "x": 0.48073,
+   "y": 0.45955
+  },
+  {
+   "code": "GTNI",
+   "name": "GHITORNI",
+   "x": 0.38187,
+   "y": 0.85021
+  },
+  {
+   "code": "HCC",
+   "name": "MILLENNIUM CITY CENTRE GURUGRAM",
+   "x": 0.2946,
+   "y": 0.8834
+  },
+  {
+   "code": "HDNR",
+   "name": "HINDON RIVER",
+   "x": 0.81157,
+   "y": 0.52647
+  },
+  {
+   "code": "HKS",
+   "name": "HAUZ KHAS",
+   "x": 0.44847,
+   "y": 0.75173
+  },
+  {
+   "code": "HNOK",
+   "name": "HARKESH NAGAR OKHLA",
+   "x": 0.56069,
+   "y": 0.7756
+  },
+  {
+   "code": "IDPT",
+   "name": "INDRAPRASTHA",
+   "x": 0.59045,
+   "y": 0.61612
+  },
+  {
+   "code": "IFOC",
+   "name": "IFFCO CHOWK",
+   "x": 0.29409,
+   "y": 0.86581
+  },
+  {
+   "code": "IGDA",
+   "name": "TERMINAL 1-IGI AIRPORT",
+   "x": 0.30721,
+   "y": 0.72194
+  },
+  {
+   "code": "IICC",
+   "name": "YASHOBHOOMI DWARKA SECTOR-25",
+   "x": 0.19549,
+   "y": 0.82269
+  },
+  {
+   "code": "IIT",
+   "name": "IIT",
+   "x": 0.42703,
+   "y": 0.75205
+  },
+  {
+   "code": "ILOK",
+   "name": "INDERLOK",
+   "x": 0.40786,
+   "y": 0.51768
+  },
+  {
+   "code": "INA",
+   "name": "DILLI HAAT-INA",
+   "x": 0.48981,
+   "y": 0.7018
+  },
+  {
+   "code": "IPE",
+   "name": "I.P. EXTENSION",
+   "x": 0.69864,
+   "y": 0.62151
+  },
+  {
+   "code": "ITO",
+   "name": "ITO",
+   "x": 0.55085,
+   "y": 0.59087
+  },
+  {
+   "code": "IWNR",
+   "name": "SUKHDEV VIHAR",
+   "x": 0.6008,
+   "y": 0.74893
+  },
+  {
+   "code": "JAMD",
+   "name": "JAMA MASJID",
+   "x": 0.54606,
+   "y": 0.55002
+  },
+  {
+   "code": "JANR",
+   "name": "JAMIA MILLIA ISLAMIA",
+   "x": 0.61971,
+   "y": 0.74893
+  },
+  {
+   "code": "JB",
+   "name": "JOR BAGH",
+   "x": 0.50015,
+   "y": 0.68988
+  },
+  {
+   "code": "JFRB",
+   "name": "JAFRABAD",
+   "x": 0.63233,
+   "y": 0.49275
+  },
+  {
+   "code": "JGPA",
+   "name": "JANGPURA",
+   "x": 0.54782,
+   "y": 0.69102
+  },
+  {
+   "code": "JGPI",
+   "name": "JAHANGIRPURI",
+   "x": 0.41467,
+   "y": 0.38579
+  },
+  {
+   "code": "JIEE",
+   "name": "JOHRI ENCLAVE",
+   "x": 0.63989,
+   "y": 0.42466
+  },
+  {
+   "code": "JLA",
+   "name": "JASOLA-APOLLO",
+   "x": 0.56548,
+   "y": 0.78326
+  },
+  {
+   "code": "JLA8",
+   "name": "JASOLA VIHAR SHAHEEN BAGH",
+   "x": 0.66133,
+   "y": 0.78155
+  },
+  {
+   "code": "JLML",
+   "name": "JHILMIL",
+   "x": 0.69637,
+   "y": 0.51711
+  },
+  {
+   "code": "JLNS",
+   "name": "JLN STADIUM",
+   "x": 0.54782,
+   "y": 0.68052
+  },
+  {
+   "code": "JNPH",
+   "name": "JANPATH",
+   "x": 0.54681,
+   "y": 0.63172
+  },
+  {
+   "code": "JPE",
+   "name": "JANAK PURI EAST",
+   "x": 0.20735,
+   "y": 0.61612
+  },
+  {
+   "code": "JPVE",
+   "name": "JAGATPUR-WAZIRABAD",
+   "x": 0.49132,
+   "y": 0.43147
+  },
+  {
+   "code": "JPW",
+   "name": "JANAK PURI WEST",
+   "x": 0.16976,
+   "y": 0.61612
+  },
+  {
+   "code": "JRMR",
+   "name": "JHARODA MAJRA",
+   "x": 0.47543,
+   "y": 0.41757
+  },
+  {
+   "code": "JW",
+   "name": "JHANDEWALAN",
+   "x": 0.44267,
+   "y": 0.61612
+  },
+  {
+   "code": "KB",
+   "name": "KAROL BAGH",
+   "x": 0.42173,
+   "y": 0.61612
+  },
+  {
+   "code": "KE",
+   "name": "KOHAT ENCLAVE",
+   "x": 0.35438,
+   "y": 0.46608
+  },
+  {
+   "code": "KG",
+   "name": "KASHMERE GATE",
+   "x": 0.512,
+   "y": 0.51739
+  },
+  {
+   "code": "KHCY",
+   "name": "KAILASH COLONY",
+   "x": 0.54782,
+   "y": 0.72591
+  },
+  {
+   "code": "KHNA",
+   "name": "KRISHNA NAGAR",
+   "x": 0.64393,
+   "y": 0.54917
+  },
+  {
+   "code": "KIKJ",
+   "name": "KALINDI KUNJ",
+   "x": 0.66739,
+   "y": 0.78581
+  },
+  {
+   "code": "KJKS",
+   "name": "KHAJURI KHAS",
+   "x": 0.57507,
+   "y": 0.44537
+  },
+  {
+   "code": "KJMD",
+   "name": "KALKAJI MANDIR",
+   "x": 0.54782,
+   "y": 0.74719
+  },
+  {
+   "code": "KKDA",
+   "name": "KARKARDUMA",
+   "x": 0.67218,
+   "y": 0.59768
+  },
+  {
+   "code": "KKDC",
+   "name": "KARKARDUMA COURT",
+   "x": 0.65124,
+   "y": 0.56165
+  },
+  {
+   "code": "KM",
+   "name": "KHAN MARKET",
+   "x": 0.54681,
+   "y": 0.66917
+  },
+  {
+   "code": "KN",
+   "name": "KANHAIYA NAGAR",
+   "x": 0.3955,
+   "y": 0.5058
+  },
+  {
+   "code": "KNR",
+   "name": "KIRTI NAGAR",
+   "x": 0.37002,
+   "y": 0.61612
+  },
+  {
+   "code": "KP",
+   "name": "KESHAV PURAM",
+   "x": 0.38238,
+   "y": 0.49275
+  },
+  {
+   "code": "KPEN",
+   "name": "KRISHNA PARK EXTENSION",
+   "x": 0.18717,
+   "y": 0.59626
+  },
+  {
+   "code": "KSHI",
+   "name": "KAUSHAMBI",
+   "x": 0.71579,
+   "y": 0.59768
+  },
+  {
+   "code": "LJPN",
+   "name": "LAJPAT NAGAR",
+   "x": 0.54782,
+   "y": 0.7018
+  },
+  {
+   "code": "LKM",
+   "name": "LOK KALYAN MARG",
+   "x": 0.50822,
+   "y": 0.68024
+  },
+  {
+   "code": "LLQA",
+   "name": "LAL QUILA",
+   "x": 0.54101,
+   "y": 0.52959
+  },
+  {
+   "code": "LN",
+   "name": "LAXMI NAGAR",
+   "x": 0.6346,
+   "y": 0.60562
+  },
+  {
+   "code": "MAL",
+   "name": "MOULSARI AVENUE",
+   "x": 0.30872,
+   "y": 0.81617
+  },
+  {
+   "code": "MAPR",
+   "name": "MADIPUR",
+   "x": 0.30519,
+   "y": 0.5242
+  },
+  {
+   "code": "MDHS",
+   "name": "MANDI HOUSE",
+   "x": 0.55463,
+   "y": 0.61612
+  },
+  {
+   "code": "MDTW",
+   "name": "MODEL TOWN",
+   "x": 0.46408,
+   "y": 0.44083
+  },
+  {
+   "code": "METE",
+   "name": "MOHAN ESTATE",
+   "x": 0.57759,
+   "y": 0.80226
+  },
+  {
+   "code": "MGRO",
+   "name": "M.G. ROAD",
+   "x": 0.3115,
+   "y": 0.85957
+  },
+  {
+   "code": "MIAA",
+   "name": "MUNDKA INDUSTRIAL AREA (MIA)",
+   "x": 0.1294,
+   "y": 0.52364
+  },
+  {
+   "code": "MIEE",
+   "name": "PANDIT SHREE RAM SHARMA",
+   "x": 0.06886,
+   "y": 0.52364
+  },
+  {
+   "code": "MIRK",
+   "name": "MUNIRKA",
+   "x": 0.39852,
+   "y": 0.75205
+  },
+  {
+   "code": "MKPR",
+   "name": "MAJLIS PARK",
+   "x": 0.44771,
+   "y": 0.38891
+  },
+  {
+   "code": "MLCD",
+   "name": "MOOLCHAND",
+   "x": 0.54782,
+   "y": 0.71343
+  },
+  {
+   "code": "MMJR",
+   "name": "MEWALA MAHARAJPUR",
+   "x": 0.59121,
+   "y": 0.85106
+  },
+  {
+   "code": "MN",
+   "name": "MOTI NAGAR",
+   "x": 0.34706,
+   "y": 0.61612
+  },
+  {
+   "code": "MNGM",
+   "name": "MOHAN NAGAR",
+   "x": 0.78635,
+   "y": 0.51711
+  },
+  {
+   "code": "MPK",
+   "name": "MANSAROVAR PARK",
+   "x": 0.68426,
+   "y": 0.51711
+  },
+  {
+   "code": "MUDK",
+   "name": "MUNDKA",
+   "x": 0.14555,
+   "y": 0.52364
+  },
+  {
+   "code": "MUPR",
+   "name": "MAUJPUR-BABARPUR",
+   "x": 0.63233,
+   "y": 0.47601
+  },
+  {
+   "code": "MVE",
+   "name": "MAYUR VIHAR EXTENSION",
+   "x": 0.62123,
+   "y": 0.69272
+  },
+  {
+   "code": "MVNR",
+   "name": "MALVIYA NAGAR",
+   "x": 0.43308,
+   "y": 0.77985
+  },
+  {
+   "code": "MVP1",
+   "name": "MAYUR VIHAR-I",
+   "x": 0.62123,
+   "y": 0.66435
+  },
+  {
+   "code": "MVPO",
+   "name": "SHREE RAM MANDIR MAYUR VIHAR",
+   "x": 0.64948,
+   "y": 0.66946
+  },
+  {
+   "code": "MYPI",
+   "name": "MAYAPURI",
+   "x": 0.33218,
+   "y": 0.64846
+  },
+  {
+   "code": "NAGR",
+   "name": "NEW ASHOK NAGAR",
+   "x": 0.63283,
+   "y": 0.71513
+  },
+  {
+   "code": "NAVR",
+   "name": "NARAINA VIHAR",
+   "x": 0.35539,
+   "y": 0.66889
+  },
+  {
+   "code": "NBAA",
+   "name": "SHAHEED STHAL ( NEW BUS ADDA)",
+   "x": 0.81972,
+   "y": 0.53073
+  },
+  {
+   "code": "NCAJ",
+   "name": "NEELAM CHOWK AJRONDA",
+   "x": 0.59121,
+   "y": 0.88454
+  },
+  {
+   "code": "NCBC",
+   "name": "SANT SURDAS (SIHI)",
+   "x": 0.59121,
+   "y": 0.90752
+  },
+  {
+   "code": "NCC",
+   "name": "NOIDA CITY CENTRE",
+   "x": 0.72058,
+   "y": 0.78326
+  },
+  {
+   "code": "NDI",
+   "name": "NEW DELHI (Yellow & Airport Line)",
+   "x": 0.512,
+   "y": 0.57073
+  },
+  {
+   "code": "NECC",
+   "name": "NOIDA ELECTRONIC CITY",
+   "x": 0.75918,
+   "y": 0.69158
+  },
+  {
+   "code": "NFGH",
+   "name": "NAJAFGARH",
+   "x": 0.06432,
+   "y": 0.69357
+  },
+  {
+   "code": "NHPC",
+   "name": "NHPC CHOWK",
+   "x": 0.59121,
+   "y": 0.84255
+  },
+  {
+   "code": "NIZM",
+   "name": "SARAI KALE KHAN-NIZAMUDDIN",
+   "x": 0.60433,
+   "y": 0.67087
+  },
+  {
+   "code": "NNGI",
+   "name": "NANGLI",
+   "x": 0.08677,
+   "y": 0.69357
+  },
+  {
+   "code": "NNOI",
+   "name": "NANGLOI",
+   "x": 0.1912,
+   "y": 0.52364
+  },
+  {
+   "code": "NP",
+   "name": "NEHRU PLACE",
+   "x": 0.54782,
+   "y": 0.73726
+  },
+  {
+   "code": "NPPR",
+   "name": "HAIDERPUR VILLAGE",
+   "x": 0.38515,
+   "y": 0.39402
+  },
+  {
+   "code": "NRSN",
+   "name": "NANGLOI RAILWAY STATION",
+   "x": 0.17582,
+   "y": 0.52364
+  },
+  {
+   "code": "NSET",
+   "name": "NOIDA SECTOR-18",
+   "x": 0.66638,
+   "y": 0.75432
+  },
+  {
+   "code": "NSFT",
+   "name": "NOIDA SECTOR-15",
+   "x": 0.64544,
+   "y": 0.7296
+  },
+  {
+   "code": "NSHP",
+   "name": "NETAJI SUBHASH PLACE",
+   "x": 0.37103,
+   "y": 0.4814
+  },
+  {
+   "code": "NSST",
+   "name": "NOIDA SECTOR-16",
+   "x": 0.65705,
+   "y": 0.74208
+  },
+  {
+   "code": "NUEE",
+   "name": "NEHRU ENCLAVE",
+   "x": 0.52764,
+   "y": 0.7495
+  },
+  {
+   "code": "NV",
+   "name": "NIRMAN VIHAR",
+   "x": 0.6467,
+   "y": 0.60222
+  },
+  {
+   "code": "NWD",
+   "name": "NAWADA",
+   "x": 0.12789,
+   "y": 0.66378
+  },
+  {
+   "code": "OFDB",
+   "name": "OLD FARIDABAD",
+   "x": 0.59121,
+   "y": 0.87602
+  },
+  {
+   "code": "OKBS",
+   "name": "OKHLA BIRD SANCTUARY",
+   "x": 0.67824,
+   "y": 0.78581
+  },
+  {
+   "code": "OKNS",
+   "name": "OKHLA NSIC",
+   "x": 0.58516,
+   "y": 0.74893
+  },
+  {
+   "code": "OVA",
+   "name": "OKHLA VIHAR",
+   "x": 0.65124,
+   "y": 0.76709
+  },
+  {
+   "code": "PAGI",
+   "name": "PEERAGARHI",
+   "x": 0.25297,
+   "y": 0.5242
+  },
+  {
+   "code": "PALM",
+   "name": "PALAM",
+   "x": 0.25146,
+   "y": 0.6808
+  },
+  {
+   "code": "PBGA",
+   "name": "PUNJABI BAGH",
+   "x": 0.35085,
+   "y": 0.5242
+  },
+  {
+   "code": "PBGH",
+   "name": "PULBANGASH",
+   "x": 0.46534,
+   "y": 0.51768
+  },
+  {
+   "code": "PBGW",
+   "name": "PUNJABI BAGH WEST",
+   "x": 0.33748,
+   "y": 0.5242
+  },
+  {
+   "code": "PH1",
+   "name": "PHASE-1",
+   "x": 0.33168,
+   "y": 0.87177
+  },
+  {
+   "code": "PHVR",
+   "name": "UTTARI PITAMPURA-PRASHANT VIHAR",
+   "x": 0.36649,
+   "y": 0.41672
+  },
+  {
+   "code": "PN",
+   "name": "PATEL NAGAR",
+   "x": 0.39726,
+   "y": 0.61612
+  },
+  {
+   "code": "PRA",
+   "name": "PRATAP NAGAR",
+   "x": 0.45074,
+   "y": 0.51768
+  },
+  {
+   "code": "PSPK",
+   "name": "PANCHSHEEL PARK",
+   "x": 0.47366,
+   "y": 0.75031
+  },
+  {
+   "code": "PTCK",
+   "name": "PATEL CHOWK",
+   "x": 0.51755,
+   "y": 0.6286
+  },
+  {
+   "code": "PTMD",
+   "name": "SUPREME COURT",
+   "x": 0.5738,
+   "y": 0.61612
+  },
+  {
+   "code": "PTP",
+   "name": "MADHUBAN CHOWK",
+   "x": 0.33773,
+   "y": 0.45104
+  },
+  {
+   "code": "PTVR",
+   "name": "PREET VIHAR",
+   "x": 0.65856,
+   "y": 0.5991
+  },
+  {
+   "code": "PVE",
+   "name": "PASCHIM VIHAR EAST",
+   "x": 0.29081,
+   "y": 0.5242
+  },
+  {
+   "code": "PVW",
+   "name": "PASCHIM VIHAR WEST",
+   "x": 0.2724,
+   "y": 0.5242
+  },
+  {
+   "code": "QM",
+   "name": "QUTAB MINAR",
+   "x": 0.41542,
+   "y": 0.8034
+  },
+  {
+   "code": "RCK",
+   "name": "RAJIV CHOWK",
+   "x": 0.51276,
+   "y": 0.61612
+  },
+  {
+   "code": "RDPK",
+   "name": "RAJDHANI PARK",
+   "x": 0.16043,
+   "y": 0.52364
+  },
+  {
+   "code": "RG",
+   "name": "RAJOURI GARDEN",
+   "x": 0.29535,
+   "y": 0.61612
+  },
+  {
+   "code": "RHE",
+   "name": "ROHINI",
+   "x": 0.32789,
+   "y": 0.44026
+  },
+  {
+   "code": "RI",
+   "name": "RITHALA",
+   "x": 0.31805,
+   "y": 0.42948
+  },
+  {
+   "code": "RISE",
+   "name": "ROHINI SECTOR-18, 19",
+   "x": 0.38919,
+   "y": 0.35799
+  },
+  {
+   "code": "RJBH",
+   "name": "RAJ BAGH",
+   "x": 0.739,
+   "y": 0.51711
+  },
+  {
+   "code": "RJNM",
+   "name": "MAJOR MOHIT SHARMA RAJENDRA NAGAR",
+   "x": 0.75539,
+   "y": 0.51711
+  },
+  {
+   "code": "RKAM",
+   "name": "RAMAKRISHNA ASHRAM MARG",
+   "x": 0.46534,
+   "y": 0.61612
+  },
+  {
+   "code": "RKPM",
+   "name": "R.K.PURAM",
+   "x": 0.41265,
+   "y": 0.75205
+  },
+  {
+   "code": "RN",
+   "name": "RAMESH NAGAR",
+   "x": 0.32587,
+   "y": 0.61612
+  },
+  {
+   "code": "RP",
+   "name": "RAJENDRA PLACE",
+   "x": 0.40987,
+   "y": 0.61612
+  },
+  {
+   "code": "S53",
+   "name": "SECTOR-53-54",
+   "x": 0.33168,
+   "y": 0.90383
+  },
+  {
+   "code": "S55",
+   "name": "SECTOR 55-56",
+   "x": 0.33168,
+   "y": 0.9339
+  },
+  {
+   "code": "SABR",
+   "name": "SADAR BAZAR CANTONMENT",
+   "x": 0.27265,
+   "y": 0.69641
+  },
+  {
+   "code": "SAKP",
+   "name": "SHAKURPUR",
+   "x": 0.35337,
+   "y": 0.50381
+  },
+  {
+   "code": "SAKT",
+   "name": "SAKET",
+   "x": 0.42602,
+   "y": 0.78893
+  },
+  {
+   "code": "SFNN",
+   "name": "SECTOR-59 NOIDA",
+   "x": 0.75918,
+   "y": 0.7296
+  },
+  {
+   "code": "SFTN",
+   "name": "SECTOR-52 NOIDA",
+   "x": 0.75489,
+   "y": 0.78241
+  },
+  {
+   "code": "SHD",
+   "name": "SHAHDARA",
+   "x": 0.67117,
+   "y": 0.51739
+  },
+  {
+   "code": "SHDN",
+   "name": "SHAHEED NAGAR",
+   "x": 0.72487,
+   "y": 0.51711
+  },
+  {
+   "code": "SHPK",
+   "name": "SHASTRI PARK",
+   "x": 0.58919,
+   "y": 0.51739
+  },
+  {
+   "code": "SHT",
+   "name": "SHASTRI NAGAR",
+   "x": 0.42879,
+   "y": 0.51768
+  },
+  {
+   "code": "SHVP",
+   "name": "SHIVAJI PARK",
+   "x": 0.32007,
+   "y": 0.5242
+  },
+  {
+   "code": "SJSU",
+   "name": "SHIVAJI STADIUM",
+   "x": 0.45629,
+   "y": 0.64733
+  },
+  {
+   "code": "SKRP",
+   "name": "SIKANDERPUR",
+   "x": 0.33142,
+   "y": 0.85957
+  },
+  {
+   "code": "SKVR",
+   "name": "SHANKAR VIHAR",
+   "x": 0.35715,
+   "y": 0.75205
+  },
+  {
+   "code": "SLAP",
+   "name": "SEELAMPUR",
+   "x": 0.62123,
+   "y": 0.51739
+  },
+  {
+   "code": "SLTP",
+   "name": "SULTANPUR",
+   "x": 0.3907,
+   "y": 0.83773
+  },
+  {
+   "code": "SMBG",
+   "name": "SHALIMAR BAGH",
+   "x": 0.3965,
+   "y": 0.45161
+  },
+  {
+   "code": "SMPK",
+   "name": "SHYAM PARK",
+   "x": 0.76793,
+   "y": 0.51711
+  },
+  {
+   "code": "SMSM",
+   "name": "MAHARAJA SURAJMAL STADIUM",
+   "x": 0.20634,
+   "y": 0.52364
+  },
+  {
+   "code": "SN",
+   "name": "SUBHASH NAGAR",
+   "x": 0.25449,
+   "y": 0.61612
+  },
+  {
+   "code": "SNVH",
+   "name": "NANAKSAR-SONIA VIHAR",
+   "x": 0.5559,
+   "y": 0.44537
+  },
+  {
+   "code": "SOEN",
+   "name": "SOUTH EXTENSION",
+   "x": 0.52613,
+   "y": 0.7018
+  },
+  {
+   "code": "SOJI",
+   "name": "SAROJINI NAGAR",
+   "x": 0.46786,
+   "y": 0.7018
+  },
+  {
+   "code": "SOOG",
+   "name": "SOORGHAT",
+   "x": 0.53067,
+   "y": 0.44537
+  },
+  {
+   "code": "SP",
+   "name": "SHADIPUR",
+   "x": 0.38414,
+   "y": 0.61612
+  },
+  {
+   "code": "SPBI",
+   "name": "SAMAYPUR BADLI",
+   "x": 0.37582,
+   "y": 0.34295
+  },
+  {
+   "code": "SRAI",
+   "name": "SARAI",
+   "x": 0.59121,
+   "y": 0.83262
+  },
+  {
+   "code": "SRSM",
+   "name": "SATGURU RAM SINGH MARG",
+   "x": 0.37002,
+   "y": 0.56364
+  },
+  {
+   "code": "SSON",
+   "name": "SECTOR-61 NOIDA",
+   "x": 0.76069,
+   "y": 0.75063
+  },
+  {
+   "code": "SSTN",
+   "name": "SECTOR-62 NOIDA",
+   "x": 0.75918,
+   "y": 0.70946
+  },
+  {
+   "code": "STFN",
+   "name": "SECTOR-34 NOIDA",
+   "x": 0.73042,
+   "y": 0.78439
+  },
+  {
+   "code": "STTA",
+   "name": "SECTOR-28",
+   "x": 0.59121,
+   "y": 0.85844
+  },
+  {
+   "code": "STVR",
+   "name": "SARITA VIHAR",
+   "x": 0.5728,
+   "y": 0.7946
+  },
+  {
+   "code": "SUL",
+   "name": "SECTOR-42-43",
+   "x": 0.33168,
+   "y": 0.88624
+  },
+  {
+   "code": "SVMB",
+   "name": "SIR M. VISHWESHWARAIAH MOTI BAGH",
+   "x": 0.42249,
+   "y": 0.70548
+  },
+  {
+   "code": "SVVR",
+   "name": "SHIV VIHAR",
+   "x": 0.63989,
+   "y": 0.40537
+  },
+  {
+   "code": "TG",
+   "name": "TAGORE GARDEN",
+   "x": 0.27391,
+   "y": 0.61612
+  },
+  {
+   "code": "TKBR",
+   "name": "TIKRI BORDER",
+   "x": 0.084,
+   "y": 0.52364
+  },
+  {
+   "code": "TKDS",
+   "name": "TUGHLAKABAD STATION",
+   "x": 0.58339,
+   "y": 0.81106
+  },
+  {
+   "code": "TKLM",
+   "name": "TIKRI KALAN",
+   "x": 0.09939,
+   "y": 0.52364
+  },
+  {
+   "code": "TKPR",
+   "name": "TRILOKPURI-SANJAY LAKE",
+   "x": 0.68174,
+   "y": 0.66293
+  },
+  {
+   "code": "TN",
+   "name": "TILAK NAGAR",
+   "x": 0.23257,
+   "y": 0.61612
+  },
+  {
+   "code": "TZI",
+   "name": "TIS HAZARI",
+   "x": 0.48754,
+   "y": 0.51739
+  },
+  {
+   "code": "UDB",
+   "name": "SEVA TEERTH",
+   "x": 0.51604,
+   "y": 0.66038
+  },
+  {
+   "code": "UNE",
+   "name": "UTTAM NAGAR EAST",
+   "x": 0.15387,
+   "y": 0.63371
+  },
+  {
+   "code": "UNRG",
+   "name": "UDYOG NAGAR",
+   "x": 0.22173,
+   "y": 0.52364
+  },
+  {
+   "code": "UNW",
+   "name": "UTTAM NAGAR WEST",
+   "x": 0.14176,
+   "y": 0.64818
+  },
+  {
+   "code": "VASI",
+   "name": "VAISHALI",
+   "x": 0.73395,
+   "y": 0.58889
+  },
+  {
+   "code": "VENT",
+   "name": "EAST VINOD NAGAR-MAYUR VIHAR-II",
+   "x": 0.6946,
+   "y": 0.64846
+  },
+  {
+   "code": "VNNR",
+   "name": "MANDAWALI-WEST VINOD NAGAR",
+   "x": 0.69864,
+   "y": 0.63343
+  },
+  {
+   "code": "VNPR",
+   "name": "VINOBAPURI",
+   "x": 0.57885,
+   "y": 0.69556
+  },
+  {
+   "code": "VS",
+   "name": "VIDHAN SABHA",
+   "x": 0.50973,
+   "y": 0.49161
+  },
+  {
+   "code": "VTVR",
+   "name": "VASANT VIHAR",
+   "x": 0.38036,
+   "y": 0.75205
+  },
+  {
+   "code": "VW",
+   "name": "VISHWAVIDYALAYA",
+   "x": 0.5004,
+   "y": 0.47856
+  },
+  {
+   "code": "WC",
+   "name": "WELCOME",
+   "x": 0.64393,
+   "y": 0.51739
+  },
+  {
+   "code": "YB",
+   "name": "YAMUNA BANK",
+   "x": 0.60962,
+   "y": 0.61612
+  },
+  {
+   "code": "YMVR",
+   "name": "YAMUNA VIHAR",
+   "x": 0.61416,
+   "y": 0.44537
+  }
+ ]
+}
