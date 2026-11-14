@@ -1,0 +1,562 @@
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  PanResponder,
+  Platform,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from 'react-native';
+import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import { useTheme } from 'react-native-paper';
+import { useAppTheme } from '../../theme/ThemeContext';
+import { stationName } from '../../utils/format';
+import {
+  MAP_BOUNDS,
+  MAP_LINES,
+  MAP_STATIONS,
+  STATION_BY_CODE,
+  type MapStation,
+} from './networkData';
+
+export interface NetworkMapHandle {
+  /** Centre on a station and zoom in far enough to read its neighbours. */
+  focusStation: (code: string) => void;
+  /** Centre on a projected point, e.g. the user's position. */
+  focusPoint: (x: number, y: number) => void;
+  /** Back to the starting view over central Delhi. */
+  reset: () => void;
+}
+
+interface Props {
+  selectedCode: string | null;
+  onSelect: (code: string | null) => void;
+  /** Projected position of the user, drawn as a dot when known. */
+  userPoint?: { x: number; y: number } | null;
+  /** Space covered by floating UI at the top and bottom, kept clear when focusing. */
+  insetTop?: number;
+  insetBottom?: number;
+}
+
+interface Viewport {
+  cx: number;
+  cy: number;
+  /** Screen pixels per metre. */
+  k: number;
+}
+
+const TAP_SLOP = 8;
+const HIT_RADIUS = 24;
+const DOUBLE_TAP_MS = 280;
+/** Starting view spans about this many metres across. */
+const START_SPAN = 14_000;
+const MIN_SPAN_FACTOR = 1.15;
+const MAX_SPAN = 1_200;
+
+type Touch = { pageX: number; pageY: number };
+
+function distance(a: Touch, b: Touch) {
+  return Math.hypot(a.pageX - b.pageX, a.pageY - b.pageY);
+}
+
+/**
+ * The metro network drawn from station coordinates.
+ *
+ * Pan and zoom move an SVG viewBox rather than scaling a bitmap, so lines stay
+ * sharp at every zoom. One finger pans, two fingers pinch, a double tap zooms
+ * in; on the web the wheel zooms too. Taps pick the nearest station within a
+ * finger's width. With a station selected, its lines stay at full strength and
+ * the rest of the network fades back.
+ */
+export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function NetworkMapCanvas(
+  { selectedCode, onSelect, userPoint, insetTop = 0, insetBottom = 0 },
+  ref,
+) {
+  const theme = useTheme();
+  const { fills, isDark } = useAppTheme();
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [view, setView] = useState<Viewport>({ cx: 0, cy: 0, k: 0 });
+  const viewRef = useRef(view);
+  const sizeRef = useRef(size);
+  const containerRef = useRef<View>(null);
+  const origin = useRef({ x: 0, y: 0 });
+  const frame = useRef<number | null>(null);
+  const insetsRef = useRef({ top: insetTop, bottom: insetBottom });
+  insetsRef.current = { top: insetTop, bottom: insetBottom };
+
+  const limits = useCallback(() => {
+    const { width, height } = sizeRef.current;
+    const spanX = MAP_BOUNDS.maxX - MAP_BOUNDS.minX;
+    const spanY = MAP_BOUNDS.maxY - MAP_BOUNDS.minY;
+    const minK = Math.min(width / spanX, height / spanY) / MIN_SPAN_FACTOR;
+    const maxK = width / MAX_SPAN;
+    return { minK, maxK };
+  }, []);
+
+  const commit = useCallback(
+    (next: Viewport) => {
+      const { minK, maxK } = limits();
+      const k = Math.min(maxK, Math.max(minK, next.k));
+      // Keep some of the network on screen however far it is dragged.
+      const cx = Math.min(MAP_BOUNDS.maxX, Math.max(MAP_BOUNDS.minX, next.cx));
+      const cy = Math.min(MAP_BOUNDS.maxY, Math.max(MAP_BOUNDS.minY, next.cy));
+      viewRef.current = { cx, cy, k };
+      if (frame.current === null) {
+        frame.current = requestAnimationFrame(() => {
+          frame.current = null;
+          setView(viewRef.current);
+        });
+      }
+    },
+    [limits],
+  );
+
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
+
+  const startView = useCallback(
+    (width: number): Viewport => ({ cx: 0, cy: 0, k: width / START_SPAN }),
+    [],
+  );
+
+  // Screen point to map point, using the canvas size and current viewport.
+  const toMap = useCallback((sx: number, sy: number, v: Viewport = viewRef.current) => {
+    const { width, height } = sizeRef.current;
+    return { x: v.cx + (sx - width / 2) / v.k, y: v.cy + (sy - height / 2) / v.k };
+  }, []);
+
+  const zoomAt = useCallback(
+    (sx: number, sy: number, factor: number) => {
+      const v = viewRef.current;
+      const { minK, maxK } = limits();
+      const k = Math.min(maxK, Math.max(minK, v.k * factor));
+      const anchor = toMap(sx, sy, v);
+      const { width, height } = sizeRef.current;
+      commit({ cx: anchor.x - (sx - width / 2) / k, cy: anchor.y - (sy - height / 2) / k, k });
+    },
+    [commit, limits, toMap],
+  );
+
+  /** Centre a map point in the area left visible between the floating UI. */
+  const centreOn = useCallback(
+    (x: number, y: number, k: number) => {
+      const { top, bottom } = insetsRef.current;
+      commit({ cx: x, cy: y + (bottom - top) / 2 / k, k });
+    },
+    [commit],
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focusStation: (code) => {
+        const station = STATION_BY_CODE.get(code);
+        if (!station) return;
+        const k = Math.max(viewRef.current.k, sizeRef.current.width / 6_000);
+        centreOn(station.x, station.y, k);
+      },
+      focusPoint: (x, y) => {
+        const k = Math.max(viewRef.current.k, sizeRef.current.width / 8_000);
+        centreOn(x, y, k);
+      },
+      reset: () => commit(startView(sizeRef.current.width)),
+    }),
+    [centreOn, commit, startView],
+  );
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    if (width <= 0 || height <= 0) return;
+    const first = sizeRef.current.width === 0;
+    sizeRef.current = { width, height };
+    setSize({ width, height });
+    containerRef.current?.measureInWindow((x, y) => {
+      origin.current = { x, y };
+    });
+    if (first) {
+      viewRef.current = startView(width);
+      setView(viewRef.current);
+    }
+  };
+
+  const nearestStation = useCallback(
+    (sx: number, sy: number): MapStation | null => {
+      const v = viewRef.current;
+      const p = toMap(sx, sy, v);
+      let best: MapStation | null = null;
+      let bestDist = HIT_RADIUS / v.k;
+      for (const station of MAP_STATIONS) {
+        const d = Math.hypot(station.x - p.x, station.y - p.y);
+        if (d < bestDist) {
+          best = station;
+          bestDist = d;
+        }
+      }
+      return best;
+    },
+    [toMap],
+  );
+
+  // Gesture state lives in refs; the responder is created once.
+  const gesture = useRef({
+    lastPan: null as { x: number; y: number } | null,
+    lastPinch: null as { dist: number; mx: number; my: number } | null,
+    moved: false,
+    lastTap: 0,
+  });
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+
+  const local = (t: Touch) => ({ x: t.pageX - origin.current.x, y: t.pageY - origin.current.y });
+
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: () => true,
+        onPanResponderTerminationRequest: () => false,
+        onPanResponderGrant: (evt: GestureResponderEvent) => {
+          // The canvas can move with the page (web scroll, rotation); refresh
+          // its window position before reading touch points against it.
+          containerRef.current?.measureInWindow((x, y) => {
+            origin.current = { x, y };
+          });
+          const touches = evt.nativeEvent.touches as unknown as Touch[];
+          const g = gesture.current;
+          g.moved = touches.length > 1;
+          g.lastPinch = null;
+          g.lastPan = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY };
+        },
+        onPanResponderMove: (evt, state) => {
+          const g = gesture.current;
+          const touches = evt.nativeEvent.touches as unknown as Touch[];
+          if (Math.abs(state.dx) > TAP_SLOP || Math.abs(state.dy) > TAP_SLOP) g.moved = true;
+
+          if (touches.length >= 2) {
+            g.moved = true;
+            g.lastPan = null;
+            const a = local(touches[0]);
+            const b = local(touches[1]);
+            const dist = distance(touches[0], touches[1]);
+            const mx = (a.x + b.x) / 2;
+            const my = (a.y + b.y) / 2;
+            if (g.lastPinch && g.lastPinch.dist > 0) {
+              const v = viewRef.current;
+              // Pan by the midpoint's movement, then zoom about it.
+              commit({
+                ...v,
+                cx: v.cx - (mx - g.lastPinch.mx) / v.k,
+                cy: v.cy - (my - g.lastPinch.my) / v.k,
+              });
+              zoomAt(mx, my, dist / g.lastPinch.dist);
+            }
+            g.lastPinch = { dist, mx, my };
+            return;
+          }
+
+          g.lastPinch = null;
+          const px = evt.nativeEvent.pageX;
+          const py = evt.nativeEvent.pageY;
+          if (g.lastPan) {
+            const v = viewRef.current;
+            commit({
+              ...v,
+              cx: v.cx - (px - g.lastPan.x) / v.k,
+              cy: v.cy - (py - g.lastPan.y) / v.k,
+            });
+          }
+          g.lastPan = { x: px, y: py };
+        },
+        onPanResponderRelease: (evt) => {
+          const g = gesture.current;
+          g.lastPan = null;
+          g.lastPinch = null;
+          if (g.moved) {
+            g.lastTap = 0;
+            return;
+          }
+          const p = local({ pageX: evt.nativeEvent.pageX, pageY: evt.nativeEvent.pageY });
+          const now = Date.now();
+          if (now - g.lastTap < DOUBLE_TAP_MS) {
+            g.lastTap = 0;
+            zoomAt(p.x, p.y, 2);
+            return;
+          }
+          g.lastTap = now;
+          const station = nearestStation(p.x, p.y);
+          onSelectRef.current(station ? station.code : null);
+        },
+        onPanResponderTerminate: () => {
+          gesture.current.lastPan = null;
+          gesture.current.lastPinch = null;
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // Wheel and trackpad zoom on the web. React Native has no wheel event, so
+  // listen on the DOM node directly; passive must be off to stop page scroll.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const node = containerRef.current as unknown as HTMLElement | null;
+    if (!node?.addEventListener) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = node.getBoundingClientRect();
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, Math.exp(-e.deltaY * 0.0018));
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [zoomAt]);
+
+  const selected = selectedCode ? STATION_BY_CODE.get(selectedCode) ?? null : null;
+
+  // Keep the selected station in view once the sheet opens over the map:
+  // if it would sit under the sheet or the search bar, pan it into the clear
+  // band between them. The zoom stays where the user left it.
+  useEffect(() => {
+    if (!selectedCode || sizeRef.current.height === 0) return;
+    const station = STATION_BY_CODE.get(selectedCode);
+    if (!station) return;
+    const v = viewRef.current;
+    const sy = sizeRef.current.height / 2 + (station.y - v.cy) * v.k;
+    const sx = sizeRef.current.width / 2 + (station.x - v.cx) * v.k;
+    const margin = 48;
+    const covered =
+      sy > sizeRef.current.height - insetBottom - margin ||
+      sy < insetTop + margin ||
+      sx < margin ||
+      sx > sizeRef.current.width - margin;
+    if (covered) centreOn(station.x, station.y, v.k);
+  }, [selectedCode, insetTop, insetBottom, centreOn]);
+  const activeLines = useMemo(() => new Set(selected?.lines ?? []), [selected]);
+
+  const { width, height } = size;
+  const { cx, cy, k } = view;
+  const ready = width > 0 && k > 0;
+  const px = (n: number) => n / (k || 1);
+  const viewBox = ready
+    ? `${cx - width / 2 / k} ${cy - height / 2 / k} ${width / k} ${height / k}`
+    : '0 0 1 1';
+
+  // How much detail to draw at this zoom. Spans are metres across the screen.
+  const span = ready ? width / k : START_SPAN;
+  const showStops = span < 26_000;
+  const showInterchangeLabels = span < 22_000;
+  const showAllLabels = span < 8_000;
+
+  // A light grid in map space so panning reads as moving over a surface.
+  const grid = useMemo(() => {
+    if (!ready) return { step: 0, xs: [] as number[], ys: [] as number[] };
+    const target = 48 / k;
+    const step = Math.pow(2, Math.round(Math.log2(target / 250))) * 250;
+    const x0 = Math.floor((cx - width / 2 / k) / step) * step;
+    const y0 = Math.floor((cy - height / 2 / k) / step) * step;
+    const xs: number[] = [];
+    const ys: number[] = [];
+    for (let x = x0; x <= cx + width / 2 / k; x += step) xs.push(x);
+    for (let y = y0; y <= cy + height / 2 / k; y += step) ys.push(y);
+    return { step, xs, ys };
+  }, [ready, k, cx, cy, width, height]);
+
+  const linePoints = useMemo(
+    () => MAP_LINES.map((line) => line.points.map((p) => `${p.x},${p.y}`).join(' ')),
+    [],
+  );
+
+  const dim = (lineCodes: string[]) =>
+    activeLines.size > 0 && !lineCodes.some((code) => activeLines.has(code));
+
+  const background = fills.containerLow;
+  const ink = theme.colors.onSurface;
+  const halo = background;
+  const labelFont = Platform.OS === 'web' ? '"Roboto Flex", Roboto, system-ui, sans-serif' : undefined;
+
+  const orderedLines = MAP_LINES.map((line, index) => ({ line, index })).sort(
+    (a, b) => Number(activeLines.has(a.line.code)) - Number(activeLines.has(b.line.code)),
+  );
+
+  return (
+    <View
+      ref={containerRef}
+      style={[styles.fill, { backgroundColor: background }]}
+      onLayout={handleLayout}
+      {...responder.panHandlers}
+      accessible
+      accessibilityLabel="Metro network map. Drag to move, pinch to zoom, tap a station to see its details."
+    >
+      {ready ? (
+        <Svg width={width} height={height} viewBox={viewBox} pointerEvents="none">
+          <G>
+            {grid.xs.map((x) => (
+              <Line
+                key={`gx${x}`}
+                x1={x}
+                x2={x}
+                y1={cy - height / 2 / k}
+                y2={cy + height / 2 / k}
+                stroke={theme.colors.outlineVariant}
+                strokeOpacity={isDark ? 0.18 : 0.35}
+                strokeWidth={px(0.6)}
+              />
+            ))}
+            {grid.ys.map((y) => (
+              <Line
+                key={`gy${y}`}
+                y1={y}
+                y2={y}
+                x1={cx - width / 2 / k}
+                x2={cx + width / 2 / k}
+                stroke={theme.colors.outlineVariant}
+                strokeOpacity={isDark ? 0.18 : 0.35}
+                strokeWidth={px(0.6)}
+              />
+            ))}
+          </G>
+
+          {orderedLines.map(({ line, index }) => {
+            const active = activeLines.has(line.code);
+            const faded = activeLines.size > 0 && !active;
+            return (
+              <G key={line.code}>
+                {active ? (
+                  <Polyline
+                    points={linePoints[index]}
+                    fill="none"
+                    stroke={line.color}
+                    strokeOpacity={0.22}
+                    strokeWidth={px(16)}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : null}
+                <Polyline
+                  points={linePoints[index]}
+                  fill="none"
+                  stroke={line.color}
+                  strokeOpacity={faded ? 0.28 : 1}
+                  strokeWidth={px(active ? 7 : 5)}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </G>
+            );
+          })}
+
+          {showStops
+            ? MAP_STATIONS.map((station) => {
+                const faded = dim(station.lines);
+                if (!station.interchange && span > 16_000 && !activeLines.size) return null;
+                const color = station.interchange
+                  ? ink
+                  : MAP_LINES.find((l) => l.code === station.lines[0])?.color ?? ink;
+                return (
+                  <Circle
+                    key={station.code}
+                    cx={station.x}
+                    cy={station.y}
+                    r={px(station.interchange ? 5.5 : 3.5)}
+                    fill={fills.containerLowest}
+                    stroke={color}
+                    strokeOpacity={faded ? 0.35 : 1}
+                    strokeWidth={px(station.interchange ? 2.5 : 2)}
+                  />
+                );
+              })
+            : null}
+
+          {showInterchangeLabels
+            ? MAP_STATIONS.map((station) => {
+                const isSelected = station.code === selectedCode;
+                const onActive = activeLines.size > 0 && !dim(station.lines);
+                const show =
+                  isSelected ||
+                  station.interchange ||
+                  showAllLabels ||
+                  (onActive && span < 14_000);
+                if (!show) return null;
+                const faded = dim(station.lines);
+                const label = stationName(station.name);
+                const common = {
+                  // The selected marker is a 30px tile, so its label moves clear of it.
+                  x: station.x + px(isSelected ? 22 : 9),
+                  y: station.y + px(4),
+                  fontSize: px(station.interchange ? 12 : 11),
+                  fontWeight: station.interchange ? '600' : '500',
+                  fontFamily: labelFont,
+                } as const;
+                // react-native-svg has no paint-order, so the halo that keeps
+                // labels readable over lines is a stroked copy drawn first.
+                return (
+                  <G key={`t${station.code}`}>
+                    <SvgText
+                      {...common}
+                      fill={halo}
+                      stroke={halo}
+                      strokeWidth={px(3.5)}
+                      strokeLinejoin="round"
+                      opacity={faded ? 0.5 : 0.9}
+                    >
+                      {label}
+                    </SvgText>
+                    <SvgText {...common} fill={ink} fillOpacity={faded ? 0.4 : 0.92}>
+                      {label}
+                    </SvgText>
+                  </G>
+                );
+              })
+            : null}
+
+          {userPoint ? (
+            <G>
+              <Circle cx={userPoint.x} cy={userPoint.y} r={px(16)} fill="#1a73e8" fillOpacity={0.18} />
+              <Circle
+                cx={userPoint.x}
+                cy={userPoint.y}
+                r={px(6)}
+                fill="#1a73e8"
+                stroke="#ffffff"
+                strokeWidth={px(2)}
+              />
+            </G>
+          ) : null}
+
+          {selected ? (
+            <G>
+              <Circle cx={selected.x} cy={selected.y} r={px(24)} fill={theme.colors.primary} fillOpacity={0.16} />
+              <Rect
+                x={selected.x - px(15)}
+                y={selected.y - px(15)}
+                width={px(30)}
+                height={px(30)}
+                rx={px(10)}
+                fill={theme.colors.primary}
+              />
+              <Circle cx={selected.x} cy={selected.y} r={px(5)} fill={theme.colors.onPrimary} />
+            </G>
+          ) : null}
+        </Svg>
+      ) : null}
+    </View>
+  );
+});
+
+const styles = StyleSheet.create({
+  fill: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+});

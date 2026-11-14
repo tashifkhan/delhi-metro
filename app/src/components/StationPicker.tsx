@@ -2,13 +2,15 @@ import { useHaptics } from '../hooks/useHaptics';
 import { useState } from 'react';
 import { FlatList, Modal, Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconButton, Searchbar, Text, useTheme } from 'react-native-paper';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { Text, useTheme } from 'react-native-paper';
 import { StationCard } from './StationCard';
 import { StationListSkeleton } from './StationListSkeleton';
+import { StationSearchBar } from './StationSearchBar';
+import { Touchable } from './Touchable';
 import { EmptyState } from './EmptyState';
 import { useStationSearchQuery } from '../hooks';
 import { useIsDesktop } from '../hooks/useIsDesktop';
-import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, radius, emphasis } from '../theme';
 import type { StationSearchResult } from '../types';
 
@@ -20,16 +22,20 @@ interface Props {
   selectedCode?: string;
 }
 
-export function StationPicker({ visible, onSelect, onClose, title = 'Select Station', selectedCode }: Props) {
+/**
+ * Full-height sheet for picking a station: title and close button, the same
+ * search bar as the Search tab, then the segmented result list.
+ */
+export function StationPicker({ visible, onSelect, onClose, title = 'Choose a station', selectedCode }: Props) {
   const theme = useTheme();
   const haptics = useHaptics();
-  const { fills } = useAppTheme();
   const insets = useSafeAreaInsets();
   const isDesktop = useIsDesktop();
   const [searchText, setSearchText] = useState('');
   // Filtering runs against the catalog already in memory, so waiting out a
   // debounce only makes the list lag behind the keys.
   const { data: results, isLoading } = useStationSearchQuery(searchText);
+  const data = results ?? [];
 
   const handleSelect = (station: StationSearchResult) => {
     onSelect({ code: station.station_code, name: station.station_name });
@@ -61,65 +67,71 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Select Stat
             isDesktop && styles.containerDesktop,
           ]}
         >
-        <View style={styles.header}>
-          <Text
-            variant="headlineSmall"
-            style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
-          >
-            {title}
-          </Text>
-          <IconButton
-            icon="close"
-            onPress={() => { haptics.navigate(); handleClose(); }}
-            iconColor={theme.colors.onSurfaceVariant}
-            accessibilityLabel="Close station picker"
-          />
+          <View style={styles.header}>
+            <Text
+              variant="headlineSmall"
+              style={[emphasis.medium, styles.title, { color: theme.colors.onSurface }]}
+            >
+              {title}
+            </Text>
+            <Touchable
+              radius={radius.pill}
+              onPress={() => {
+                haptics.navigate();
+                handleClose();
+              }}
+              accessibilityLabel="Close station picker"
+            >
+              <View style={styles.close}>
+                <Ionicons name="close" size={24} color={theme.colors.onSurface} />
+              </View>
+            </Touchable>
+          </View>
+
+          <View style={styles.barWrap}>
+            <StationSearchBar
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Search Delhi and Noida stations"
+              autoFocus
+            />
+          </View>
+
+          {isLoading ? (
+            <StationListSkeleton />
+          ) : (
+            <FlatList
+              data={data}
+              keyExtractor={(item) => `${item.network ?? 'dmrc'}:${item.station_code}`}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={styles.list}
+              renderItem={({ item, index }) => (
+                <StationCard
+                  station={item}
+                  selected={item.station_code === selectedCode}
+                  onPress={() => handleSelect(item)}
+                  showChevron={false}
+                  network={item.network}
+                  first={index === 0}
+                  last={index === data.length - 1}
+                />
+              )}
+              ListEmptyComponent={
+                <EmptyState
+                  title="No stations found"
+                  subtitle={
+                    searchText.trim()
+                      ? `Nothing matches "${searchText.trim()}"`
+                      : 'Try a different station name or code'
+                  }
+                  icon="search-outline"
+                />
+              }
+            />
+          )}
         </View>
-
-        <Searchbar
-          placeholder="Search both metro networks"
-          value={searchText}
-          onChangeText={setSearchText}
-          autoFocus
-          autoCapitalize="characters"
-          style={[styles.searchbar, { backgroundColor: fills.subtle }]}
-          inputStyle={{ color: theme.colors.onSurface }}
-          placeholderTextColor={theme.colors.outline}
-          elevation={0}
-        />
-
-        {isLoading ? (
-          <StationListSkeleton />
-        ) : (
-          <FlatList
-            data={results ?? []}
-            keyExtractor={(item) => `${item.network ?? 'dmrc'}:${item.station_code}`}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <StationCard
-                station={item}
-                selected={item.station_code === selectedCode}
-                onPress={() => handleSelect(item)}
-                showChevron={false}
-                network={item.network}
-              />
-            )}
-            ListEmptyComponent={
-              <EmptyState
-                title="No stations found"
-                subtitle={
-                  searchText.trim()
-                    ? `Nothing matches "${searchText.trim()}"`
-                    : 'Try a different station name or code'
-                }
-                icon="search-outline"
-              />
-            }
-          />
-        )}
       </View>
-    </View>
     </Modal>
   );
 }
@@ -144,27 +156,32 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 600,
     maxHeight: '85%',
-    borderRadius: radius.card,
+    borderRadius: 28,
     overflow: 'hidden',
     paddingBottom: spacing.md,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: spacing.base,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing.sm,
   },
   title: {
     flex: 1,
   },
-  searchbar: {
-    marginHorizontal: spacing.base,
-    marginBottom: spacing.sm,
-    borderRadius: radius.pill,
+  close: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  barWrap: {
+    paddingHorizontal: spacing.base,
+    paddingBottom: spacing.md,
   },
   list: {
-    paddingTop: spacing.xs,
     paddingBottom: spacing.lg,
     flexGrow: 1,
   },

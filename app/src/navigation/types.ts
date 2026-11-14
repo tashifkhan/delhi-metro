@@ -2,7 +2,8 @@ import type { RouteStrategy } from '../types';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type HomeStackParamList = {
-  Home: undefined;
+  /** `presetFrom` fills the From field, e.g. from "Route from here" on a station. */
+  Home: { presetFrom?: { code: string; name: string } } | undefined;
   JourneyResults: {
     fromCode: string;
     toCode: string;
@@ -29,6 +30,7 @@ export type LinesStackParamList = {
 
 export type MapStackParamList = {
   MetroMap: undefined;
+  StationDetail: { stationCode: string; stationName: string };
 };
 
 export type AlertsStackParamList = {

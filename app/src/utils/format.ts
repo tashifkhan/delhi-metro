@@ -11,15 +11,30 @@ const ACRONYMS = new Set([
   'DDA', 'ESI', 'IGNOU', 'NHPC', 'NSEZ', 'KG',
 ]);
 
-/** "HAUZ KHAS" to "Hauz Khas". Names already in mixed case are left alone. */
+function titleWord(word: string): string {
+  const upper = word.toUpperCase();
+  if (ACRONYMS.has(upper)) return upper;
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+/**
+ * "HAUZ KHAS" to "Hauz Khas". DMRC also mixes cases inside one name, as in
+ * "NEW DELHI (Yellow & Airport Line)" or "SEVA TEERTH (earlier UDYOG
+ * BHAWAN))", so every all-capital word is fixed on its own, stray brackets
+ * are tidied, and "Sector - 52" becomes "Sector 52".
+ */
 export function stationName(name: string): string {
-  if (!name || name !== name.toUpperCase()) return name;
+  if (!name) return name;
   return name
-    .toLowerCase()
-    .replace(/\b([a-z])/g, (letter) => letter.toUpperCase())
-    .replace(/\b[A-Za-z]+\b/g, (word) =>
-      ACRONYMS.has(word.toUpperCase()) ? word.toUpperCase() : word,
-    );
+    .replace(/\b[A-Z][A-Z.']+\b/g, (word) =>
+      word.replace(/[A-Za-z]+/g, (part) => titleWord(part)),
+    )
+    .replace(/\bSector\s*-\s*(\d)/gi, 'Sector $1')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .replace(/\){2,}/g, ')')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 /** "23:32:06" to "23:32". Anything else passes through. */

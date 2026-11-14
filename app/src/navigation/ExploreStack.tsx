@@ -19,7 +19,7 @@ export function ExploreStack() {
       key={network}
       screenOptions={screenOptions}
     >
-      <Stack.Screen name="StationSearch" component={StationSearchScreen} options={{ title: 'Search Stations' }} />
+      <Stack.Screen name="StationSearch" component={StationSearchScreen} options={{ title: 'Search' }} />
       <Stack.Screen
         name="StationDetail"
         component={StationDetailScreen}

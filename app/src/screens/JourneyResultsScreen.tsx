@@ -15,7 +15,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Appbar, Text, useTheme } from 'react-native-paper';
 import {
-  useBookingQuery,
   useJourneyPlanCachedQuery,
   useMetroLinesQuery,
   useStationSearchQuery,
@@ -38,6 +37,7 @@ import type { MetroNetwork, PlannedFare, RouteStrategy, WhatsAppBooking } from '
 import type { HomeStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis, tabular } from '../theme';
 import { clockTime, durationLabel, stationName } from '../utils/format';
+import { bookingsFor } from '../services/whatsappBooking';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'JourneyResults'>;
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
@@ -77,6 +77,9 @@ export function JourneyResultsScreen() {
   const [editing, setEditing] = useState<'from' | 'to' | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [bookY, setBookY] = useState(0);
+  // Hide the jump-to-booking button once the booking cards are on screen.
+  const [bookingVisible, setBookingVisible] = useState(false);
+  const viewportH = useRef(0);
 
   const { data: plan, isPending, isError, isPlaceholderData, savedAt, refetch } =
     useJourneyPlanCachedQuery(fromCode, toCode, strategy, journeyTime);
@@ -143,17 +146,15 @@ export function JourneyResultsScreen() {
     [editing, navigation, fromCode, toCode, handleSwapStations],
   );
 
-  // Plans saved before booking links existed have none. Fetch the operator
-  // link instead of hiding the button. A fresh plan already carries them.
-  const planBookings = plan?.bookings ?? [];
-  const fallbackNetwork: MetroNetwork =
-    plan?.networks[0] ?? (plan?.source === 'nmrc' ? 'nmrc' : 'dmrc');
-  const { data: fallbackBooking } = useBookingQuery(
-    fallbackNetwork,
-    Boolean(plan) && planBookings.length === 0,
-  );
-  const bookings: WhatsAppBooking[] =
-    planBookings.length > 0 ? planBookings : fallbackBooking ? [fallbackBooking] : [];
+  // The API attaches booking links to fresh plans. Saved plans, and an API
+  // deploy without the field, get the app's own copy of the same links.
+  const bookings: WhatsAppBooking[] = !plan
+    ? []
+    : plan.bookings && plan.bookings.length > 0
+      ? plan.bookings
+      : bookingsFor(
+          plan.networks.length > 0 ? plan.networks : [plan.source === 'nmrc' ? 'nmrc' : 'dmrc'],
+        );
 
   // One outcome per requested journey, including cached results. Refetches stay quiet.
   const journeyKey = JSON.stringify([fromCode, toCode, strategy, journeyTime]);
@@ -353,6 +354,15 @@ export function JourneyResultsScreen() {
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
+        scrollEventThrottle={100}
+        onLayout={(e) => {
+          viewportH.current = e.nativeEvent.layout.height;
+        }}
+        onScroll={(e) => {
+          const bottom = e.nativeEvent.contentOffset.y + viewportH.current;
+          const visible = bookY > 0 && bottom > bookY + 160;
+          if (visible !== bookingVisible) setBookingVisible(visible);
+        }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -563,7 +573,7 @@ export function JourneyResultsScreen() {
         </View>
       </ScrollView>
 
-      {bookings.length > 0 ? (
+      {bookings.length > 0 && !bookingVisible ? (
         <View style={styles.fabWrap} pointerEvents="box-none">
           <Touchable
             radius={shape.lg + 2}

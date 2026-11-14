@@ -308,6 +308,9 @@ export interface StationDetail {
   station_name: string;
   station_commercial_name: string | null;
   station_description: string | null;
+  /** Station hours as "HH:MM:SS"; DMRC publishes these, not per-line trains. */
+  opening_time?: string | null;
+  closing_time?: string | null;
   station_type: string | null;
   interchange: boolean | null;
   latitude: number | null;

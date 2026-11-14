@@ -20,7 +20,7 @@ export function LinesStack() {
       key={network}
       screenOptions={screenOptions}
     >
-      <Stack.Screen name="MetroLines" component={MetroLinesScreen} options={{ title: 'Metro Lines' }} />
+      <Stack.Screen name="MetroLines" component={MetroLinesScreen} options={{ title: 'Lines' }} />
       <Stack.Screen
         name="LineStations"
         component={LineStationsScreen}

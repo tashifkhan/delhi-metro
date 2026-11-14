@@ -1,6 +1,6 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -82,6 +82,17 @@ export function HomeScreen() {
   }, [linesQuery.data]);
   const [departureOffsetMinutes, setDepartureOffsetMinutes] = useState(0);
   const [strategy, setStrategy] = useState<RouteStrategy>('least-distance');
+
+  // "Route from here" on a station or the map lands here with the From field
+  // already filled. Clear the param so a later visit doesn't refill it.
+  const route = useRoute<RouteProp<HomeStackParamList, 'Home'>>();
+  const presetFrom = route.params?.presetFrom;
+  const setFrom = fromPicker.setStation;
+  useEffect(() => {
+    if (!presetFrom) return;
+    setFrom(presetFrom);
+    navigation.setParams({ presetFrom: undefined });
+  }, [presetFrom, setFrom, navigation]);
 
   const canSearch = Boolean(fromPicker.station && toPicker.station);
 

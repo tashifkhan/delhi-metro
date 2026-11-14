@@ -49,6 +49,7 @@ export const navigationLinking: LinkingOptions<RootTabParamList> = {
         path: 'map',
         screens: {
           MetroMap: '',
+          StationDetail: 'station/:stationCode',
         },
       },
       AlertsTab: {

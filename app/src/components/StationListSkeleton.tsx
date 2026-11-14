@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useAppTheme } from '../theme/ThemeContext';
-import { spacing, radius } from '../theme';
+import { spacing, shape } from '../theme';
 
 interface Props {
   /** Number of placeholder rows. */
@@ -13,9 +13,8 @@ const ROW_KEYS = ['a', 'b', 'c', 'd', 'e', 'f'];
 /**
  * Placeholder rows shown while station results load.
  *
- * Shared by the search screen and the picker sheet so both wait in the same
- * visual language, and so the row shape only has to track the real
- * `StationCard` layout in one place.
+ * Same segmented tiles as `StationCard`, so the list doesn't change shape
+ * when the real rows arrive. Shared by the Search tab and the picker sheet.
  */
 export function StationListSkeleton({ rows = 5 }: Props) {
   const { fills } = useAppTheme();
@@ -32,19 +31,40 @@ export function StationListSkeleton({ rows = 5 }: Props) {
     return () => loop.stop();
   }, [shimmer]);
 
-  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
+  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.5, 1] });
+  const keys = ROW_KEYS.slice(0, rows);
 
   return (
     <View style={styles.container} accessibilityLabel="Loading stations" accessibilityRole="progressbar">
-      {ROW_KEYS.slice(0, rows).map((key) => (
-        <Animated.View key={key} style={[styles.row, { opacity }]}>
-          <View style={[styles.icon, { backgroundColor: fills.subtle }]} />
-          <View style={styles.lines}>
-            <View style={[styles.bar, styles.barWide, { backgroundColor: fills.subtle }]} />
-            <View style={[styles.bar, styles.barNarrow, { backgroundColor: fills.subtle }]} />
+      {keys.map((key, index) => {
+        const first = index === 0;
+        const last = index === keys.length - 1;
+        return (
+          <View
+            key={key}
+            style={[
+              styles.row,
+              {
+                backgroundColor: fills.containerLow,
+                borderTopLeftRadius: first ? shape.xl : shape.sm,
+                borderTopRightRadius: first ? shape.xl : shape.sm,
+                borderBottomLeftRadius: last ? shape.xl : shape.sm,
+                borderBottomRightRadius: last ? shape.xl : shape.sm,
+              },
+            ]}
+          >
+            <Animated.View style={[styles.icon, { opacity, backgroundColor: fills.containerHighest }]} />
+            <View style={styles.lines}>
+              <Animated.View
+                style={[styles.bar, styles.barWide, { opacity, backgroundColor: fills.containerHighest }]}
+              />
+              <Animated.View
+                style={[styles.bar, styles.barNarrow, { opacity, backgroundColor: fills.containerHigh }]}
+              />
+            </View>
           </View>
-        </Animated.View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -52,19 +72,20 @@ export function StationListSkeleton({ rows = 5 }: Props) {
 const styles = StyleSheet.create({
   container: {
     paddingTop: spacing.sm,
-    gap: spacing.xs,
+    paddingHorizontal: spacing.base,
+    gap: 3,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.base,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     gap: spacing.md,
   },
   icon: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.icon,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
   },
   lines: {
     flex: 1,
