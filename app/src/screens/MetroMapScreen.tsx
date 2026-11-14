@@ -9,26 +9,22 @@ import {
   View,
   type LayoutChangeEvent,
 } from 'react-native';
-import { useNavigation, type NavigationProp } from '@react-navigation/native';
+import { useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import { useStationSearchQuery } from '../hooks';
-import { useMapLayout } from '../hooks/useMapLayout';
 import { useHaptics } from '../hooks/useHaptics';
 import { Touchable } from '../components/Touchable';
 import { NetworkSwitcher } from '../components/NetworkSwitcher';
 import { NetworkMapCanvas, type NetworkMapHandle } from '../components/map/NetworkMapCanvas';
 import { StationSheet } from '../components/map/StationSheet';
 import { OfficialMapView } from '../components/map/OfficialMapView';
-import { LINE_BY_CODE, project, type MapStation } from '../components/map/networkData';
-import {
-  BASE_GEOMETRY,
-  LAYOUT_REGISTRY,
-  applyLayouts,
-  type NetworkGeometry,
-} from '../components/map/geometry';
+import { LINE_BY_CODE, project, shortLineName, type MapStation } from '../components/map/networkData';
+import { type NetworkGeometry } from '../components/map/geometry';
+import { useLiveGeometry } from '../components/map/useLiveGeometry';
+import { BrandMark } from '../components/BrandMark';
 import { NetworkGeometryProvider } from '../components/map/NetworkGeometryContext';
 import { useAppTheme } from '../theme/ThemeContext';
 import { emphasis, onColor, radius, spacing } from '../theme';
@@ -78,12 +74,7 @@ export function MetroMapScreen() {
 
   // Official-map layouts (see components/map/geometry). One hook per network,
   // gated by the registry, so Delhi makes no request while it is switched off.
-  const nmrcLayout = useMapLayout('nmrc', LAYOUT_REGISTRY.nmrc.enabled);
-  const dmrcLayout = useMapLayout('dmrc', LAYOUT_REGISTRY.dmrc.enabled);
-  const geometry = useMemo(
-    () => applyLayouts(BASE_GEOMETRY, { nmrc: nmrcLayout.layout, dmrc: dmrcLayout.layout }),
-    [nmrcLayout.layout, dmrcLayout.layout],
-  );
+  const { geometry, nmrc: nmrcLayout, dmrc: dmrcLayout } = useLiveGeometry();
   const reading = [nmrcLayout, dmrcLayout].find(
     (state) => state.stage === 'extracting' || state.stage === 'progress',
   );
@@ -112,6 +103,34 @@ export function MetroMapScreen() {
   }, [query, results, geometry]);
 
   const selected = selectedCode ? geometry.stationByCode.get(selectedCode) ?? null : null;
+
+  // Arriving from a route's "Open in Map": select that station once the
+  // canvas has laid out, then clear the param so a return visit starts fresh.
+  const route = useRoute<RouteProp<MapStackParamList, 'MetroMap'>>();
+  const focusCode = route.params?.focusCode;
+  useEffect(() => {
+    if (!focusCode) return;
+    setMode('schematic');
+    setSelectedCode(focusCode);
+    const timer = setTimeout(() => mapRef.current?.focusStation(focusCode), 60);
+    navigation.setParams({ focusCode: undefined });
+    return () => clearTimeout(timer);
+  }, [focusCode, navigation]);
+
+  // One key entry per line name: the Pink and Magenta extensions share their
+  // parent line's colour and name, and Blue's two branches are one line to a rider.
+  const legend = useMemo(() => {
+    const byName = new Map<string, { code: string; label: string; color: string }>();
+    for (const line of LINE_BY_CODE.values()) {
+      const label = shortLineName(line).replace(/^RMGL$/, 'Rapid');
+      if (!byName.has(label)) byName.set(label, { code: line.code, label, color: line.color });
+    }
+    return [...byName.values()];
+  }, []);
+
+  const [canvas, setCanvas] = useState({ width: 0, height: 0 });
+  const width = canvas.width;
+  const wide = width >= 600;
 
   const select = useCallback(
     (code: string | null) => {
@@ -180,6 +199,23 @@ export function MetroMapScreen() {
   const top = insets.top + spacing.sm;
   const sheetOpen = mode === 'schematic' && selected !== null;
 
+  // Floating controls, so station names never hide under them.
+  const labelObstacles = useMemo(() => {
+    if (canvas.width === 0) return [];
+    const fabTop = top + SEARCH_HEIGHT + spacing.xl;
+    const fabWidth = wide ? 170 : FAB_SIZE;
+    return [
+      { x0: 0, y0: 0, x1: canvas.width, y1: top + SEARCH_HEIGHT + 4 },
+      {
+        x0: canvas.width - spacing.md - fabWidth - 4,
+        y0: fabTop - 4,
+        x1: canvas.width,
+        y1: fabTop + FAB_SIZE * 2 + spacing.md + 4,
+      },
+      { x0: 0, y0: canvas.height - spacing.base - 36, x1: canvas.width, y1: canvas.height },
+    ];
+  }, [canvas, top, wide]);
+
   if (mode === 'official') {
     return (
       <View style={[styles.fill, { backgroundColor: theme.colors.background }]}>
@@ -225,7 +261,12 @@ export function MetroMapScreen() {
 
   return (
     <NetworkGeometryProvider value={geometry}>
-    <View style={[styles.fill, { backgroundColor: fills.containerLow }]}>
+    <View
+      style={[styles.fill, { backgroundColor: fills.containerLow }]}
+      onLayout={(e: LayoutChangeEvent) =>
+        setCanvas({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+      }
+    >
       <NetworkMapCanvas
         ref={mapRef}
         selectedCode={selectedCode}
@@ -237,6 +278,7 @@ export function MetroMapScreen() {
           select(code);
         }}
         userPoint={userPoint}
+        labelObstacles={labelObstacles}
         insetTop={top + SEARCH_HEIGHT}
         insetBottom={sheetOpen ? sheetHeight : 0}
       />
@@ -270,8 +312,8 @@ export function MetroMapScreen() {
               </View>
             </Touchable>
           ) : (
-            <View style={[styles.avatar, { backgroundColor: theme.colors.tertiaryContainer }]}>
-              <Ionicons name="train" size={18} color={theme.colors.onTertiaryContainer} />
+            <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
+              <BrandMark size={36} />
             </View>
           )}
         </View>
@@ -332,11 +374,17 @@ export function MetroMapScreen() {
               setSelectedCode(null);
               setMode('official');
             }}
-            accessibilityLabel="Show the official network map"
-            style={[styles.fab, { backgroundColor: fills.containerHigh }]}
+            accessibilityLabel="Show the official map image"
+            style={[styles.fab, styles.fabRight, { backgroundColor: fills.containerHigh }]}
           >
-            <View style={styles.fabInner}>
-              <Ionicons name="layers-outline" size={24} color={theme.colors.onSurface} />
+            {/* An image of the published map, so the icon is a picture, not layers. */}
+            <View style={wide ? styles.fabExtended : styles.fabInner}>
+              <Ionicons name="image-outline" size={22} color={theme.colors.onSurface} />
+              {wide ? (
+                <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+                  Official map
+                </Text>
+              ) : null}
             </View>
           </Touchable>
         </View>
@@ -346,16 +394,14 @@ export function MetroMapScreen() {
       {!selected ? (
         <View style={styles.legendWrap} pointerEvents="box-none">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.legend}>
-            {Array.from(new Map([...LINE_BY_CODE.values()].map((l) => [l.color + l.name.replace(/\s*\(Ext\.\)$/i, ''), l])).values()).map(
-              (line) => (
-                <View key={line.code} style={[styles.legendChip, { backgroundColor: fills.containerHigh }]}>
-                  <View style={[styles.legendSwatch, { backgroundColor: line.color }]} />
-                  <Text variant="labelMedium" style={[emphasis.medium, { color: theme.colors.onSurface }]}>
-                    {line.name.replace(/\s*\(Ext\.\)$/i, '').replace(/\s+Line$/i, '').replace('RMGL', 'Rapid')}
-                  </Text>
-                </View>
-              ),
-            )}
+            {legend.map((line) => (
+              <View key={line.code} style={[styles.legendChip, { backgroundColor: fills.containerHigh }]}>
+                <View style={[styles.legendSwatch, { backgroundColor: line.color }]} />
+                <Text variant="labelMedium" style={[emphasis.medium, { color: theme.colors.onSurface }]}>
+                  {line.label}
+                </Text>
+              </View>
+            ))}
           </ScrollView>
         </View>
       ) : null}
@@ -490,6 +536,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: spacing.md,
     gap: spacing.md,
+    alignItems: 'flex-end',
   },
   fab: {
     shadowColor: '#000',
@@ -503,6 +550,17 @@ const styles = StyleSheet.create({
     height: FAB_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fabRight: {
+    alignSelf: 'flex-end',
+  },
+  fabExtended: {
+    height: FAB_SIZE,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingLeft: spacing.base,
+    paddingRight: spacing.lg,
   },
   legendWrap: {
     position: 'absolute',

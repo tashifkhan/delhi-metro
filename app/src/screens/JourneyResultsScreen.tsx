@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
-import type { RouteProp } from '@react-navigation/native';
+import type { NavigationProp, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Appbar, Text, useTheme } from 'react-native-paper';
@@ -31,10 +31,11 @@ import { ErrorState } from '../components/ErrorState';
 import { StationPicker } from '../components/StationPicker';
 import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
+import { RouteMap } from '../components/map/RouteMap';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NETWORK_NAMES } from '../network';
 import type { MetroNetwork, PlannedFare, RouteStrategy, WhatsAppBooking } from '../types';
-import type { HomeStackParamList } from '../navigation/types';
+import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import { spacing, shape, emphasis, tabular } from '../theme';
 import { clockTime, durationLabel, stationName } from '../utils/format';
 import { bookingsFor } from '../services/whatsappBooking';
@@ -433,6 +434,30 @@ export function JourneyResultsScreen() {
           </View>
         </Reveal>
 
+        {/* The preference sits above the map it changes, clear of the
+            floating booking button that hovers over the lower half. */}
+        {hasStrategyChoice ? (
+          <Reveal index={1} replayOnFocus={false}>
+            <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
+              <StrategyToggle active={strategy} onChange={setStrategy} />
+            </Animated.View>
+          </Reveal>
+        ) : null}
+
+        {/* The trip on the network map, like the map tab but framed on this route. */}
+        <Reveal index={1} replayOnFocus={false}>
+          <RouteMap
+            legs={plan.legs}
+            colorFor={(leg) => colorFor(leg.line_name, leg.line_color)}
+            onOpenMap={() =>
+              navigation.getParent<NavigationProp<RootTabParamList>>()?.navigate('MapTab', {
+                screen: 'MetroMap',
+                params: { focusCode: rideLegs[0]?.from_station_code ?? fromCode },
+              })
+            }
+          />
+        </Reveal>
+
         {plan.separate_tickets ? (
           <Reveal index={2} replayOnFocus={false}>
             <View style={[styles.note, { backgroundColor: theme.colors.tertiaryContainer }]}>
@@ -450,14 +475,6 @@ export function JourneyResultsScreen() {
                 </Text>
               </View>
             </View>
-          </Reveal>
-        ) : null}
-
-        {hasStrategyChoice ? (
-          <Reveal index={3} replayOnFocus={false}>
-            <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
-              <StrategyToggle active={strategy} onChange={setStrategy} />
-            </Animated.View>
           </Reveal>
         ) : null}
 
