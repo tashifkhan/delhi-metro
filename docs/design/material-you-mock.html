@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NCR Metro redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wdth,wght@8..144,25..151,300..900&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=swap" rel="stylesheet">
+<style>
+/* Fallback roles (Blue Line seed, light). JS overwrites these from the seed. */
+:root {
+  --md-primary:#1d5fa6; --md-on-primary:#fff; --md-primary-container:#d4e3ff; --md-on-primary-container:#001c3a;
+  --md-secondary:#545f71; --md-on-secondary:#fff; --md-secondary-container:#d8e3f8; --md-on-secondary-container:#111c2b;
+  --md-tertiary:#6e5676; --md-on-tertiary:#fff; --md-tertiary-container:#f8d8ff; --md-on-tertiary-container:#27132f;
+  --md-error:#ba1a1a; --md-error-container:#ffdad6; --md-on-error-container:#410002;
+  --md-surface:#f9f9ff; --md-on-surface:#191c20; --md-on-surface-variant:#43474e;
+  --md-surface-dim:#d9d9e0; --md-surface-bright:#f9f9ff;
+  --md-surface-container-lowest:#fff; --md-surface-container-low:#f3f3fa; --md-surface-container:#ededf4;
+  --md-surface-container-high:#e7e8ee; --md-surface-container-highest:#e2e2e9;
+  --md-outline:#73777f; --md-outline-variant:#c3c6cf; --md-inverse-surface:#2e3036; --md-inverse-on-surface:#f0f0f7;
+
+  /* Line colours stay fixed: they are wayfinding, not decoration */
+  --line-red:#e2232a; --line-yellow:#fcc00a; --line-blue:#1565c0; --line-green:#00a651;
+  --line-violet:#8b3f98; --line-pink:#ec4d9a; --line-magenta:#b6156d; --line-grey:#8a8b8f;
+  --line-orange:#f58220; --line-aqua:#00b5e2;
+
+  --font: "Roboto Flex", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font); color: var(--foreground, var(--md-on-surface));
+  -webkit-font-smoothing: antialiased;
+}
+.ms { font-family: "Material Symbols Rounded"; font-weight: 400; font-style: normal; font-size: 22px; line-height: 1;
+  display: inline-block; font-variation-settings: "FILL" 0, "wght" 400, "opsz" 24; user-select: none; }
+.ms.fill { font-variation-settings: "FILL" 1, "wght" 500, "opsz" 24; }
+
+/* ---------- Control bar ---------- */
+.controls {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--md-surface-container) 88%, transparent);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-radius: 20px; color: var(--md-on-surface);
+  padding: 16px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center;
+}
+.brand { display: flex; flex-direction: column; margin-right: auto; }
+.brand b { font-size: 18px; font-weight: 700; font-stretch: 112%; letter-spacing: -.01em; }
+.brand span { font-size: 12px; color: var(--md-on-surface-variant); }
+.group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.group > label { font-size: 12px; font-weight: 600; color: var(--md-on-surface-variant); text-transform: uppercase; letter-spacing: .06em; margin-right: 2px; }
+.seed {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer; position: relative;
+  background: var(--c); transition: transform .2s, border-radius .25s;
+}
+.seed:hover { transform: scale(1.08); }
+.seed[aria-pressed="true"] { border-radius: 10px; outline: 3px solid var(--md-on-surface); outline-offset: 2px; }
+.custom { position: relative; width: 30px; height: 30px; border-radius: 50%; overflow: hidden;
+  background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red); }
+.custom input { position: absolute; inset: -8px; width: 46px; height: 46px; opacity: 0; cursor: pointer; }
+.pillset { display: inline-flex; border: 1px solid var(--md-outline); border-radius: 999px; overflow: hidden; }
+.pillset button {
+  font: 500 13px var(--font); padding: 7px 14px; border: 0; background: transparent; color: var(--md-on-surface);
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+}
+.pillset button + button { border-left: 1px solid var(--md-outline); }
+.pillset button[aria-pressed="true"] { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.pillset .ms { font-size: 18px; }
+
+/* ---------- Stage ---------- */
+.stage { padding: 24px 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 36px 20px; }
+.shot { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 340px; max-width: 100%; }
+.caption { font-size: 13px; color: var(--md-on-surface-variant); text-align: center; line-height: 1.45; max-width: 330px; }
+.caption b { color: var(--md-on-surface); font-weight: 650; display: block; font-size: 14px; margin-bottom: 2px; }
+
+.phone {
+  width: 340px; max-width: 100%; height: 740px; border-radius: 44px; position: relative; overflow: hidden;
+  background: var(--md-surface); color: var(--md-on-surface);
+  box-shadow: 0 0 0 10px #141518, 0 0 0 11px #2a2c31, 0 30px 60px -20px rgba(0,0,0,.45);
+  display: flex; flex-direction: column;
+  transition: background .4s, color .4s;
+}
+.status { height: 40px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 26px 0 28px;
+  font-size: 14px; font-weight: 600; }
+.status .ico { display: flex; gap: 4px; }
+.status .ms { font-size: 17px; }
+.scroll { flex: 1; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.pad { padding: 0 16px; }
+
+/* typography */
+.display { font-size: 34px; line-height: 40px; font-weight: 500; font-stretch: 106%; letter-spacing: -.02em; }
+.headline { font-size: 26px; line-height: 32px; font-weight: 550; letter-spacing: -.01em; }
+.title-l { font-size: 20px; line-height: 26px; font-weight: 600; }
+.title-m { font-size: 16px; line-height: 22px; font-weight: 600; }
+.body-m { font-size: 14px; line-height: 20px; }
+.body-s { font-size: 12.5px; line-height: 17px; color: var(--md-on-surface-variant); }
+.label-l { font-size: 14px; font-weight: 600; letter-spacing: .01em; }
+.label-s { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--md-on-surface-variant); }
+.muted { color: var(--md-on-surface-variant); }
+
+/* common bits */
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 4px 8px 4px 8px; height: 56px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; background: transparent; color: var(--md-on-surface); cursor: pointer; }
+.icon-btn.tonal { background: var(--md-surface-container-high); }
+.card { background: var(--md-surface-container-low); border-radius: 28px; }
+.card.hi { background: var(--md-surface-container); }
+.btn {
+  height: 56px; border-radius: 999px; border: 0; width: 100%; cursor: pointer;
+  font: 600 16px var(--font); letter-spacing: .01em; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--md-primary); color: var(--md-on-primary); transition: border-radius .25s, filter .2s;
+}
+.btn:active { border-radius: 16px; }
+.btn.tonal { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.btn.sm { height: 44px; font-size: 14px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; background: var(--md-surface-container-high); color: var(--md-on-surface); white-space: nowrap; }
+.chip .ms { font-size: 18px; }
+.chip.accent { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+.chip.outline { background: transparent; border: 1px solid var(--md-outline-variant); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.badge { display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px 0 6px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 700; color: #fff; background: var(--c); }
+.badge.dark-text { color: #241a00; }
+
+/* nav bar */
+.navbar { flex: none; height: 80px; background: var(--md-surface-container); display: flex; justify-content: space-around; padding: 12px 6px 16px; }
+.nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 64px; font-size: 12px; font-weight: 600; color: var(--md-on-surface-variant); }
+.nav-item .pill { width: 56px; height: 32px; border-radius: 16px; display: grid; place-items: center; }
+.nav-item.on { color: var(--md-on-surface); }
+.nav-item.on .pill { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.home-ind { position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%); width: 110px; height: 4px; border-radius: 4px; background: var(--md-on-surface); opacity: .35; }
+
+/* ---------- Screen 1: Plan ---------- */
+.p1-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 0; }
+.net { display: inline-flex; background: var(--md-surface-container-high); border-radius: 999px; padding: 3px; }
+.net span { padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; color: var(--md-on-surface-variant); }
+.net span.on { background: var(--md-primary); color: var(--md-on-primary); }
+.planner { margin: 20px 12px 0; padding: 8px; position: relative; background: var(--md-surface-container); border-radius: 32px; }
+.field { background: var(--md-surface-container-lowest); border-radius: 24px; padding: 12px 64px 12px 18px; display: flex; gap: 14px; align-items: center; }
+.field + .field { margin-top: 6px; }
+.field .ring { width: 14px; height: 14px; border-radius: 50%; border: 3px solid var(--md-primary); flex: none; }
+.field .ring.to { border-radius: 4px; background: var(--md-primary); border: 0; transform: rotate(45deg); width: 11px; height: 11px; margin: 0 1.5px; }
+.field .label-s { font-size: 10.5px; }
+.field .val { font-size: 17px; font-weight: 600; margin-top: 1px; }
+.field .lines { display: flex; gap: 4px; margin-top: 5px; }
+.swap { position: absolute; right: 22px; top: 50px; width: 52px; height: 52px; border-radius: 18px; border: 0;
+  background: var(--md-primary-container); color: var(--md-on-primary-container); display: grid; place-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+.seg { display: flex; margin: 10px 4px 10px; border: 1px solid var(--md-outline); border-radius: 999px; overflow: hidden; height: 40px; }
+.seg > span { flex: 1; display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.seg > span + span { border-left: 1px solid var(--md-outline); }
+.seg > span.on { background: var(--md-secondary-container); color: var(--md-on-secondary-container); }
+.seg .ms { font-size: 18px; }
+.sect { display: flex; align-items: baseline; justify-content: space-between; padding: 24px 20px 10px; }
+.sect a { font-size: 13.5px; font-weight: 600; color: var(--md-primary); text-decoration: none; }
+.status-strip { margin: 0 12px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.status-strip::-webkit-scrollbar { display: none; }
+.lstat { flex: none; display: flex; align-items: center; gap: 10px; padding: 10px 14px 10px 10px; border-radius: 20px; background: var(--md-surface-container-low); }
+.lstat .sq { width: 28px; height: 28px; border-radius: 9px; background: var(--c); display: grid; place-items: center; color: #fff; font-size: 12px; font-weight: 800; }
+.lstat .t { font-size: 13px; font-weight: 600; }
+.lstat .s { font-size: 11.5px; color: var(--md-on-surface-variant); display: flex; align-items: center; gap: 4px; }
+.lstat .s i { width: 6px; height: 6px; border-radius: 50%; background: #2e9d4f; }
+.lstat.warn .s i { background: #e0a100; }
+.freq { margin: 0 12px; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; gap: 3px; }
+.freq-row { background: var(--md-surface-container-low); padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
+.freq-row:first-child { border-radius: 28px 28px 8px 8px; } .freq-row:last-child { border-radius: 8px 8px 28px 28px; }
+.mini-rail { display: flex; flex-direction: column; align-items: center; width: 10px; gap: 0; }
+.mini-rail .a { width: 10px; height: 10px; border-radius: 50%; border: 2.5px solid var(--c1); }
+.mini-rail .m { width: 3px; height: 16px; background: linear-gradient(var(--c1), var(--c2)); }
+.mini-rail .b { width: 10px; height: 10px; border-radius: 50%; background: var(--c2); }
+.freq-row .names { flex: 1; min-width: 0; }
+.freq-row .names div { font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.freq-row .names div + div { margin-top: 10px; }
+.freq-row .meta { text-align: right; }
+.freq-row .meta b { font-size: 15px; display: block; }
+
+/* ---------- Screen 2: Route ---------- */
+.r-head { padding: 4px 20px 0; }
+.r-head .headline span { color: var(--md-on-surface-variant); font-weight: 400; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 20px 0; }
+.note { margin: 16px 12px 0; padding: 14px 16px; border-radius: 20px; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container);
+  display: flex; gap: 12px; font-size: 13px; line-height: 18px; }
+.note b { display: block; font-size: 14px; margin-bottom: 2px; }
+.timeline { margin: 14px 12px 0; padding: 18px 16px 8px 8px; background: var(--md-surface-container-low); border-radius: 28px; }
+.leg { display: grid; grid-template-columns: 50px 22px 1fr; column-gap: 10px; }
+.leg .time { font-size: 13px; font-weight: 600; text-align: right; padding-top: 1px; font-variant-numeric: tabular-nums; }
+.rail { position: relative; display: flex; justify-content: center; }
+.rail::before { content: ""; position: absolute; top: 4px; bottom: -4px; width: 8px; border-radius: 8px; background: var(--c); }
+.rail.end::before { bottom: auto; height: 12px; }
+.rail .stop { position: relative; z-index: 1; width: 18px; height: 18px; border-radius: 50%; background: var(--md-surface-container-lowest); border: 4px solid var(--c); margin-top: 0; }
+.rail .tick { position: relative; z-index: 1; width: 6px; height: 6px; border-radius: 50%; background: var(--md-surface-container-lowest); margin-top: 7px; opacity: .9; }
+.rail.walk::before { width: 0; border-left: 3px dotted var(--md-outline); background: none; border-radius: 0; }
+.leg .body { padding-bottom: 14px; min-width: 0; }
+.leg .stn { font-size: 15.5px; font-weight: 650; }
+.leg .info { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+.expand { margin: 4px 0 2px; display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: var(--md-primary);
+  padding: 6px 10px 6px 8px; border-radius: 10px; background: var(--md-surface-container-high); }
+.expand .ms { font-size: 18px; }
+.walkbox { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 16px; background: var(--md-surface-container-high); font-size: 13px; margin: 2px 0 6px; }
+.walkbox .ms { font-size: 20px; color: var(--md-primary); }
+.fab-x { position: absolute; right: 16px; bottom: 24px; height: 56px; padding: 0 20px 0 16px; border-radius: 18px; border: 0;
+  background: var(--md-primary-container); color: var(--md-on-primary-container); font: 600 15px var(--font); display: flex; align-items: center; gap: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.18), 0 1px 3px rgba(0,0,0,.12); }
+
+/* ---------- Screen 3: Map ---------- */
+.mapwrap { position: absolute; inset: 0; background: var(--md-surface-container-low); }
+.mapwrap svg { width: 100%; height: 100%; display: block; }
+.map-top { position: absolute; top: 48px; left: 12px; right: 12px; display: flex; gap: 8px; z-index: 2; }
+.searchbar { flex: 1; height: 56px; border-radius: 28px; background: var(--md-surface-container-high); display: flex; align-items: center; gap: 12px; padding: 0 8px 0 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.1); color: var(--md-on-surface-variant); font-size: 15.5px; }
+.searchbar .grow { flex: 1; }
+.avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--md-tertiary-container); color: var(--md-on-tertiary-container); display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+.map-fabs { position: absolute; right: 12px; top: 120px; display: flex; flex-direction: column; gap: 10px; z-index: 2; }
+.map-fabs button { width: 48px; height: 48px; border-radius: 16px; border: 0; background: var(--md-surface-container-high); color: var(--md-on-surface); display: grid; place-items: center; box-shadow: 0 2px 6px rgba(0,0,0,.14); }
+.map-fabs button.p { background: var(--md-primary-container); color: var(--md-on-primary-container); }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: var(--md-surface-container-low); border-radius: 28px 28px 0 0;
+  padding: 10px 16px 28px; box-shadow: 0 -4px 20px rgba(0,0,0,.12); }
+.handle { width: 32px; height: 4px; border-radius: 4px; background: var(--md-on-surface-variant); opacity: .4; margin: 0 auto 14px; }
+.sheet-head { display: flex; gap: 14px; align-items: flex-start; }
+.sheet-head .mark { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--md-primary); color: var(--md-on-primary); flex: none; }
+.sheet-head .grow { flex: 1; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.tile { background: var(--md-surface-container-highest); border-radius: 18px; padding: 12px 14px; }
+.tile .label-s { font-size: 10.5px; }
+.tile b { display: block; font-size: 20px; font-weight: 650; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.tile small { font-size: 12px; color: var(--md-on-surface-variant); }
+.facil { display: flex; gap: 8px; margin-top: 14px; overflow-x: auto; scrollbar-width: none; }
+
+/* ---------- Screen 4: Book ---------- */
+.pass { margin: 8px 12px 0; border-radius: 28px; background: var(--md-primary); color: var(--md-on-primary); position: relative; overflow: hidden; }
+.pass-top { padding: 18px 20px 20px; }
+.pass-row { display: flex; justify-content: space-between; align-items: center; }
+.pass .pchip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 9px; background: color-mix(in srgb, var(--md-on-primary) 16%, transparent); font-size: 12.5px; font-weight: 600; }
+.pass .pchip .ms { font-size: 16px; }
+.ends { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-top: 22px; gap: 8px; }
+.ends .code { font-size: 30px; font-weight: 700; font-stretch: 115%; letter-spacing: -.01em; line-height: 1; }
+.ends .nm { font-size: 12.5px; opacity: .8; margin-top: 6px; }
+.ends .r { text-align: right; }
+.train-mid { display: flex; align-items: center; gap: 0; width: 92px; }
+.train-mid i { flex: 1; height: 2px; background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 8px); opacity: .6; }
+.train-mid span.ms { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; background: var(--md-on-primary); color: var(--md-primary); font-size: 20px; }
+.perf { position: relative; height: 0; border-top: 2px dashed color-mix(in srgb, var(--md-on-primary) 35%, transparent); margin: 0 18px; }
+.perf::before, .perf::after { content: ""; position: absolute; top: -13px; width: 24px; height: 24px; border-radius: 50%; background: var(--md-surface); }
+.perf::before { left: -30px; } .perf::after { right: -30px; }
+.pass-legs { padding: 16px 20px 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pleg .label-s { color: inherit; opacity: .75; font-size: 10.5px; }
+.pleg b { display: block; font-size: 22px; margin-top: 2px; }
+.pleg small { font-size: 12px; opacity: .85; display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+.op { margin: 10px 12px 0; padding: 16px; border-radius: 24px; background: var(--md-surface-container-low); }
+.op-head { display: flex; align-items: center; gap: 12px; }
+.op-head .logo { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; font-weight: 800; font-size: 13px; color: #fff; background: var(--c); }
+.op-head .grow { flex: 1; }
+.op .btn { margin-top: 14px; }
+.btn.outline { background: transparent; color: var(--md-primary); border: 1px solid var(--md-outline); }
+.step { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; flex: none;
+  background: var(--md-primary); color: var(--md-on-primary); }
+.step.next { background: transparent; color: var(--md-on-surface-variant); border: 1.5px solid var(--md-outline); }
+.op.current { background: var(--md-surface-container); outline: 2px solid var(--md-primary); outline-offset: -2px; }
+.wa { width: 20px; height: 20px; }
+.fare-tbl { margin: 10px 12px 0; padding: 4px 16px; border-radius: 24px; background: var(--md-surface-container-low); }
+.fare-tbl div { display: flex; justify-content: space-between; padding: 12px 0; font-size: 14px; }
+.fare-tbl div + div { border-top: 1px solid var(--md-outline-variant); }
+.fare-tbl b { font-variant-numeric: tabular-nums; }
+
+/* palette strip */
+.palette { padding: 8px 0 16px; }
+.palette h2 { font-size: 13px; font-weight: 600; color: var(--md-on-surface-variant); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 10px 4px; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.sw { height: 64px; border-radius: 14px; padding: 10px 12px; font-size: 12px; font-weight: 600; display: flex; align-items: flex-end; }
+
+@media (max-width: 420px) {
+  .phone { height: 720px; box-shadow: 0 0 0 6px #141518, 0 20px 40px -20px rgba(0,0,0,.45); border-radius: 36px; }
+  .stage { padding-top: 24px; }
+}
+</style>
+</head>
+<body>
+
+<header class="controls">
+  <div class="brand">
+    <b>NCR Metro, Material You pass</b>
+    <span>Pick a seed. Every surface, container and accent is generated from it.</span>
+  </div>
+  <div class="group" id="seeds">
+    <label>Seed</label>
+  </div>
+  <div class="group">
+    <label>Scheme</label>
+    <div class="pillset" id="variants">
+      <button data-v="tonal" aria-pressed="true">Tonal</button>
+      <button data-v="vibrant">Vibrant</button>
+      <button data-v="expressive">Expressive</button>
+      <button data-v="neutral">Neutral</button>
+    </div>
+  </div>
+  <div class="group">
+    <div class="pillset" id="modes">
+      <button data-m="light" aria-pressed="true"><span class="ms">light_mode</span>Light</button>
+      <button data-m="dark"><span class="ms">dark_mode</span>Dark</button>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+
+  <!-- ============ 1. PLAN ============ -->
+  <section class="shot">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="ico"><span class="ms fill">signal_cellular_alt</span><span class="ms fill">wifi</span><span class="ms fill">battery_full</span></span></div>
+      <div class="scroll">
+        <div class="p1-head">
+          <div>
+            <div class="label-s">Friday, 14 Nov</div>
+          </div>
+          <div class="net"><span class="on">Delhi</span><span>Noida</span></div>
+        </div>
+        <div class="pad" style="margin-top:14px">
+          <div class="display">Where are you<br>headed today?</div>
+        </div>
+
+        <div class="planner">
+          <div class="field">
+            <span class="ring"></span>
+            <div>
+              <div class="label-s">From</div>
+              <div class="val">Rajiv Chowk</div>
+              <div class="lines"><span class="dot" style="background:var(--line-blue)"></span><span class="dot" style="background:var(--line-yellow)"></span></div>
+            </div>
+          </div>
+          <div class="field">
+            <span class="ring to"></span>
+            <div>
+              <div class="label-s">To</div>
+              <div class="val">Noida Sector 142</div>
+              <div class="lines"><span class="dot" style="background:var(--line-aqua)"></span></div>
+            </div>
+          </div>
+          <button class="swap" aria-label="Swap stations"><span class="ms">swap_vert</span></button>
+          <div class="seg">
+            <span class="on"><span class="ms">check</span>Shortest</span>
+            <span><span class="ms">alt_route</span>Fewer changes</span>
+          </div>
+          <button class="btn"><span class="ms">search</span>Find route</button>
+        </div>
+
+        <div class="sect"><span class="title-m">Lines right now</span><a href="#">All lines</a></div>
+        <div class="status-strip">
+          <div class="lstat"><span class="sq" style="--c:var(--line-blue)">B</span><div><div class="t">Blue</div><div class="s"><i></i>Running normally</div></div></div>
+          <div class="lstat warn"><span class="sq" style="--c:var(--line-yellow);color:#241a00">Y</span><div><div class="t">Yellow</div><div class="s"><i></i>Slow near Chawri</div></div></div>
+          <div class="lstat"><span class="sq" style="--c:var(--line-aqua)">A</span><div><div class="t">Aqua</div><div class="s"><i></i>Running normally</div></div></div>
+        </div>
+
+        <div class="sect"><span class="title-m">Frequent</span><a href="#">Edit</a></div>
+        <div class="freq">
+          <div class="freq-row">
+            <div class="mini-rail" style="--c1:var(--line-yellow);--c2:var(--line-red)"><span class="a"></span><span class="m"></span><span class="b"></span></div>
+            <div class="names"><div>Hauz Khas</div><div>Kashmere Gate</div></div>
+            <div class="meta"><b>42 min</b><span class="body-s">₹50</span></div>
+          </div>
+          <div class="freq-row">
+            <div class="mini-rail" style="--c1:var(--line-magenta);--c2:var(--line-violet)"><span class="a"></span><span class="m"></span><span class="b"></span></div>
+            <div class="names"><div>Botanical Garden</div><div>Nehru Place</div></div>
+            <div class="meta"><b>21 min</b><span class="body-s">₹40</span></div>
+          </div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+      <nav class="navbar">
+        <div class="nav-item on"><span class="pill"><span class="ms fill">directions_subway</span></span>Plan</div>
+        <div class="nav-item"><span class="pill"><span class="ms">search</span></span>Search</div>
+        <div class="nav-item"><span class="pill"><span class="ms">commit</span></span>Lines</div>
+        <div class="nav-item"><span class="pill"><span class="ms">map</span></span>Map</div>
+        <div class="nav-item"><span class="pill"><span class="ms">notifications</span></span>Alerts</div>
+      </nav>
+      <span class="home-ind"></span>
+    </div>
+    <p class="caption"><b>Plan</b>Big question headline and the stacked from/to card with a floating swap button come from the train refs. The strategy toggle becomes an M3 segmented button.</p>
+  </section>
+
+  <!-- ============ 2. ROUTE ============ -->
+  <section class="shot">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="ico"><span class="ms fill">signal_cellular_alt</span><span class="ms fill">wifi</span><span class="ms fill">battery_full</span></span></div>
+      <div class="scroll">
+        <div class="topbar">
+          <button class="icon-btn"><span class="ms">arrow_back</span></button>
+          <div style="display:flex">
+            <button class="icon-btn"><span class="ms">bookmark</span></button>
+            <button class="icon-btn"><span class="ms">share</span></button>
+          </div>
+        </div>
+        <div class="r-head">
+          <div class="headline">Rajiv Chowk <span>to</span> Noida Sector 142</div>
+          <div class="body-s" style="margin-top:6px">Leave 9:32, arrive 10:28</div>
+        </div>
+        <div class="chips">
+          <span class="chip accent"><span class="ms">schedule</span>56 min</span>
+          <span class="chip"><span class="ms">currency_rupee</span>50 + 40</span>
+          <span class="chip"><span class="ms">sync_alt</span>1 change</span>
+          <span class="chip outline">24 stops</span>
+        </div>
+
+        <div class="note">
+          <span class="ms fill" style="font-size:22px">confirmation_number</span>
+          <div><b>You need two tickets</b>DMRC and NMRC don't share tickets. Buy the Aqua leg at Sector 51.</div>
+        </div>
+
+        <div class="timeline">
+          <!-- Blue leg -->
+          <div class="leg" style="--c:var(--line-blue)">
+            <div class="time">9:32</div>
+            <div class="rail"><span class="stop"></span></div>
+            <div class="body">
+              <div class="stn">Rajiv Chowk</div>
+              <div class="info"><span class="badge" style="--c:var(--line-blue)"><span class="ms" style="font-size:14px">train</span>Blue</span><span class="body-s">Platform 3, to Noida Electronic City</span></div>
+            </div>
+          </div>
+          <div class="leg" style="--c:var(--line-blue)">
+            <div class="time"></div>
+            <div class="rail"><span class="tick"></span></div>
+            <div class="body"><span class="expand"><span class="ms">expand_more</span>17 stops, 34 min</span></div>
+          </div>
+          <div class="leg" style="--c:var(--line-blue)">
+            <div class="time">10:06</div>
+            <div class="rail end"><span class="stop"></span></div>
+            <div class="body">
+              <div class="stn">Noida Sector 52</div>
+              <div class="body-s" style="margin-top:3px">Get off. Exit from Gate 2</div>
+            </div>
+          </div>
+          <!-- Walk -->
+          <div class="leg">
+            <div class="time"></div>
+            <div class="rail walk"></div>
+            <div class="body">
+              <div class="walkbox"><span class="ms">directions_walk</span><div><b>Walk 300 m</b> to Sector 51<br><span class="body-s">About 6 min, covered skywalk</span></div></div>
+            </div>
+          </div>
+          <!-- Aqua leg -->
+          <div class="leg" style="--c:var(--line-aqua)">
+            <div class="time">10:14</div>
+            <div class="rail"><span class="stop"></span></div>
+            <div class="body">
+              <div class="stn">Noida Sector 51</div>
+              <div class="info"><span class="badge" style="--c:var(--line-aqua)"><span class="ms" style="font-size:14px">train</span>Aqua</span><span class="body-s">to Depot</span></div>
+            </div>
+          </div>
+          <div class="leg" style="--c:var(--line-aqua)">
+            <div class="time"></div>
+            <div class="rail"><span class="tick"></span></div>
+            <div class="body"><span class="expand"><span class="ms">expand_more</span>5 stops, 14 min</span></div>
+          </div>
+          <div class="leg" style="--c:var(--line-aqua)">
+            <div class="time">10:28</div>
+            <div class="rail end"><span class="stop"></span></div>
+            <div class="body"><div class="stn">Noida Sector 142</div><div class="body-s" style="margin-top:3px">Last train 22:00</div></div>
+          </div>
+        </div>
+        <div style="height:100px"></div>
+      </div>
+      <button class="fab-x"><svg class="wa" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.27-.2-.57-.34M12.05 21.78h-.01a9.87 9.87 0 0 1-5.03-1.37l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 7c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.69 1.45h.01c6.55 0 11.89-5.34 11.89-11.9a11.82 11.82 0 0 0-3.48-8.41Z"/></svg>Book tickets</button>
+      <span class="home-ind"></span>
+    </div>
+    <p class="caption"><b>Route</b>The coloured rail timeline from the Milan ref, with stops folded by default. The walk leg between operators gets its own dotted rail and a ticket warning up top.</p>
+  </section>
+
+  <!-- ============ 3. MAP ============ -->
+  <section class="shot">
+    <div class="phone">
+      <div class="mapwrap">
+        <svg viewBox="0 0 360 760" preserveAspectRatio="xMidYMid slice" aria-label="Schematic network map">
+          <defs>
+            <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+              <path d="M24 0H0V24" fill="none" stroke="var(--md-outline-variant)" stroke-width=".6" opacity=".5"/>
+            </pattern>
+          </defs>
+          <rect width="360" height="760" fill="url(#grid)"/>
+          <!-- muted network -->
+          <g fill="none" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" opacity=".28">
+            <path d="M120 40 V200 L150 230 V560" stroke="var(--line-yellow)"/>
+            <path d="M-10 150 H90 L120 180 H260 L300 140 H380" stroke="var(--line-red)"/>
+            <path d="M-10 330 L60 260 H120" stroke="var(--line-blue)"/>
+            <path d="M200 60 V170 L230 200 V300 L190 340 V600" stroke="var(--line-violet)"/>
+            <path d="M-10 470 H70 L110 430 H230 L300 500 V600" stroke="var(--line-magenta)"/>
+            <path d="M330 40 V250 L300 280" stroke="var(--line-pink)"/>
+            <path d="M-10 610 L60 540 L150 540" stroke="var(--line-orange)"/>
+          </g>
+          <!-- highlighted route: Blue to Sector 52 then Aqua -->
+          <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M150 260 H230 L270 300 V360 L290 380" stroke="var(--line-blue)" stroke-width="14" opacity=".18"/>
+            <path d="M150 260 H230 L270 300 V360 L290 380" stroke="var(--line-blue)" stroke-width="7"/>
+            <path d="M290 380 L300 390 V420" stroke="var(--line-blue)" stroke-width="7" opacity=".35"/>
+            <path d="M296 392 L312 404" stroke="var(--md-outline)" stroke-width="3" stroke-dasharray="2 5"/>
+            <path d="M318 408 V470 L280 510 V620" stroke="var(--line-aqua)" stroke-width="14" opacity=".2"/>
+            <path d="M318 408 V470 L280 510 V620" stroke="var(--line-aqua)" stroke-width="7"/>
+          </g>
+          <!-- stations -->
+          <g stroke-width="3.5" fill="var(--md-surface-container-lowest)">
+            <circle cx="150" cy="260" r="8" stroke="var(--line-blue)"/>
+            <circle cx="200" cy="260" r="5" stroke="var(--line-blue)"/>
+            <circle cx="255" cy="285" r="5" stroke="var(--line-blue)"/>
+            <circle cx="270" cy="330" r="5" stroke="var(--line-blue)"/>
+            <circle cx="318" cy="440" r="5" stroke="var(--line-aqua)"/>
+            <circle cx="300" cy="490" r="5" stroke="var(--line-aqua)"/>
+            <circle cx="280" cy="560" r="5" stroke="var(--line-aqua)"/>
+            <circle cx="280" cy="620" r="8" stroke="var(--line-aqua)"/>
+          </g>
+          <!-- selected interchange -->
+          <circle cx="303" cy="396" r="22" fill="var(--md-primary)" opacity=".16"/>
+          <rect x="285" y="376" width="36" height="36" rx="12" fill="var(--md-primary)"/>
+          <text x="303" y="400" text-anchor="middle" font-family="Material Symbols Rounded" font-size="22" fill="var(--md-on-primary)">sync_alt</text>
+          <g font-family="Roboto Flex, sans-serif" font-size="11" font-weight="600" fill="var(--md-on-surface)">
+            <text x="128" y="250" text-anchor="end">Rajiv Chowk</text>
+            <text x="200" y="248" text-anchor="middle" fill="var(--md-on-surface-variant)">Mandi House</text>
+            <text x="260" y="346" text-anchor="end" fill="var(--md-on-surface-variant)">Botanical Garden</text>
+            <text x="262" y="624" text-anchor="end">Sector 142</text>
+          </g>
+        </svg>
+      </div>
+      <div class="status" style="position:relative;z-index:2"><span>9:41</span><span class="ico"><span class="ms fill">signal_cellular_alt</span><span class="ms fill">wifi</span><span class="ms fill">battery_full</span></span></div>
+      <div class="map-top">
+        <div class="searchbar"><span class="ms">search</span><span class="grow">Search stations</span><span class="avatar">T</span></div>
+      </div>
+      <div class="map-fabs">
+        <button class="p" aria-label="Near me"><span class="ms fill">near_me</span></button>
+        <button aria-label="Layers"><span class="ms">layers</span></button>
+      </div>
+
+      <div class="sheet">
+        <div class="handle"></div>
+        <div class="sheet-head">
+          <div class="mark"><span class="ms fill">sync_alt</span></div>
+          <div class="grow">
+            <div class="label-s" style="color:var(--md-primary)">Interchange</div>
+            <div class="title-l">Noida Sector 52</div>
+            <div class="info" style="display:flex;gap:6px;margin-top:6px">
+              <span class="badge" style="--c:var(--line-blue)">Blue</span>
+              <span class="badge" style="--c:var(--line-aqua)">Aqua via Sector 51</span>
+            </div>
+          </div>
+          <button class="icon-btn tonal" aria-label="Save"><span class="ms">bookmark</span></button>
+        </div>
+        <div class="grid2">
+          <div class="tile"><div class="label-s">First train</div><b>05:42</b><small>to Dwarka 21</small></div>
+          <div class="tile"><div class="label-s">Last train</div><b>23:12</b><small>to Dwarka 21</small></div>
+        </div>
+        <div class="facil">
+          <span class="chip"><span class="ms">elevator</span>Lift, Gate 1</span>
+          <span class="chip"><span class="ms">local_parking</span>Parking</span>
+          <span class="chip"><span class="ms">door_front</span>3 gates</span>
+          <span class="chip"><span class="ms">wc</span>Toilets</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn tonal sm" style="flex:1"><span class="ms">info</span>Details</button>
+          <button class="btn sm" style="flex:1.4"><span class="ms">directions</span>Route from here</button>
+        </div>
+      </div>
+      <span class="home-ind" style="z-index:4"></span>
+    </div>
+    <p class="caption"><b>Map</b>Full-bleed map with the trip highlighted and the rest of the network dimmed, as in the orange ref. Tapping a station opens an M3 bottom sheet with first and last train and facilities.</p>
+  </section>
+
+  <!-- ============ 4. BOOK ============ -->
+  <section class="shot">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span class="ico"><span class="ms fill">signal_cellular_alt</span><span class="ms fill">wifi</span><span class="ms fill">battery_full</span></span></div>
+      <div class="scroll">
+        <div class="topbar">
+          <button class="icon-btn"><span class="ms">arrow_back</span></button>
+          <span class="title-m">Book tickets</span>
+          <button class="icon-btn"><span class="ms">help</span></button>
+        </div>
+
+        <div class="pass">
+          <div class="pass-top">
+            <div class="pass-row">
+              <span class="pchip"><span class="ms">calendar_today</span>Fri, 14 Nov</span>
+              <span class="pchip"><span class="ms">schedule</span>56 min</span>
+            </div>
+            <div class="ends">
+              <div><div class="code">RCK</div><div class="nm">Rajiv Chowk</div></div>
+              <div class="train-mid"><i></i><span class="ms fill">train</span><i></i></div>
+              <div class="r"><div class="code">S142</div><div class="nm">Noida Sec 142</div></div>
+            </div>
+          </div>
+          <div class="perf"></div>
+          <div class="pass-legs">
+            <div class="pleg"><div class="label-s">Leg 1, DMRC</div><b>₹50</b><small><span class="dot" style="background:var(--line-blue);width:8px;height:8px"></span>To Sector 52</small></div>
+            <div class="pleg" style="text-align:right"><div class="label-s">Leg 2, NMRC</div><b>₹40</b><small style="justify-content:flex-end"><span class="dot" style="background:var(--line-aqua);width:8px;height:8px"></span>From Sector 51</small></div>
+          </div>
+        </div>
+
+        <div class="op current">
+          <div class="op-head">
+            <span class="logo" style="--c:#c8102e">DM</span>
+            <div class="grow"><div class="title-m">Delhi Metro</div><div class="body-s">Rajiv Chowk to Noida Sector 52</div></div>
+            <span class="step" aria-label="Step 1">1</span>
+          </div>
+          <button class="btn"><svg class="wa" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.27-.2-.57-.34M12.05 21.78h-.01a9.87 9.87 0 0 1-5.03-1.37l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 7c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.69 1.45h.01c6.55 0 11.89-5.34 11.89-11.9a11.82 11.82 0 0 0-3.48-8.41Z"/></svg>Book on WhatsApp</button>
+        </div>
+        <div class="op">
+          <div class="op-head">
+            <span class="logo" style="--c:#0094c6">NM</span>
+            <div class="grow"><div class="title-m">Noida Metro</div><div class="body-s">Sector 51 to Sector 142</div></div>
+            <span class="step next" aria-label="Step 2">2</span>
+          </div>
+          <button class="btn outline"><svg class="wa" viewBox="0 0 24 24" fill="currentColor"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.46-2.39-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.03-.52-.07-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.12.57-.09 1.76-.72 2-1.41.25-.7.25-1.29.18-1.42-.08-.12-.27-.2-.57-.34M12.05 21.78h-.01a9.87 9.87 0 0 1-5.03-1.37l-.36-.22-3.74.98 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.83 9.83 0 0 1 2.89 7c0 5.45-4.44 9.88-9.88 9.88m8.41-18.3A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.69 1.45h.01c6.55 0 11.89-5.34 11.89-11.9a11.82 11.82 0 0 0-3.48-8.41Z"/></svg>Book on WhatsApp</button>
+        </div>
+        <p class="body-s" style="padding:12px 24px 0;display:flex;gap:8px"><span class="ms" style="font-size:18px">info</span>The chat opens with "Hi". Pick the same stations again inside WhatsApp.</p>
+
+        <div class="sect" style="padding-top:20px"><span class="title-m">Fare by day</span></div>
+        <div class="fare-tbl">
+          <div><span>Monday to Saturday</span><b>₹90</b></div>
+          <div><span>Sunday and holidays</span><b>₹80</b></div>
+        </div>
+        <div style="height:28px"></div>
+      </div>
+      <span class="home-ind"></span>
+    </div>
+    <p class="caption"><b>Book</b>The boarding pass layout from the blue ref, minus the fake QR. It shows the split fare, then one WhatsApp hand-off per operator in the order you ride.</p>
+  </section>
+</main>
+
+<section class="palette">
+  <h2>Generated roles</h2>
+  <div class="swatches" id="swatches"></div>
+</section>
+
+<script type="module">
+const SEEDS = [
+  ["Blue Line", "#1565c0"], ["Magenta", "#b6156d"], ["Aqua", "#00b5e2"],
+  ["Yellow", "#fcc00a"], ["Violet", "#8b3f98"], ["Green", "#00a651"], ["Airport", "#f58220"],
+];
+const ROLES = [
+  "primary","onPrimary","primaryContainer","onPrimaryContainer",
+  "secondary","onSecondary","secondaryContainer","onSecondaryContainer",
+  "tertiary","onTertiary","tertiaryContainer","onTertiaryContainer",
+  "error","errorContainer","onErrorContainer",
+  "surface","onSurface","onSurfaceVariant","surfaceDim","surfaceBright",
+  "surfaceContainerLowest","surfaceContainerLow","surfaceContainer","surfaceContainerHigh","surfaceContainerHighest",
+  "outline","outlineVariant","inverseSurface","inverseOnSurface",
+];
+const SHOW = [["primary","onPrimary"],["primaryContainer","onPrimaryContainer"],["secondaryContainer","onSecondaryContainer"],
+  ["tertiaryContainer","onTertiaryContainer"],["surfaceContainerLow","onSurface"],["surfaceContainerHigh","onSurface"],["inverseSurface","inverseOnSurface"],["outline","surface"]];
+const kebab = s => s.replace(/([A-Z])/g, "-$1").toLowerCase();
+
+const state = { seed: SEEDS[0][1], variant: "tonal", dark: matchMedia("(prefers-color-scheme: dark)").matches };
+let M = null;
+
+const seedsEl = document.getElementById("seeds");
+SEEDS.forEach(([name, hex]) => {
+  const b = document.createElement("button");
+  b.className = "seed"; b.style.setProperty("--c", hex); b.title = name; b.setAttribute("aria-label", name + " seed");
+  b.onclick = () => { state.seed = hex; apply(); };
+  b.dataset.hex = hex; seedsEl.appendChild(b);
+});
+const custom = document.createElement("label");
+custom.className = "custom"; custom.title = "Custom colour";
+custom.innerHTML = '<input type="color" aria-label="Custom seed colour" value="#1565c0">';
+custom.querySelector("input").oninput = e => { state.seed = e.target.value; apply(); };
+seedsEl.appendChild(custom);
+
+document.querySelectorAll("#variants button").forEach(b => b.onclick = () => { state.variant = b.dataset.v; apply(); });
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => { state.dark = b.dataset.m === "dark"; apply(); });
+
+function apply() {
+  document.querySelectorAll(".seed").forEach(b => b.setAttribute("aria-pressed", b.dataset.hex === state.seed));
+  document.querySelectorAll("#variants button").forEach(b => b.setAttribute("aria-pressed", b.dataset.v === state.variant));
+  document.querySelectorAll("#modes button").forEach(b => b.setAttribute("aria-pressed", (b.dataset.m === "dark") === state.dark));
+  document.documentElement.style.colorScheme = state.dark ? "dark" : "light";
+  if (!M) return;
+  const hct = M.Hct.fromInt(M.argbFromHex(state.seed));
+  const Cls = { tonal: M.SchemeTonalSpot, vibrant: M.SchemeVibrant, expressive: M.SchemeExpressive, neutral: M.SchemeNeutral }[state.variant];
+  const scheme = new Cls(hct, state.dark, 0);
+  const root = document.documentElement.style;
+  const vals = {};
+  for (const r of ROLES) {
+    const dc = M.MaterialDynamicColors[r];
+    if (!dc) continue;
+    vals[r] = M.hexFromArgb(dc.getArgb(scheme));
+    root.setProperty("--md-" + kebab(r), vals[r]);
+  }
+  document.getElementById("swatches").innerHTML = SHOW.map(([bg, fg]) =>
+    `<div class="sw" style="background:${vals[bg]};color:${vals[fg]}">${bg.replace(/([A-Z])/g, " $1").toLowerCase()}<br>${vals[bg]}</div>`).join("");
+}
+
+apply();
+try {
+  M = await import("https://cdn.jsdelivr.net/npm/@material/material-color-utilities@0.3.0/+esm");
+  apply();
+} catch (e) {
+  document.querySelector(".brand span").textContent = "Colour library failed to load, showing the default Blue Line palette.";
+}
+</script>
+</body>
+</html>
