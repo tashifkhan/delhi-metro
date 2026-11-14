@@ -1,4 +1,5 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFirstLastTrainQuery, useStationDetailQuery } from '../../hooks';
@@ -20,6 +21,33 @@ interface Tile {
   label: string;
   time: string | null;
   note: string | null;
+}
+
+/**
+ * A slow fade between 50% and 100% for placeholder shapes. Holds at full
+ * opacity when motion is off, so the placeholders still show without moving.
+ */
+function usePulse(active: boolean): Animated.Value {
+  const { animationStyle, reduceMotionEnabled } = useAppTheme();
+  const value = useRef(new Animated.Value(1)).current;
+  const still = animationStyle === 'none' || reduceMotionEnabled;
+
+  useEffect(() => {
+    if (!active || still) {
+      value.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(value, { toValue: 0.5, duration: 700, useNativeDriver: true }),
+        Animated.timing(value, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [active, still, value]);
+
+  return value;
 }
 
 /** The far end of the station's first line, so first/last times have a direction. */
@@ -71,9 +99,9 @@ export function StationSheet({ station, onClose, onDetails, onRouteFromHere }: P
   const theme = useTheme();
   const { fills } = useAppTheme();
   const isNmrc = station.lines.includes('AQUA');
-  const { data: detail } = useStationDetailQuery(station.code);
+  const { data: detail, isLoading: detailLoading } = useStationDetailQuery(station.code);
   const terminus = isNmrc ? null : terminusFor(station);
-  const { data: trains } = useFirstLastTrainQuery(
+  const { data: trains, isLoading: trainsLoading } = useFirstLastTrainQuery(
     terminus ? station.code : '',
     terminus?.code ?? '',
     'minimum-interchange',
@@ -110,6 +138,11 @@ export function StationSheet({ station, onClose, onDetails, onRouteFromHere }: P
       : null;
   const chips = facilityChips(detail);
   const name = stationName(station.name);
+  // `isLoading` rather than `isPending`: a disabled query (no terminus) is
+  // pending forever but never fetching, and must not show a placeholder.
+  const tilesLoading = !tiles && (isNmrc ? detailLoading : trainsLoading);
+  const chipsLoading = chips.length === 0 && detailLoading;
+  const pulse = usePulse(tilesLoading || chipsLoading);
 
   return (
     <View style={[styles.sheet, { backgroundColor: fills.containerLow }]}>
@@ -173,6 +206,39 @@ export function StationSheet({ station, onClose, onDetails, onRouteFromHere }: P
                 </Text>
               ) : null}
             </View>
+          ))}
+        </View>
+      ) : null}
+
+      {tilesLoading ? (
+        <View
+          style={styles.tiles}
+          accessible
+          accessibilityLabel="Loading first and last train times"
+        >
+          {['First train', 'Last train'].map((label) => (
+            <View key={label} style={[styles.tile, { backgroundColor: fills.containerHighest }]}>
+              <Text variant="labelSmall" style={[styles.overline, { color: theme.colors.onSurfaceVariant }]}>
+                {label}
+              </Text>
+              <Animated.View
+                style={[styles.barTime, { backgroundColor: fills.containerHigh, opacity: pulse }]}
+              />
+              <Animated.View
+                style={[styles.barNote, { backgroundColor: fills.containerHigh, opacity: pulse }]}
+              />
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {chipsLoading ? (
+        <View style={styles.chipRowSkeleton} accessible accessibilityLabel="Loading facilities">
+          {[84, 120, 92].map((width) => (
+            <Animated.View
+              key={width}
+              style={[styles.chip, { width, backgroundColor: fills.containerHighest, opacity: pulse }]}
+            />
           ))}
         </View>
       ) : null}
@@ -309,6 +375,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: 14,
     gap: 2,
+  },
+  barTime: {
+    height: 26,
+    width: '62%',
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  barNote: {
+    height: 12,
+    width: '80%',
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  chipRowSkeleton: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   chipsBleed: {
     marginHorizontal: -spacing.base,

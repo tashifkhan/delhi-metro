@@ -14,6 +14,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import { Reveal } from '../components/Reveal';
 import { StationLineChip, shortLineName } from '../components/StationLineChip';
 import { LineGlyph, lineGlyph } from '../components/LineGlyph';
+import { StationMap } from '../components/map/StationMap';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { StationDetail } from '../types';
@@ -518,6 +519,11 @@ export function StationDetailScreen() {
         params: { presetFrom: { code: station.station_code, name: station.station_name } },
       });
 
+  const openOnNetworkMap = () =>
+    navigation
+      .getParent<NavigationProp<RootTabParamList>>()
+      ?.navigate('MapTab', { screen: 'MetroMap', params: { focusCode: station.station_code } });
+
   const openMaps = () =>
     Linking.openURL(
       `https://www.google.com/maps/search/?api=1&query=${station.latitude},${station.longitude}`,
@@ -577,6 +583,16 @@ export function StationDetailScreen() {
       {isOfflineCopy ? (
         <OfflineNote message="Saved station details. Gates and facilities may have changed." />
       ) : null}
+
+      {/* Where the station sits on the network, above the summary card,
+          like the map tab with a station selected. */}
+      <Reveal index={0} replayOnFocus={false}>
+        <StationMap
+          code={station.station_code}
+          onOpenMap={openOnNetworkMap}
+          onSelectStation={(code, name) => openStation(code, stationName(name))}
+        />
+      </Reveal>
 
       {/* Header card, the same layout as the station sheet on the map. */}
       <Reveal index={0} replayOnFocus={false}>
