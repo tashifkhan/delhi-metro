@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] — 2026-11-15
+
+### Added
+
+- Book tickets on WhatsApp from a journey. A trip that crosses from Delhi Metro to Noida Metro gets one numbered step per operator, in riding order, because the two don't share tickets. The chat opens with "Hi"; the stations are picked again inside WhatsApp.
+- A network map drawn from station coordinates, with pan and pinch zoom, station search, names at every zoom, and a sheet for the selected station with first and last train, facilities, and Route from here. The official DMRC and NMRC maps are one tap away behind the image button.
+- Journey results show the trip on the network map, the other lines faded, the walk between operators dotted.
+- Station pages open on the station's spot on the map, then a short summary. Platforms, gates, lifts, parking, nearby places and the rest sit behind More details.
+- Next stops on each line from a station page, and facility, parking and nearby details the app was receiving but never showed.
+- `GET /api/v1/{dmrc|nmrc}/maps/layout` returns where each station sits on the operator's official map. The API only asks Gemini to read the map again when the image changes, and streams progress so the app can say it's working. Noida is on; Delhi is off because its coordinates come from DMRC.
+- Saved page animation preferences in Appearance.
+
+### Changed
+
+- New Material You design across the app. Colours are generated from the theme seed, so dark mode uses tonal surfaces instead of pure black, and the web build uses Roboto Flex.
+- Plan leads with "Where are you headed today?", the from and to fields share one panel with a floating swap button, and a "Lines right now" strip shows every line's status.
+- Route results lead with the trip, its time, fare, changes and stops, a note when two tickets are needed, and a timeline with folded intermediate stops. Shortest and Fewer changes moved here from Plan.
+- Lines are grouped by operator, and each line page draws its stations along one continuous rail with interchange chips.
+- Alerts open with a one-line service summary and line chips, and notices read in sentence case.
+- Station rows lead with a slim line-colour bar in place of the train tiles.
+- Loading screens use the Material 3 expressive loading indicator, and the station sheet on the map shows placeholders while its details load.
+- Station names read in title case everywhere, and times drop their seconds.
+- A new app mark for the website, sidebar and home-screen icons: two lines crossing at an interchange.
+
+### Fixed
+
+- Journey results counted the destination as a change between trains.
+- Opening a shared route or line link no longer shows "Choose departure" or a blank line page.
+- The API found DMRC's small map preview instead of the full network map after DMRC renamed the file.
+
 ## [1.7.0] — 2026-11-08
 
 ### Added
@@ -212,7 +242,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.6.0...v1.7.0
 [1.5.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...v1.5.2
 [1.5.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.0...v1.5.1
