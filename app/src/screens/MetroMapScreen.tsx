@@ -419,6 +419,7 @@ export function MetroMapScreen() {
               navigation.navigate('StationDetail', {
                 stationCode: selected.code,
                 stationName: stationName(selected.name),
+                expanded: true,
               })
             }
             onRouteFromHere={() => routeFromHere(selected)}
