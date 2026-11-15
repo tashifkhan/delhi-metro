@@ -26,6 +26,7 @@ import { type NetworkGeometry } from '../components/map/geometry';
 import { useLiveGeometry } from '../components/map/useLiveGeometry';
 import { BrandMark } from '../components/BrandMark';
 import { NetworkGeometryProvider } from '../components/map/NetworkGeometryContext';
+import { GOOD_ACCURACY_M, decide, roughDistance, type Fix } from '../components/map/locate';
 import { useAppTheme } from '../theme/ThemeContext';
 import { emphasis, onColor, radius, spacing } from '../theme';
 import { stationName } from '../utils/format';
@@ -68,8 +69,17 @@ export function MetroMapScreen() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
-  const [userPoint, setUserPoint] = useState<{ x: number; y: number } | null>(null);
+  const [userPoint, setUserPoint] = useState<Fix | null>(null);
   const [locating, setLocating] = useState(false);
+  /** A short note after locating, e.g. why no station was picked. */
+  const [locateNote, setLocateNote] = useState<string | null>(null);
+  const stopWatching = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopWatching.current?.(), []);
+  useEffect(() => {
+    if (!locateNote) return;
+    const timer = setTimeout(() => setLocateNote(null), 8_000);
+    return () => clearTimeout(timer);
+  }, [locateNote]);
   const [sheetHeight, setSheetHeight] = useState(0);
 
   // Official-map layouts (see components/map/geometry). One hook per network,
@@ -148,6 +158,33 @@ export function MetroMapScreen() {
     mapRef.current?.focusStation(station.code);
   };
 
+  const finishLocating = (fix: Fix | null) => {
+    stopWatching.current?.();
+    stopWatching.current = null;
+    setLocating(false);
+    if (!fix) {
+      haptics.warning();
+      setLocateNote("Couldn't get your location. Check that location access is allowed.");
+      mapRef.current?.reset();
+      return;
+    }
+    setUserPoint(fix);
+    const outcome = decide(geometry.stations, fix);
+    if (outcome.kind === 'station') {
+      setLocateNote(null);
+      setSelectedCode(outcome.station.code);
+      mapRef.current?.focusStation(outcome.station.code);
+      return;
+    }
+    mapRef.current?.focusPoint(fix.x, fix.y);
+    haptics.warning();
+    setLocateNote(
+      outcome.kind === 'imprecise'
+        ? `Your location is only accurate to about ${roughDistance(outcome.accuracy)}, so no station was picked. Tap the one nearest you.`
+        : `You're about ${roughDistance(outcome.distance)} from the nearest station.`,
+    );
+  };
+
   const handleNearMe = () => {
     haptics.press();
     const geo = Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.geolocation : undefined;
@@ -157,36 +194,38 @@ export function MetroMapScreen() {
       mapRef.current?.reset();
       return;
     }
+    if (stopWatching.current) return;
     setLocating(true);
-    geo.getCurrentPosition(
+    setLocateNote(null);
+
+    // The first answer is often a coarse Wi-Fi or IP estimate. Watch for a
+    // few seconds, keep the most accurate fix, and stop early once it's good.
+    let best: Fix | null = null;
+    let done = false;
+    // Success, error and the timer can all end the watch; only the first counts.
+    const finish = () => {
+      if (done) return;
+      done = true;
+      finishLocating(best);
+    };
+    const id = geo.watchPosition(
       (position) => {
-        setLocating(false);
-        const point = project(position.coords.latitude, position.coords.longitude);
-        setUserPoint(point);
-        let nearest: MapStation | null = null;
-        let best = Infinity;
-        for (const station of geometry.stations) {
-          const d = Math.hypot(station.x - point.x, station.y - point.y);
-          if (d < best) {
-            best = d;
-            nearest = station;
-          }
-        }
-        // Within 5 km, open the nearest station; further out, just show where you are.
-        if (nearest && best < 5_000) {
-          setSelectedCode(nearest.code);
-          mapRef.current?.focusStation(nearest.code);
-        } else {
-          mapRef.current?.focusPoint(point.x, point.y);
-        }
+        const fix: Fix = {
+          ...project(position.coords.latitude, position.coords.longitude),
+          accuracy: position.coords.accuracy,
+        };
+        if (!best || fix.accuracy < best.accuracy) best = fix;
+        setUserPoint(best);
+        if (best.accuracy <= GOOD_ACCURACY_M) finish();
       },
-      () => {
-        setLocating(false);
-        haptics.warning();
-        mapRef.current?.reset();
-      },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
+      finish,
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );
+    const timer = setTimeout(finish, 8_000);
+    stopWatching.current = () => {
+      geo.clearWatch(id);
+      clearTimeout(timer);
+    };
   };
 
   const routeFromHere = (station: MapStation) => {
@@ -245,7 +284,11 @@ export function MetroMapScreen() {
     );
   }
 
-  const banner = reading
+  const banner = locating
+    ? { busy: true, text: 'Finding where you are…', count: null }
+    : locateNote
+      ? { busy: false, icon: 'locate-outline' as const, text: locateNote, count: null }
+      : reading
     ? {
         busy: true,
         text:
@@ -437,7 +480,11 @@ export function MetroMapScreen() {
             {banner.busy ? (
               <ActivityIndicator size="small" color={theme.colors.inversePrimary} />
             ) : (
-              <Ionicons name="cloud-offline-outline" size={18} color={theme.colors.inverseOnSurface} />
+              <Ionicons
+                name={"icon" in banner && banner.icon ? banner.icon : 'cloud-offline-outline'}
+                size={18}
+                color={theme.colors.inverseOnSurface}
+              />
             )}
             <Text
               variant="bodyMedium"
