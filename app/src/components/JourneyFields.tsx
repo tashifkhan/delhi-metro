@@ -99,44 +99,49 @@ function Field({ kind, endpoint }: { kind: 'from' | 'to'; endpoint: JourneyEndpo
   const { fills } = useAppTheme();
   const isFrom = kind === 'from';
 
+  // The whole card is the press target, including the strip under the swap
+  // button (which sits on top and takes its own taps). Touchable puts `style`
+  // on its inner ripple and wraps it in a clipping view that sizes to its
+  // content, so the card's width has to come from a stretching parent.
   return (
     <View style={[styles.field, { backgroundColor: fills.containerLowest }]}>
-      <Touchable
-        radius={FIELD_RADIUS}
-        onPress={endpoint.onPress}
-        accessibilityLabel={endpoint.accessibilityLabel}
-        accessibilityHint={endpoint.accessibilityHint}
-        style={styles.fieldPress}
-      >
-        <View style={styles.fieldRow}>
-          {/* Ring for the start, filled diamond for the end, like a map pin pair. */}
-          <View style={styles.markerSlot}>
-            {isFrom ? (
-              <View style={[styles.ring, { borderColor: theme.colors.primary }]} />
-            ) : (
-              <View style={[styles.diamond, { backgroundColor: theme.colors.primary }]} />
-            )}
+      <View style={styles.fieldPress}>
+        <Touchable
+          radius={FIELD_RADIUS}
+          onPress={endpoint.onPress}
+          accessibilityLabel={endpoint.accessibilityLabel}
+          accessibilityHint={endpoint.accessibilityHint}
+        >
+          <View style={[styles.fieldRow, !endpoint.trailing && styles.fieldRowUnderSwap]}>
+            {/* Ring for the start, filled diamond for the end, like a map pin pair. */}
+            <View style={styles.markerSlot}>
+              {isFrom ? (
+                <View style={[styles.ring, { borderColor: theme.colors.primary }]} />
+              ) : (
+                <View style={[styles.diamond, { backgroundColor: theme.colors.primary }]} />
+              )}
+            </View>
+            <View style={styles.fieldText}>
+              <Text
+                variant="labelSmall"
+                style={[overline, { color: theme.colors.onSurfaceVariant }]}
+              >
+                {isFrom ? 'From' : 'To'}
+              </Text>
+              <Text
+                variant="titleMedium"
+                numberOfLines={1}
+                style={[
+                  emphasis.strong,
+                  { color: endpoint.name ? theme.colors.onSurface : theme.colors.outline },
+                ]}
+              >
+                {endpoint.name ?? endpoint.placeholder}
+              </Text>
+            </View>
           </View>
-          <View style={styles.fieldText}>
-            <Text
-              variant="labelSmall"
-              style={[overline, { color: theme.colors.onSurfaceVariant }]}
-            >
-              {isFrom ? 'From' : 'To'}
-            </Text>
-            <Text
-              variant="titleMedium"
-              numberOfLines={1}
-              style={[
-                emphasis.strong,
-                { color: endpoint.name ? theme.colors.onSurface : theme.colors.outline },
-              ]}
-            >
-              {endpoint.name ?? endpoint.placeholder}
-            </Text>
-          </View>
-        </View>
-      </Touchable>
+        </Touchable>
+      </View>
       {endpoint.trailing ? <View style={styles.trailing}>{endpoint.trailing}</View> : null}
     </View>
   );
@@ -151,11 +156,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: FIELD_RADIUS,
     overflow: 'hidden',
-    // Room for the swap button, which floats over the right edge.
-    paddingRight: SWAP_SIZE + spacing.md,
   },
   fieldPress: {
     flex: 1,
+    alignSelf: 'stretch',
   },
   fieldRow: {
     flexDirection: 'row',
@@ -165,6 +169,10 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.base,
     paddingRight: spacing.sm,
     minHeight: 64,
+  },
+  /** Text stops short of the swap button; the press area runs under it. */
+  fieldRowUnderSwap: {
+    paddingRight: SWAP_SIZE + spacing.md,
   },
   markerSlot: {
     width: 16,
@@ -187,7 +195,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   trailing: {
-    marginRight: -spacing.xs,
+    // Clear of the swap button, which floats over the right edge.
+    marginRight: SWAP_SIZE + spacing.md - spacing.xs,
   },
   swapAnchor: {
     ...StyleSheet.absoluteFillObject,

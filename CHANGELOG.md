@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] — 2026-11-15
+
+### Changed
+
+- Station names on the network map sit beside the track instead of on it. Each name takes the spot that crosses the fewest lines, and ordinary stops show when zoomed out if they have room. The default view names about 40 stations, up from 9.
+- Details on the map's station sheet opens the station page with everything showing, so there's no second "More details" tap.
+
+### Fixed
+
+- Near me picked a station from whatever position the browser answered with first, which on a laptop can be a Wi-Fi or IP guess kilometres off. It now waits up to 8 seconds for a precise fix and only picks a station when the fix is within 1 km. Otherwise the map shows how accurate your position is and says why no station was picked.
+- The whole From and To card opens the station picker. Before, only the station name did.
+
 ## [1.8.0] — 2026-11-15
 
 ### Added
@@ -242,7 +254,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.1...HEAD
+[1.8.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.6.0...v1.7.0
 [1.5.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.5.1...v1.5.2

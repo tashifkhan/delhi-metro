@@ -35,8 +35,11 @@ export interface NetworkMapHandle {
 interface Props {
   selectedCode: string | null;
   onSelect: (code: string | null) => void;
-  /** Projected position of the user, drawn as a dot when known. */
-  userPoint?: { x: number; y: number } | null;
+  /**
+   * Projected position of the user, drawn as a dot when known. `accuracy`
+   * (metres) draws the area the user could be anywhere in.
+   */
+  userPoint?: { x: number; y: number; accuracy?: number } | null;
   /** Space covered by floating UI at the top and bottom, kept clear when focusing. */
   insetTop?: number;
   insetBottom?: number;
@@ -670,6 +673,18 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
 
           {userPoint ? (
             <G>
+              {userPoint.accuracy && userPoint.accuracy > px(16) ? (
+                <Circle
+                  cx={userPoint.x}
+                  cy={userPoint.y}
+                  r={userPoint.accuracy}
+                  fill="#1a73e8"
+                  fillOpacity={0.08}
+                  stroke="#1a73e8"
+                  strokeOpacity={0.4}
+                  strokeWidth={px(1)}
+                />
+              ) : null}
               <Circle cx={userPoint.x} cy={userPoint.y} r={px(16)} fill="#1a73e8" fillOpacity={0.18} />
               <Circle
                 cx={userPoint.x}

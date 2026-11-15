@@ -12,26 +12,46 @@ export type HomeStackParamList = {
     journeyTime?: string;
     strategy?: RouteStrategy;
   };
-  StationDetail: { stationCode: string; stationName: string };
+  StationDetail: {
+    stationCode: string;
+    stationName: string;
+    /** Open with the full details showing, e.g. from the map sheet's Details button. */
+    expanded?: boolean;
+  };
   Appearance: undefined;
   About: undefined;
 };
 
 export type ExploreStackParamList = {
   StationSearch: { q?: string } | undefined;
-  StationDetail: { stationCode: string; stationName: string };
+  StationDetail: {
+    stationCode: string;
+    stationName: string;
+    /** Open with the full details showing, e.g. from the map sheet's Details button. */
+    expanded?: boolean;
+  };
 };
 
 export type LinesStackParamList = {
   MetroLines: undefined;
   LineStations: { lineCode: string; lineName: string; lineColor: string };
-  StationDetail: { stationCode: string; stationName: string };
+  StationDetail: {
+    stationCode: string;
+    stationName: string;
+    /** Open with the full details showing, e.g. from the map sheet's Details button. */
+    expanded?: boolean;
+  };
 };
 
 export type MapStackParamList = {
   /** `focusCode` opens the map on that station, e.g. from a route's "Open in Map". */
   MetroMap: { focusCode?: string } | undefined;
-  StationDetail: { stationCode: string; stationName: string };
+  StationDetail: {
+    stationCode: string;
+    stationName: string;
+    /** Open with the full details showing, e.g. from the map sheet's Details button. */
+    expanded?: boolean;
+  };
 };
 
 export type AlertsStackParamList = {

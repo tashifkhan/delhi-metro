@@ -435,13 +435,17 @@ export function StationDetailScreen() {
   const { data, isLoading, isError, isOfflineCopy, refetch } = useStationDetailQuery(stationCode);
 
   // The page opens on the summary card. Everything else waits behind "More
-  // details", and the choice lasts only for this visit to this station.
-  const [expanded, setExpanded] = useState(false);
+  // details", and the choice lasts only for this visit to this station. The
+  // map sheet already shows that summary, so its Details button opens the page
+  // expanded rather than asking for a second tap.
+  // On the web the flag round-trips through the URL as the string "true".
+  const openExpanded = String(route.params.expanded) === 'true';
+  const [expanded, setExpanded] = useState(openExpanded);
   const reveal = useRef(new Animated.Value(0)).current;
   const animate = animationStyle !== 'none';
   useEffect(() => {
-    setExpanded(false);
-  }, [stationCode]);
+    setExpanded(openExpanded);
+  }, [stationCode, openExpanded]);
   useEffect(() => {
     if (!expanded) {
       reveal.setValue(0);
