@@ -133,11 +133,18 @@ def _endpoint(scope: Scope) -> str:
     Grouping by the raw path would split on every station code. Unmatched paths
     (404s, scanner probes) are grouped as "unmatched" for the same reason.
     """
-    route = scope.get("route")
-    template = getattr(route, "path", None)
-    if template:
-        return template
-    return "/" if scope["path"] == "/" else "unmatched"
+    path = scope["path"]
+    if scope.get("route") is None:
+        return "/" if path == "/" else "unmatched"
+    # Put the parameter names back into the path. The route object itself
+    # isn't usable: newer FastAPI hands over the router's copy, which lacks
+    # the /api/v1 prefix.
+    params = {name: str(value) for name, value in (scope.get("path_params") or {}).items()}
+    for name, value in params.items():
+        if "/" in value and value and path.endswith(value):  # {name:path}
+            path = path[: -len(value)] + "{" + name + "}"
+    by_value = {value: name for name, value in params.items() if value and "/" not in value}
+    return "/".join("{" + by_value[seg] + "}" if seg in by_value else seg for seg in path.split("/"))
 
 
 def _headers_from_env(raw: str) -> dict[str, str]:
