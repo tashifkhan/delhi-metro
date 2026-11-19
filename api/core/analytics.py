@@ -223,11 +223,19 @@ def build_payload(api: str, scope: Scope, status: int, cache: str, start_ns: int
 
 
 class AnalyticsMiddleware:
-    """Sends one OTLP span per request, errors and 404s included."""
+    """Sends one OTLP span per request, errors and 404s included.
 
-    def __init__(self, app: ASGIApp, api: str) -> None:
+    By default the span is posted in the background, so the caller never waits.
+    Pass wait=True on runtimes that end the invocation as soon as the response
+    is done (Vercel's legacy @vercel/python builder): the post then finishes
+    before the handler returns, on a fresh client, since such runtimes can run
+    each request on a new event loop.
+    """
+
+    def __init__(self, app: ASGIApp, api: str, wait: bool = False) -> None:
         self.app = app
         self.api = api
+        self.wait = wait
         endpoint = os.environ.get("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "").strip()
         base = os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT", "").strip().rstrip("/")
         self.url = endpoint or (f"{base}/v1/traces" if base else "")
@@ -259,10 +267,12 @@ class AnalyticsMiddleware:
         finally:
             try:
                 payload = build_payload(self.api, scope, seen["status"], seen["cache"], start_ns, time.time_ns())
-                # Background send, so the caller never waits on the backend.
-                task = asyncio.create_task(self._send(payload))
-                self.pending.add(task)
-                task.add_done_callback(self.pending.discard)
+                if self.wait:
+                    await self._send_now(payload)
+                else:
+                    task = asyncio.create_task(self._send(payload))
+                    self.pending.add(task)
+                    task.add_done_callback(self.pending.discard)
             except Exception:  # analytics must never break a request
                 pass
 
@@ -271,5 +281,12 @@ class AnalyticsMiddleware:
             if self.client is None:
                 self.client = httpx.AsyncClient(timeout=SEND_TIMEOUT)
             await self.client.post(self.url, json=payload, headers=self.headers)
+        except Exception:
+            pass
+
+    async def _send_now(self, payload: dict) -> None:
+        try:
+            async with httpx.AsyncClient(timeout=SEND_TIMEOUT) as client:
+                await client.post(self.url, json=payload, headers=self.headers)
         except Exception:
             pass
