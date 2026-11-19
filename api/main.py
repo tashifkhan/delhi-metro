@@ -95,8 +95,9 @@ app = FastAPI(
 
 
 # One OTLP span per request when OTEL_EXPORTER_OTLP_ENDPOINT is set (Honeycomb
-# in production). Without it nothing is sent.
-app.add_middleware(AnalyticsMiddleware, api="delhi-metro")
+# in production). Without it nothing is sent. wait=True: Vercel can freeze the
+# function once the response is out, which dropped background sends.
+app.add_middleware(AnalyticsMiddleware, api="delhi-metro", wait=True)
 
 
 @app.exception_handler(UpstreamApiError)
