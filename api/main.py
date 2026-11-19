@@ -17,6 +17,7 @@ from clients.dmrc import dmrc_client
 from clients.frontend import frontend_client
 from clients.nmrc import nmrc_client
 from clients.sarthi import sarthi_client
+from core.analytics import AnalyticsMiddleware
 from core.config import settings
 from core.errors import ApiRequestError, UpstreamApiError
 from routes import dmrc, health, nmrc, planner
@@ -91,6 +92,11 @@ app = FastAPI(
         },
     ],
 )
+
+
+# One OTLP span per request when OTEL_EXPORTER_OTLP_ENDPOINT is set (Honeycomb
+# in production). Without it nothing is sent.
+app.add_middleware(AnalyticsMiddleware, api="delhi-metro")
 
 
 @app.exception_handler(UpstreamApiError)
