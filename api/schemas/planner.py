@@ -224,6 +224,21 @@ class WhatsAppBooking(BaseModel):
     )
 
 
+class AppBooking(BaseModel):
+    """Official passenger app and website for ticket purchases."""
+
+    channel: Literal["app"] = "app"
+    network: MetroNetwork
+    label: str
+    url: str
+    android_url: str
+    ios_url: str
+    note: str
+
+
+TicketBooking = WhatsAppBooking | AppBooking
+
+
 class PlannedJourney(BaseModel):
     """A journey plan normalized across metro operators."""
 
@@ -289,4 +304,8 @@ class PlannedJourney(BaseModel):
             "WhatsApp ticket links for the networks this journey rides, in "
             "travel order. A cross-network trip has one link per operator."
         ),
+    )
+    booking_options: list[TicketBooking] = Field(
+        default_factory=list,
+        description="Official ticket booking options for the networks ridden, in travel order.",
     )

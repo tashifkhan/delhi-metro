@@ -7,6 +7,7 @@ from fastapi import APIRouter, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
+from routes.booking import mount_booking
 from schemas.line import MetroLine
 from schemas.map_asset import (
     MapAsset,
@@ -16,11 +17,13 @@ from schemas.map_asset import (
     MapFormat,
 )
 from schemas.notification import NCRTCPassengerNotification, PassengerNotificationDetail
+from schemas.planner import MetroNetwork
 from schemas.station import StationDetail
 from services.ncrtc import catalog, help, live, map_asset, notification, station
 from services.ncrtc.catalog import NCRTCStationByLineItem
 
 router = APIRouter(prefix="/ncrtc", tags=["ncrtc"])
+mount_booking(router, MetroNetwork.NCRTC)
 
 
 class SnapshotResponse(BaseModel):

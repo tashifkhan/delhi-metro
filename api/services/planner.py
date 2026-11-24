@@ -28,7 +28,7 @@ from schemas.planner import (
     PlannedStation,
 )
 from services import nmrc as nmrc_planner
-from services.booking import bookings_for
+from services.booking import booking_options_for, bookings_for
 from services.dmrc import journey as dmrc_planner
 from services.dmrc import sarthi as sarthi_planner
 from services.interchange import NetworkInterchange, find_interchanges
@@ -170,6 +170,7 @@ def _stamp_network(plan: PlannedJourney, network: MetroNetwork) -> PlannedJourne
         update={
             "networks": [network],
             "bookings": bookings_for([network]),
+            "booking_options": booking_options_for([network]),
             "legs": [
                 leg.model_copy(update={"network": network, "source": plan.source})
                 for leg in plan.legs
@@ -482,6 +483,7 @@ async def _find_fastest(
             ),
             ticket_available=False,
             bookings=bookings_for(networks),
+            booking_options=booking_options_for([fare.network for fare in fares]),
         )
 
     outcomes = await asyncio.gather(

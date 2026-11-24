@@ -1,4 +1,4 @@
-"""WhatsApp booking links for Delhi Metro and Noida Metro."""
+"""Official ticket booking links across operators."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from schemas.planner import MetroNetwork
-from services.booking import bookings_for, whatsapp_booking
+from services.booking import booking_options_for, bookings_for, whatsapp_booking
 
 client = TestClient(app)
 
@@ -47,3 +47,20 @@ class WhatsAppBookingTests(unittest.TestCase):
         self.assertEqual(noida.json()["network"], "nmrc")
         self.assertTrue(delhi.json()["url"].startswith("https://wa.me/919650855800"))
         self.assertTrue(noida.json()["url"].startswith("https://wa.me/919599030188"))
+
+    def test_ncrtc_exposes_its_app_and_website(self) -> None:
+        response = client.get("/api/v1/ncrtc/booking")
+
+        self.assertEqual(response.status_code, 200)
+        option = response.json()
+        self.assertEqual(option["network"], "ncrtc")
+        self.assertEqual(option["channel"], "app")
+        self.assertEqual(option["url"], "https://namobharat.ncrtc.in/")
+        self.assertTrue(option["android_url"].endswith("id=com.ncrtc"))
+        self.assertTrue(option["ios_url"].endswith("id6448940583"))
+
+    def test_booking_options_cover_all_ridden_operators_in_order(self) -> None:
+        networks = [MetroNetwork.NMRC, MetroNetwork.DMRC, MetroNetwork.NCRTC]
+        options = booking_options_for([*networks, MetroNetwork.NCRTC])
+
+        self.assertEqual([option.network for option in options], networks)

@@ -1,15 +1,10 @@
-"""WhatsApp ticket links for the two operators.
-
-Neither operator accepts a station pair in the first message. The link only
-opens their chatbot with "Hi" filled in. The passenger picks the stations
-again inside the chat.
-"""
+"""Official ticket booking links."""
 
 from __future__ import annotations
 
 from urllib.parse import quote
 
-from schemas.planner import MetroNetwork, WhatsAppBooking
+from schemas.planner import AppBooking, MetroNetwork, TicketBooking, WhatsAppBooking
 
 _GREETING = "Hi"
 
@@ -50,3 +45,22 @@ def bookings_for(networks: list[MetroNetwork]) -> list[WhatsAppBooking]:
         if network not in ordered and network in _CHANNELS:
             ordered.append(network)
     return [whatsapp_booking(network) for network in ordered]
+
+
+def ticket_booking(network: MetroNetwork) -> TicketBooking:
+    if network is not MetroNetwork.NCRTC:
+        return whatsapp_booking(network)
+
+    # NCRTC lists Namo Bharat Connect for ticket purchases on its passenger site.
+    return AppBooking(
+        network=network,
+        label="Namo Bharat Connect",
+        url="https://namobharat.ncrtc.in/",
+        android_url="https://play.google.com/store/apps/details?id=com.ncrtc",
+        ios_url="https://apps.apple.com/in/app/namo-bharat-connect/id6448940583",
+        note="Choose your stations in Namo Bharat Connect, or buy your ticket at the station.",
+    )
+
+
+def booking_options_for(networks: list[MetroNetwork]) -> list[TicketBooking]:
+    return [ticket_booking(network) for network in dict.fromkeys(networks)]

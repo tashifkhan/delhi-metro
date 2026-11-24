@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Linking, StyleSheet, View } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAdaptedStyles } from '../theme/useAdaptedStyles';
@@ -9,24 +9,20 @@ import { Touchable } from './Touchable';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NETWORK_NAMES } from '../network';
-import type { MetroNetwork, WhatsAppBooking } from '../types';
+import { bookingUrl } from '../services/ticketBooking';
+import type { MetroNetwork, TicketBooking } from '../types';
 import { emphasis, radius, spacing } from '../theme';
 
 interface Props {
-  bookings: WhatsAppBooking[];
+  bookings: TicketBooking[];
   /** "Rajiv Chowk to Noida Sector 52" per operator, shown under its name. */
   routes?: Partial<Record<MetroNetwork, string>>;
 }
 
 /**
- * One card per operator, each opening that operator's WhatsApp ticket bot.
- *
- * A cross-network trip needs a ticket from each operator, so the cards are
- * numbered steps in riding order. The current step gets the outline and the
- * filled button; opening it moves both to the next step. The link only
- * pre-fills Hi, so the note under the cards says to pick the stations again.
+ * One official booking option per operator, in travel order.
  */
-export function WhatsAppBookingCard({ bookings, routes }: Props) {
+export function TicketBookingCards({ bookings, routes }: Props) {
   const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
@@ -36,9 +32,9 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
   if (bookings.length === 0) return null;
   const multi = bookings.length > 1;
 
-  const open = (booking: WhatsAppBooking, index: number) => {
+  const open = (booking: TicketBooking, index: number) => {
     haptics.press();
-    Linking.openURL(booking.url)
+    Linking.openURL(bookingUrl(booking, Platform.OS))
       .then(() => setCurrent(Math.min(index + 1, bookings.length - 1)))
       .catch(() => haptics.error());
   };
@@ -48,6 +44,10 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
       {bookings.map((booking, index) => {
         const isCurrent = !multi || index === current;
         const highlighted = multi && isCurrent;
+        const isApp = 'channel' in booking;
+        const action = isApp
+          ? Platform.OS === 'web' ? 'Open Namo Bharat website' : 'Namo Bharat Connect'
+          : 'Book on WhatsApp';
         return (
           <View
             key={booking.network}
@@ -99,8 +99,7 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
               radius={radius.pill}
               haptic={false}
               accessibilityRole="link"
-              accessibilityLabel={`Book on WhatsApp with ${booking.label}`}
-              accessibilityHint={booking.note}
+              accessibilityLabel={isApp ? action : `Book on WhatsApp with ${booking.label}`}
               style={
                 isCurrent
                   ? { backgroundColor: theme.colors.primary }
@@ -109,7 +108,7 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
             >
               <View style={styles.button}>
                 <Ionicons
-                  name="logo-whatsapp"
+                  name={isApp ? 'open-outline' : 'logo-whatsapp'}
                   size={20}
                   color={isCurrent ? theme.colors.onPrimary : theme.colors.primary}
                 />
@@ -120,20 +119,17 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
                     { color: isCurrent ? theme.colors.onPrimary : theme.colors.primary },
                   ]}
                 >
-                  Book on WhatsApp
+                  {action}
                 </Text>
               </View>
             </Touchable>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              {booking.note}
+            </Text>
           </View>
         );
       })}
 
-      <View style={styles.note}>
-        <Ionicons name="information-circle-outline" size={18} color={theme.colors.onSurfaceVariant} />
-        <Text variant="bodySmall" style={[styles.noteText, { color: theme.colors.onSurfaceVariant }]}>
-          The chat opens with "Hi". Pick the same stations again inside WhatsApp.
-        </Text>
-      </View>
     </View>
   );
 }
@@ -182,15 +178,7 @@ const baseStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    height: 52,
-  },
-  note: {
-    flexDirection: 'row',
-    gap: spacing.sm,
+    minHeight: 52,
     paddingHorizontal: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  noteText: {
-    flex: 1,
   },
 });

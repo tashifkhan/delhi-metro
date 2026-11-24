@@ -102,6 +102,7 @@ export interface StationSearchResult {
   station_code: string;
   station_facility: StationFacility[];
   metro_lines: StationLineBadge[];
+  interchange?: boolean;
   /**
    * Which operator publishes this station. Added by the app when the two
    * catalogs are merged, not returned by the API.
@@ -267,6 +268,18 @@ export interface WhatsAppBooking {
   note: string;
 }
 
+export interface AppBooking {
+  channel: 'app';
+  network: MetroNetwork;
+  label: string;
+  url: string;
+  android_url: string;
+  ios_url: string;
+  note: string;
+}
+
+export type TicketBooking = WhatsAppBooking | AppBooking;
+
 /** Normalized journey plan from GET /api/v2/journeys/plan. */
 export interface PlannedJourney {
   source: JourneySource;
@@ -288,11 +301,10 @@ export interface PlannedJourney {
   metro_service: ServiceTimes | null;
   service_available: boolean | null;
   ticket_available: boolean | null;
-  /**
-   * One link per network the journey rides. Missing on plans saved before
-   * this field existed.
-   */
+  /** WhatsApp links returned by older API deployments. */
   bookings?: WhatsAppBooking[];
+  /** Official options for the operators ridden, including app booking. */
+  booking_options?: TicketBooking[];
 }
 
 export interface StationByLineItem {

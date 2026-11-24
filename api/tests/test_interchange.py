@@ -186,6 +186,7 @@ class CrossNetworkPlanTests(unittest.IsolatedAsyncioTestCase):
         # One ticket only: the traveller is already outside the DMRC network.
         self.assertFalse(plan.separate_tickets)
         self.assertEqual(plan.fare.normal, 40.0)
+        self.assertEqual([option.network for option in plan.booking_options], [MetroNetwork.NMRC])
 
     async def test_interchange_walk_alone_is_a_valid_journey(self) -> None:
         plan = await self._plan_cross("SFTN", "NM01")
@@ -194,6 +195,7 @@ class CrossNetworkPlanTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(plan.total_time, "6 min")
         self.assertEqual(plan.fare.normal, 0.0)
         self.assertFalse(plan.separate_tickets)
+        self.assertEqual(plan.booking_options, [])
 
     async def test_reverse_direction_walks_the_other_way(self) -> None:
         self.dmrc_half = _plan(
