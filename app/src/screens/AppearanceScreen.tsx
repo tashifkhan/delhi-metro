@@ -15,7 +15,46 @@ import {
   type Palette,
 } from '../theme/palettes';
 import type { ThemeMode } from '../storage/appSettingsRepository';
+import {
+  STUDIO_COMBOS,
+  STUDIO_NEUTRALS,
+  type UiStyle,
+} from '../theme/studio';
+import { LOOKS } from '../theme/look';
 import { spacing, radius, emphasis, onColor } from '../theme';
+
+const STYLES: { id: UiStyle; label: string; detail: string }[] = [
+  { id: 'studio', label: 'Studio', detail: 'Warm greys, one accent' },
+  { id: 'material', label: 'Material', detail: 'Material You colour' },
+  { id: 'plain', label: 'Plain', detail: 'Raw, no decoration' },
+];
+
+/**
+ * A thumbnail of what each style does to a card and a button, drawn with the
+ * style's own corners and colours so the choice reads before it's made.
+ */
+function StylePreview({ style, isDark }: { style: UiStyle; isDark: boolean }) {
+  const theme = useTheme();
+  const look = LOOKS[style];
+  const n = isDark ? STUDIO_NEUTRALS.dark : STUDIO_NEUTRALS.light;
+  const studioAccent = isDark ? STUDIO_COMBOS[0].dark.accent : STUDIO_COMBOS[0].light.accent;
+  const paper = style === 'material' ? theme.colors.elevation.level2 : style === 'plain' ? n.background : n.surface;
+  const edge = style === 'material' ? 'transparent' : n.border;
+  const fill = style === 'material' ? theme.colors.primary : style === 'plain' ? n.foreground : studioAccent;
+  const line = style === 'material' ? theme.colors.onSurfaceVariant : n.faint;
+  return (
+    <View
+      style={[
+        styles.preview,
+        { backgroundColor: paper, borderColor: edge, borderRadius: look.radius.card },
+      ]}
+    >
+      <View style={[styles.previewLine, { backgroundColor: line, width: '70%' }]} />
+      <View style={[styles.previewLine, { backgroundColor: line, width: '45%', opacity: 0.6 }]} />
+      <View style={[styles.previewButton, { backgroundColor: fill, borderRadius: look.radius.pill }]} />
+    </View>
+  );
+}
 
 const THEME_MODES: { id: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'system', label: 'System', icon: 'phone-portrait-outline' },
@@ -164,7 +203,9 @@ function ToggleCard({
 
 export function AppearanceScreen() {
   const theme = useTheme();
-  const { settings, updateSettings, isDark, fills, dynamicAvailable, reduceMotionEnabled } = useAppTheme();
+  const { settings, updateSettings, isDark, fills, dynamicAvailable, reduceMotionEnabled } =
+    useAppTheme();
+  const material = settings.uiStyle === 'material';
 
   const availablePalettes = useMemo(
     () => PALETTES.filter((p) => p.id !== DYNAMIC_PALETTE_ID || dynamicAvailable),
@@ -187,6 +228,84 @@ export function AppearanceScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
+      {/* Style */}
+      <View style={styles.section}>
+        <SectionHeader title="Style" icon="shapes-outline" />
+        <View style={styles.modeRow} accessibilityRole="radiogroup">
+          {STYLES.map((option) => {
+            const active = settings.uiStyle === option.id;
+            const fg = active ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
+            return (
+              <View key={option.id} style={styles.modeSlot}>
+                <Touchable
+                  radius={radius.hero}
+                  haptic="select"
+                  onPress={() => updateSettings({ uiStyle: option.id })}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${option.label} style. ${option.detail}`}
+                  style={{
+                    backgroundColor: active ? theme.colors.primaryContainer : fills.subtle,
+                  }}
+                >
+                  <View style={styles.styleCard}>
+                    <StylePreview style={option.id} isDark={isDark} />
+                    <Text variant="labelLarge" style={[emphasis.strong, { color: fg }]}>
+                      {option.label}
+                    </Text>
+                    <Text
+                      variant="bodySmall"
+                      numberOfLines={1}
+                      style={{ color: active ? fg : theme.colors.onSurfaceVariant }}
+                    >
+                      {option.detail}
+                    </Text>
+                  </View>
+                </Touchable>
+              </View>
+            );
+          })}
+        </View>
+        {settings.uiStyle === 'studio' && (
+          <View style={styles.comboRow} accessibilityRole="radiogroup">
+            {STUDIO_COMBOS.map((combo) => {
+              const active = settings.studioColor === combo.id;
+              const swatch = isDark ? combo.dark.accent : combo.light.accent;
+              return (
+                <Touchable
+                  key={combo.id}
+                  radius={radius.pill}
+                  haptic="select"
+                  onPress={() => updateSettings({ studioColor: combo.id })}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${combo.name} accent`}
+                  style={{
+                    backgroundColor: active ? theme.colors.primaryContainer : fills.subtle,
+                  }}
+                >
+                  <View style={styles.combo}>
+                    <View style={[styles.comboDot, { backgroundColor: swatch }]}>
+                      {active && <Ionicons name="checkmark" size={12} color={onColor(swatch)} />}
+                    </View>
+                    <Text variant="labelLarge" style={{ color: theme.colors.onSurface }}>
+                      {combo.name}
+                    </Text>
+                  </View>
+                </Touchable>
+              );
+            })}
+          </View>
+        )}
+        <Text variant="bodySmall" style={[styles.note, { color: theme.colors.onSurfaceVariant }]}>
+          {settings.uiStyle === 'studio'
+            ? 'The look of taf.sh: warm greys, hairline edges and one accent colour.'
+            : settings.uiStyle === 'plain'
+              ? 'No colour except the metro lines. Square corners, no cards.'
+              : 'Tonal surfaces and your choice of palette, or your wallpaper colours.'}
+        </Text>
+      </View>
+
       {/* Theme mode */}
       <View style={styles.section}>
         <SectionHeader title="Theme" icon="contrast-outline" />
@@ -220,7 +339,8 @@ export function AppearanceScreen() {
         </View>
       </View>
 
-      {/* Palette */}
+      {/* Palette, Material only */}
+      {material && (
       <View style={styles.section}>
         <SectionHeader title="Color palette" icon="color-palette-outline" />
         <View style={styles.paletteGrid} accessibilityRole="radiogroup">
@@ -263,11 +383,13 @@ export function AppearanceScreen() {
           </Text>
         )}
       </View>
+      )}
 
       {/* Options */}
       <View style={styles.section}>
         <SectionHeader title="Options" icon="options-outline" />
         <View style={styles.toggleList}>
+          {material && (
           <ToggleCard
             icon="moon"
             title="AMOLED black"
@@ -279,6 +401,8 @@ export function AppearanceScreen() {
             value={settings.amoledDark}
             onChange={(amoledDark) => updateSettings({ amoledDark })}
           />
+          )}
+          {material && (
           <ToggleCard
             icon="contrast"
             title="High contrast"
@@ -286,6 +410,7 @@ export function AppearanceScreen() {
             value={settings.highContrast}
             onChange={(highContrast) => updateSettings({ highContrast })}
           />
+          )}
           <ToggleCard
             icon="pulse"
             title="Haptics"
@@ -399,8 +524,53 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   toggleSurface: {
-    borderRadius: radius.hero,
     overflow: 'hidden',
+  },
+  // Style
+  styleCard: {
+    alignItems: 'center',
+    gap: 2,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
+  },
+  preview: {
+    width: 64,
+    height: 48,
+    borderWidth: 1,
+    padding: 7,
+    gap: 4,
+    marginBottom: spacing.xs,
+  },
+  previewLine: {
+    height: 4,
+    borderRadius: 2,
+  },
+  previewButton: {
+    marginTop: 'auto',
+    height: 10,
+    width: 28,
+  },
+  comboRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  combo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.xs,
+    paddingRight: spacing.md,
+  },
+  comboDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   toggleRow: {
     flexDirection: 'row',

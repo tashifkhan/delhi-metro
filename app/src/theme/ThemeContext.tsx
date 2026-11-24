@@ -40,6 +40,8 @@ import {
 } from '../storage/appSettingsRepository';
 import { setHapticsEnabled } from '../hooks/useHaptics';
 import { animationPreference, type AnimationStyle } from './animationPreferences';
+import { buildStudioScheme, studioComboFromId, STUDIO_NEUTRALS } from './studio';
+import { LOOKS, type Look } from './look';
 
 const IS_ANDROID_12_PLUS =
   Platform.OS === 'android' &&
@@ -174,12 +176,41 @@ function createFills(theme: MD3Theme, isDark: boolean): SurfaceFills {
   };
 }
 
+/**
+ * Studio and Plain draw no tonal ladder: every container is the surface or the
+ * raised surface, and every card gets a visible hairline in both themes.
+ */
+function createFlatFills(theme: MD3Theme, isDark: boolean, plain: boolean): SurfaceFills {
+  const n = isDark ? STUDIO_NEUTRALS.dark : STUDIO_NEUTRALS.light;
+  const { colors } = theme;
+  const base = plain ? n.background : n.surface;
+  return {
+    subtle: colors.surfaceVariant,
+    subtleStrong: colors.surfaceVariant,
+    inset: colors.surfaceVariant,
+    accentSubtle: plain ? colors.surfaceVariant : colors.primaryContainer,
+    hero: base,
+    onHero: colors.surfaceVariant,
+    onHeroText: colors.onSurface,
+    selected: plain ? colors.surfaceVariant : colors.primaryContainer,
+    floating: n.elevated,
+    hairline: n.border,
+    containerLowest: plain ? n.background : n.elevated,
+    containerLow: base,
+    container: base,
+    containerHigh: plain ? colors.surfaceVariant : n.elevated,
+    containerHighest: colors.surfaceVariant,
+  };
+}
+
 interface AppTheme {
   paperTheme: MD3Theme;
   navTheme: NavigationTheme;
   isDark: boolean;
   semantic: SemanticColors;
   fills: SurfaceFills;
+  /** Corners, edges and figure type for the chosen style. */
+  look: Look;
   settings: AppSettings;
   updateSettings: (patch: Partial<AppSettings>) => void;
   /** False until stored settings have been read, to avoid a theme flash. */
@@ -196,6 +227,7 @@ const ThemeContext = createContext<AppTheme>({
   isDark: false,
   semantic: lightScheme,
   fills: createFills(paperLightTheme, false),
+  look: LOOKS.studio,
   settings: DEFAULT_SETTINGS,
   updateSettings: () => {},
   settingsLoaded: false,
@@ -281,26 +313,34 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         ? systemScheme === 'dark'
         : settings.themeMode === 'dark';
 
-    const palette = paletteFromId(settings.paletteId);
-    const useDynamic = palette.id === DYNAMIC_PALETTE_ID && DYNAMIC_THEME_AVAILABLE;
+    const look = LOOKS[settings.uiStyle];
+    let scheme: Partial<MD3Theme['colors']>;
+    if (settings.uiStyle === 'material') {
+      const palette = paletteFromId(settings.paletteId);
+      const useDynamic = palette.id === DYNAMIC_PALETTE_ID && DYNAMIC_THEME_AVAILABLE;
 
-    // Wallpaper mode keeps the tonal surfaces Material You generates. Forcing
-    // them to black here would make the AMOLED setting a no-op in this mode —
-    // pure black is the toggle's job, not the palette's.
-    let scheme: Partial<MD3Theme['colors']> = useDynamic
-      ? isDark
-        ? materialTheme.dark
-        : materialTheme.light
-      : buildScheme(palette, isDark);
+      // Wallpaper mode keeps the tonal surfaces Material You generates. Forcing
+      // them to black here would make the AMOLED setting a no-op in this mode —
+      // pure black is the toggle's job, not the palette's.
+      scheme = useDynamic
+        ? isDark
+          ? materialTheme.dark
+          : materialTheme.light
+        : buildScheme(palette, isDark);
 
-    if (isDark && settings.amoledDark) {
-      scheme = toAmoled(scheme);
+      if (isDark && settings.amoledDark) {
+        scheme = toAmoled(scheme);
+      }
+      if (settings.highContrast) {
+        scheme = toHighContrast(scheme, isDark);
+      }
+    } else {
+      // Studio and Plain are fixed palettes; AMOLED, high contrast and the
+      // Material palettes don't apply to them.
+      scheme = buildStudioScheme(settings.uiStyle, studioComboFromId(settings.studioColor), isDark);
     }
-    if (settings.highContrast) {
-      scheme = toHighContrast(scheme, isDark);
-    }
 
-    const activeTheme = createPaperTheme(isDark, scheme);
+    const activeTheme = { ...createPaperTheme(isDark, scheme), roundness: look.paperRoundness };
     const animationStyle = animationPreference(settings.animationStyle, reduceMotionEnabled).style;
     activeTheme.animation = { ...activeTheme.animation, scale: animationStyle === 'none' ? 0 : 1 };
 
@@ -318,7 +358,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       navTheme: createNavigationTheme(isDark ? navDark : navLight, activeTheme, isDark),
       isDark,
       semantic: isDark ? darkScheme : lightScheme,
-      fills: createFills(activeTheme, isDark),
+      fills:
+        settings.uiStyle === 'material'
+          ? createFills(activeTheme, isDark)
+          : createFlatFills(activeTheme, isDark, settings.uiStyle === 'plain'),
+      look,
       settings,
       updateSettings,
       settingsLoaded,
