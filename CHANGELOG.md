@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-25
+
+- Plan journeys across Delhi Metro, Noida Metro, Namo Bharat and Meerut Metro. See the fare and booking option for each operator you ride.
+- Download an offline pack for station details, timetables, maps and new journey estimates without a connection.
+- Browse the interactive map with terrain and waterways across the NCR corridors. Official maps have their own picker.
+- Use the new Plan, Map, Network, Saved and Alerts tabs. Save trips and places, and start from saved places with Android launcher shortcuts.
+- Choose Studio, Material or Plain in Appearance. Fade transitions keep the tabs centered.
+- Download an Android APK for your phone's architecture. The offline pack carries the detailed maps separately.
+
 ## [1.8.1] — 2026-11-15
 
 ### Changed
@@ -254,7 +263,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.1...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.6.0...v1.7.0
