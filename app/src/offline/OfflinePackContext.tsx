@@ -4,6 +4,7 @@ import * as Network from 'expo-network';
 import { env } from '../config/env';
 import { useAppTheme } from '../theme/ThemeContext';
 import { packStore } from './store';
+import { invalidatePack } from './reader';
 import { syncPack, type SyncOutcome } from './sync';
 import { dueForCheck, mayAutoSync, type Connection, type PackMeta } from './model';
 
@@ -68,6 +69,7 @@ export function OfflinePackProvider({ children }: { children: ReactNode }) {
     const job = syncPack({ apiBase: env.apiBaseUrl, fetchFn: fetch, store: packStore, now: Date.now })
       .then((outcome) => {
         lastCheckedAt.current = Date.now();
+        if (outcome.kind === 'downloaded') invalidatePack();
         if (outcome.kind === 'downloaded' || outcome.kind === 'up-to-date') setMeta(outcome.meta);
         setLast({ ...outcome, at: Date.now() });
         return outcome;
@@ -109,6 +111,7 @@ export function OfflinePackProvider({ children }: { children: ReactNode }) {
 
   const remove = useCallback(async () => {
     await packStore.clear();
+    invalidatePack();
     setMeta(null);
     setLast(null);
   }, []);

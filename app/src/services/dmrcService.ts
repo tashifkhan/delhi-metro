@@ -18,6 +18,7 @@ import type {
   StationSearchResult,
 } from '../types';
 import { OPERATORS, type MetroNetwork } from '../network';
+import { fromPack } from '../offline/reader';
 
 const API_V1 = '/api/v1';
 const API_V2 = '/api/v2';
@@ -210,6 +211,8 @@ export class DmrcService {
       if (cachedStations) {
         return cachedStations;
       }
+      const packed = await fromPack((pack) => pack.stations(network)).catch(() => null);
+      if (packed) return packed.payload;
       throw error;
     }
   }
