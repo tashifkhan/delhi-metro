@@ -8,7 +8,7 @@ import type { AlertsStackParamList } from './types';
 const Stack = createNativeStackNavigator<AlertsStackParamList>();
 
 export function AlertsStack() {
-  const screenOptions = useStackScreenOptions({ networkSwitcher: true });
+  const screenOptions = useStackScreenOptions();
   const { network } = useMetroNetwork();
 
   return (

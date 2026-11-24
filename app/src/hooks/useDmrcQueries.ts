@@ -391,17 +391,6 @@ export function useMetroLinesQuery() {
   });
 }
 
-/** Lines for one operator, for the network-scoped alerts page. */
-export function useNetworkLinesQuery() {
-  const { dmrcService } = useDI();
-  const { network } = useMetroNetwork();
-  return useCachedQuery({
-    queryKey: queryKeys.lines(network),
-    load: (shown) => dmrcService.getLines(network, shown),
-    readCache: () => dmrcService.getCachedLinesFor(network),
-  });
-}
-
 /** Resolve a line code to the network that runs it. */
 export function useLineNetworkLookup() {
   const { data: lines } = useMetroLinesQuery();
@@ -418,9 +407,11 @@ export function useLineNetworkLookup() {
   }, [lines]);
 }
 
-export function useNotificationsQuery() {
+/** Notices for one operator. Defaults to the selected network. */
+export function useNotificationsQuery(only?: MetroNetwork) {
   const { dmrcService } = useDI();
-  const { network } = useMetroNetwork();
+  const { network: selected } = useMetroNetwork();
+  const network = only ?? selected;
   return useCachedQuery({
     queryKey: queryKeys.notifications(network),
     load: (shown) => dmrcService.getNotifications(network, shown),
