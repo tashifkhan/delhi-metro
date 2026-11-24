@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Platform, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Animated as RNAnimated, Easing, Platform, View, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import Animated, { useAnimatedProps, useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { useTheme } from 'react-native-paper';
@@ -38,11 +38,24 @@ export function LoadingIndicator({
   accessibilityLabel = 'Loading',
 }: Props) {
   const theme = useTheme();
-  const { animationStyle } = useAppTheme();
+  const { animationStyle, look } = useAppTheme();
   const still = animationStyle === 'none';
   const fill = color ?? theme.colors.primary;
   const c = size / 2;
   const radius = (size * SHAPE_RATIO) / 2;
+
+  if (look.style === 'plain') {
+    return (
+      <View
+        style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, style]}
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={accessibilityLabel}
+      >
+        <Ticker color={fill} dot={Math.max(4, Math.round(size / 10))} still={still} />
+      </View>
+    );
+  }
 
   return (
     <View
@@ -97,4 +110,38 @@ function WebShape({ radius, c, fill }: ShapeProps) {
   }, []);
   const f = frameAt(elapsed);
   return <Path d={morphPath(f.from, f.to, f.progress, f.rotation, radius, c, c)} fill={fill} />;
+}
+
+/** Plain's loader: three dots that brighten in turn. */
+function Ticker({ color, dot, still }: { color: string; dot: number; still: boolean }) {
+  const [phase] = useState(() => new RNAnimated.Value(0));
+  useEffect(() => {
+    if (still) return undefined;
+    const loop = RNAnimated.loop(
+      RNAnimated.timing(phase, { toValue: 3, duration: 900, easing: Easing.linear, useNativeDriver: true }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [phase, still]);
+  return (
+    <View style={{ flexDirection: 'row', gap: dot }}>
+      {[0, 1, 2].map((i) => (
+        <RNAnimated.View
+          key={i}
+          style={{
+            width: dot,
+            height: dot,
+            backgroundColor: color,
+            opacity: still
+              ? 0.6
+              : phase.interpolate({
+                  inputRange: [0, i, i + 0.5, i + 1, 3],
+                  outputRange: [0.25, 0.25, 1, 0.25, 0.25],
+                  extrapolate: 'clamp',
+                }),
+          }}
+        />
+      ))}
+    </View>
+  );
 }
