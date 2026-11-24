@@ -21,6 +21,9 @@ type Filter = 'all' | MetroNetwork;
 /** Operators whose notices this screen reads, in display order. */
 const OPERATORS: MetroNetwork[] = ['dmrc', 'nmrc'];
 
+/** Notices shown before "Show more". */
+const PAGE = 20;
+
 /** Helplines that work whatever the app knows. */
 const HELPLINES: { name: string; number: string }[] = [{ name: 'Delhi Metro helpline', number: '155370' }];
 
@@ -61,6 +64,7 @@ export function NotificationsScreen() {
   const navigation = useNavigation<NavigationProp<RootTabParamList>>();
   const { semantic, look } = useAppTheme();
   const [filter, setFilter] = useState<Filter>('all');
+  const [limit, setLimit] = useState(PAGE);
 
   const dmrc = useNotificationsQuery('dmrc');
   const nmrc = useNotificationsQuery('nmrc');
@@ -195,16 +199,31 @@ export function NotificationsScreen() {
         ) : null}
         {notices.length > 0 ? (
           <View style={styles.notices}>
-            {notices.map(({ network, notice }, index) => (
+            {notices.slice(0, limit).map(({ network, notice }, index, page) => (
               <View key={`${network}-${notice.id}`}>
-                {filter === 'all' ? (
+                {/* The operator is named where it changes, not on every notice. */}
+                {filter === 'all' && (index === 0 || page[index - 1].network !== network) ? (
                   <Text variant="labelSmall" style={[styles.operator, look.meta, { color: theme.colors.onSurfaceVariant }]}>
                     {NETWORK_NAMES[network]}
                   </Text>
                 ) : null}
-                <NotificationCard notification={notice} position={positionOf(index, notices.length)} />
+                <NotificationCard notification={notice} position={positionOf(index, Math.min(limit, notices.length))} />
               </View>
             ))}
+            {notices.length > limit ? (
+              <Touchable
+                radius={radius.pill}
+                onPress={() => setLimit((n) => n + PAGE)}
+                accessibilityLabel={`Show ${Math.min(PAGE, notices.length - limit)} more notices`}
+                style={[styles.more, { borderColor: theme.colors.outlineVariant }]}
+              >
+                <View style={styles.moreInner}>
+                  <Text variant="labelLarge" style={{ color: theme.colors.primary }}>
+                    Show more · {notices.length - limit} older
+                  </Text>
+                </View>
+              </Touchable>
+            ) : null}
           </View>
         ) : !loading && !nothingAtAll ? (
           <Text variant="bodyMedium" style={[styles.quiet, { color: theme.colors.onSurfaceVariant }]}>
@@ -303,6 +322,14 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
+  },
+  more: {
+    borderWidth: 1,
+    marginTop: spacing.sm,
+  },
+  moreInner: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
   },
   offline: {
     padding: spacing.base,

@@ -50,16 +50,16 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
         })
       }
       accessibilityLabel={`${title}, ${from} to ${to}, ${disrupted ? line.status : 'running normally'}`}
-      style={[
-        {
-          backgroundColor: fills.containerLow,
-          borderRadius: inner,
-          borderColor: fills.hairline,
-          borderWidth: look.edge === 'hairline' ? StyleSheet.hairlineWidth : 0,
-        },
-        first && { borderTopLeftRadius: outer, borderTopRightRadius: outer },
-        last && { borderBottomLeftRadius: outer, borderBottomRightRadius: outer },
-      ]}
+      style={
+        look.style === 'material'
+          ? [
+              { backgroundColor: fills.containerLow, borderRadius: inner },
+              first && { borderTopLeftRadius: outer, borderTopRightRadius: outer },
+              last && { borderBottomLeftRadius: outer, borderBottomRightRadius: outer },
+            ]
+          : // Studio and Plain: rows inside one hairline card, divided by hairlines.
+            [{ borderTopWidth: first ? 0 : StyleSheet.hairlineWidth, borderTopColor: fills.hairline }]
+      }
     >
       <View style={styles.rowInner}>
         <LineGlyph color={line.primary_color_code} glyph={lineGlyph(line)} />
@@ -117,6 +117,7 @@ export function MetroLinesScreen() {
   const { data, isLoading, isError, isOfflineCopy, refetch, isRefetching } =
     useMetroLinesQuery();
   const theme = useTheme();
+  const { look, fills } = useAppTheme();
   const isDesktop = useIsDesktop();
 
   // Group by operator, keeping the API's order inside each group.
@@ -175,7 +176,21 @@ export function MetroLinesScreen() {
               </View>
             </View>
           ) : null}
-          <View style={[styles.list, isDesktop && styles.listDesktop]}>
+          <View
+            style={[
+              styles.list,
+              isDesktop && styles.listDesktop,
+              look.style !== 'material' &&
+                !isDesktop && {
+                  gap: 0,
+                  backgroundColor: fills.containerLow,
+                  borderColor: fills.hairline,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderRadius: look.radius.hero,
+                  overflow: 'hidden',
+                },
+            ]}
+          >
             {group.lines.map((line, index) => (
               <View key={`${group.network}-${line.id}`} style={isDesktop ? styles.gridCell : undefined}>
                 <LineRow

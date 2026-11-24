@@ -193,7 +193,7 @@ export function HomeScreen() {
                     size={15}
                     color={fg}
                   />
-                  <Text variant="labelLarge" style={[emphasis.medium, look.figures, { color: fg }]}>
+                  <Text variant="labelLarge" style={[emphasis.medium, { color: fg }]}>
                     {option.label}
                   </Text>
                 </View>
