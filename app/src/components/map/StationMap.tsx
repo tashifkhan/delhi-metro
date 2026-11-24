@@ -75,7 +75,7 @@ export function StationMap({ code, height = 240, onOpenMap, onSelectStation, sty
           }}
           fit={fit}
           wheelZoom="modifier"
-          grid={false}
+          terrain={false}
           labelObstacles={obstacles}
         />
         {onOpenMap ? (

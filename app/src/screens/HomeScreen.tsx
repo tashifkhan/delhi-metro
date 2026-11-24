@@ -440,9 +440,11 @@ export function HomeScreen() {
       <Reveal index={2}>{lineStatus}</Reveal>
 
       {isDesktop ? (
+        // A first visit has no frequent routes yet. An empty column would
+        // push Alerts into the right half, so each column needs content.
         <View style={styles.desktopColumns}>
-          <View style={styles.desktopColumn}>{frequent}</View>
-          <View style={styles.desktopColumn}>{alerts}</View>
+          {frequent ? <View style={styles.desktopColumn}>{frequent}</View> : null}
+          {alerts ? <View style={styles.desktopColumn}>{alerts}</View> : null}
         </View>
       ) : (
         <>

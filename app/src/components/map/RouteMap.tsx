@@ -64,7 +64,7 @@ export function RouteMap({ legs, colorFor, height = 280, onOpenMap, style }: Pro
           route={overlay}
           fit={overlay.bounds}
           wheelZoom="modifier"
-          grid={false}
+          terrain={false}
           labelObstacles={obstacles}
         />
         <View style={styles.actions} pointerEvents="box-none">

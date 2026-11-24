@@ -174,6 +174,11 @@ export function AboutScreen() {
           it is fixed. Check the station or the operator before a journey that has to be
           right.
         </Text>
+        <Text variant="bodySmall" style={[styles.note, { color: theme.colors.onSurfaceVariant }]}>
+          The map's background shows real contours and water. Heights come from AWS
+          Terrain Tiles (SRTM). Lakes and rivers are © OpenStreetMap contributors, served
+          by OpenFreeMap, under the Open Database License.
+        </Text>
       </View>
 
       <View style={styles.section}>

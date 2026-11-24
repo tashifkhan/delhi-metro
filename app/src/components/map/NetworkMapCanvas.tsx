@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -15,13 +16,21 @@ import {
   type GestureResponderEvent,
   type LayoutChangeEvent,
 } from 'react-native';
-import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, G, Path, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useTheme } from 'react-native-paper';
 import { useAppTheme } from '../../theme/ThemeContext';
 import type { MapStation } from './networkData';
 import { placeLabels, type Box } from './labels';
 import type { RouteOverlay } from './routeOverlay';
 import { useNetworkGeometry } from './NetworkGeometryContext';
+import {
+  DETAIL_SPAN,
+  TERRAIN_OVERVIEW,
+  chunksIn,
+  loadTerrainDetail,
+  type TerrainDetail,
+} from './terrain';
 
 export interface NetworkMapHandle {
   /** Centre on a station and zoom in far enough to read its neighbours. */
@@ -53,8 +62,8 @@ interface Props {
    * trap the scroll.
    */
   wheelZoom?: 'always' | 'modifier';
-  /** Draw the faint map-space grid. */
-  grid?: boolean;
+  /** Draw contour lines and the river behind the network. */
+  terrain?: boolean;
   /** Screen boxes covered by floating controls, kept clear of station names. */
   labelObstacles?: Box[];
 }
@@ -73,6 +82,15 @@ const DOUBLE_TAP_MS = 280;
 const START_SPAN = 14_000;
 const MIN_SPAN_FACTOR = 1.15;
 const MAX_SPAN = 1_200;
+/**
+ * The SVG is drawn this far past each edge, as a share of the screen, so a
+ * pan in progress shows drawn map instead of an empty edge.
+ */
+const OVERSCAN = 0.5;
+/** Mid-gesture redraws are spaced at least this far apart. */
+const REDRAW_MS = 220;
+/** Wheel zoom redraws once the wheel has been still this long. */
+const WHEEL_SETTLE_MS = 140;
 
 type Touch = { pageX: number; pageY: number };
 
@@ -83,8 +101,12 @@ function distance(a: Touch, b: Touch) {
 /**
  * The metro network drawn from station coordinates.
  *
- * Pan and zoom move an SVG viewBox rather than scaling a bitmap, so lines stay
- * sharp at every zoom. One finger pans, two fingers pinch, a double tap zooms
+ * Redrawing the SVG is the expensive part (hundreds of nodes plus label
+ * placement), so gestures don't redraw it every frame. While a finger is
+ * down, the drawn layer moves and scales with a transform on the UI thread;
+ * the viewBox catches up when the gesture ends, or mid-gesture when the
+ * transform has drifted past the overscan. Lines come back sharp after each
+ * redraw. One finger pans, two fingers pinch, a double tap zooms
  * in; on the web the wheel zooms too. Taps pick the nearest station within a
  * finger's width. With a station selected, its lines stay at full strength and
  * the rest of the network fades back.
@@ -99,7 +121,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
     route = null,
     fit = null,
     wheelZoom = 'always',
-    grid: showGrid = true,
+    terrain: showTerrain = true,
     labelObstacles,
   },
   ref,
@@ -113,8 +135,20 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
   geoRef.current = geometry;
   const { lines: MAP_LINES, stations: MAP_STATIONS, stationByCode: STATION_BY_CODE } = geometry;
   const [size, setSize] = useState({ width: 0, height: 0 });
+  // `view` is what the SVG is drawn for; `viewRef` is where the user is now.
+  // The transform below covers the difference between them.
   const [view, setView] = useState<Viewport>({ cx: 0, cy: 0, k: 0 });
   const viewRef = useRef(view);
+  const drawnRef = useRef(view);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const layerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
+  }));
+  const gestureActive = useRef(false);
+  const lastRedraw = useRef(0);
+  const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sizeRef = useRef(size);
   const containerRef = useRef<View>(null);
   const origin = useRef({ x: 0, y: 0 });
@@ -132,6 +166,30 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
     return { minK, maxK };
   }, []);
 
+  /** Point the transform from the drawn view to the live one. */
+  const syncTransform = useCallback(() => {
+    const d = drawnRef.current;
+    const v = viewRef.current;
+    if (d.k === 0) return;
+    scale.value = v.k / d.k;
+    tx.value = (d.cx - v.cx) * v.k;
+    ty.value = (d.cy - v.cy) * v.k;
+  }, [scale, tx, ty]);
+
+  /** Redraw the SVG for the live view on the next frame. */
+  const redraw = useCallback(() => {
+    if (frame.current !== null) return;
+    frame.current = requestAnimationFrame(() => {
+      frame.current = null;
+      lastRedraw.current = Date.now();
+      setView(viewRef.current);
+    });
+  }, []);
+
+  /**
+   * Move the live view. Outside a gesture the SVG redraws straight away;
+   * during one it redraws only once the drawn area would run out.
+   */
   const commit = useCallback(
     (next: Viewport) => {
       const { minK, maxK } = limits();
@@ -141,19 +199,33 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
       const cx = Math.min(MAP_BOUNDS.maxX, Math.max(MAP_BOUNDS.minX, next.cx));
       const cy = Math.min(MAP_BOUNDS.maxY, Math.max(MAP_BOUNDS.minY, next.cy));
       viewRef.current = { cx, cy, k };
-      if (frame.current === null) {
-        frame.current = requestAnimationFrame(() => {
-          frame.current = null;
-          setView(viewRef.current);
-        });
+      syncTransform();
+      if (!gestureActive.current) {
+        redraw();
+        return;
       }
+      const d = drawnRef.current;
+      const { width, height } = sizeRef.current;
+      const s = k / d.k;
+      // How far the drawn layer's edge has come toward the screen edge.
+      const slackX = width * (OVERSCAN + 0.5) * s - width / 2 - Math.abs((d.cx - cx) * k);
+      const slackY = height * (OVERSCAN + 0.5) * s - height / 2 - Math.abs((d.cy - cy) * k);
+      const stale = slackX < 24 || slackY < 24 || s > 1.6 || s < 0.7;
+      if (stale && Date.now() - lastRedraw.current > REDRAW_MS) redraw();
     },
-    [limits],
+    [limits, syncTransform, redraw],
   );
+
+  // Once a new drawing is on screen, the transform starts again from it.
+  useLayoutEffect(() => {
+    drawnRef.current = view;
+    syncTransform();
+  }, [view, syncTransform]);
 
   useEffect(
     () => () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);
+      if (wheelTimer.current !== null) clearTimeout(wheelTimer.current);
     },
     [],
   );
@@ -239,6 +311,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
       const v = startView(width);
       const { minK, maxK } = limits();
       viewRef.current = { ...v, k: Math.min(maxK, Math.max(minK, v.k)) };
+      drawnRef.current = viewRef.current;
       setView(viewRef.current);
     }
   };
@@ -287,6 +360,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
           });
           const touches = evt.nativeEvent.touches as unknown as Touch[];
           const g = gesture.current;
+          gestureActive.current = true;
           g.moved = touches.length > 1;
           g.lastPinch = null;
           g.lastPan = { x: evt.nativeEvent.pageX, y: evt.nativeEvent.pageY };
@@ -335,7 +409,9 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
           const g = gesture.current;
           g.lastPan = null;
           g.lastPinch = null;
+          gestureActive.current = false;
           if (g.moved) {
+            redraw();
             g.lastTap = 0;
             return;
           }
@@ -353,6 +429,8 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
         onPanResponderTerminate: () => {
           gesture.current.lastPan = null;
           gesture.current.lastPinch = null;
+          gestureActive.current = false;
+          redraw();
         },
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -369,11 +447,19 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
       if (wheelZoom === 'modifier' && !e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const rect = node.getBoundingClientRect();
+      // A wheel spin is a gesture too: scale the drawn layer, redraw once it stops.
+      gestureActive.current = true;
       zoomAt(e.clientX - rect.left, e.clientY - rect.top, Math.exp(-e.deltaY * 0.0018));
+      if (wheelTimer.current !== null) clearTimeout(wheelTimer.current);
+      wheelTimer.current = setTimeout(() => {
+        wheelTimer.current = null;
+        gestureActive.current = false;
+        redraw();
+      }, WHEEL_SETTLE_MS);
     };
     node.addEventListener('wheel', onWheel, { passive: false });
     return () => node.removeEventListener('wheel', onWheel);
-  }, [zoomAt, wheelZoom]);
+  }, [zoomAt, wheelZoom, redraw]);
 
   const selected = selectedCode ? STATION_BY_CODE.get(selectedCode) ?? null : null;
 
@@ -404,8 +490,11 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
   const { cx, cy, k } = view;
   const ready = width > 0 && k > 0;
   const px = (n: number) => n / (k || 1);
+  // The drawing reaches OVERSCAN screens past every edge.
+  const drawW = width * (1 + 2 * OVERSCAN);
+  const drawH = height * (1 + 2 * OVERSCAN);
   const viewBox = ready
-    ? `${cx - width / 2 / k} ${cy - height / 2 / k} ${width / k} ${height / k}`
+    ? `${cx - drawW / 2 / k} ${cy - drawH / 2 / k} ${drawW / k} ${drawH / k}`
     : '0 0 1 1';
 
   // Markers shrink as the view widens but never disappear, so the network
@@ -414,24 +503,34 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
   const markerScale = Math.min(1, Math.max(0.6, 14_000 / span));
   const lineScale = Math.min(1, Math.max(0.7, 16_000 / span));
 
-  // A light grid in map space so panning reads as moving over a surface.
-  const grid = useMemo(() => {
-    if (!ready || !showGrid) return { step: 0, xs: [] as number[], ys: [] as number[] };
-    const target = 48 / k;
-    const step = Math.pow(2, Math.round(Math.log2(target / 250))) * 250;
-    const x0 = Math.floor((cx - width / 2 / k) / step) * step;
-    const y0 = Math.floor((cy - height / 2 / k) / step) * step;
-    const xs: number[] = [];
-    const ys: number[] = [];
-    for (let x = x0; x <= cx + width / 2 / k; x += step) xs.push(x);
-    for (let y = y0; y <= cy + height / 2 / k; y += step) ys.push(y);
-    return { step, xs, ys };
-  }, [ready, showGrid, k, cx, cy, width, height]);
+  // Zoomed in, the detailed relief replaces the overview. It loads on first
+  // use; the overview stays up until it arrives.
+  const [detail, setDetail] = useState<TerrainDetail | null>(null);
+  const wantDetail = showTerrain && ready && span < DETAIL_SPAN;
+  useEffect(() => {
+    if (!wantDetail || detail) return;
+    let live = true;
+    loadTerrainDetail()
+      .then((data) => {
+        if (live) setDetail(data);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [wantDetail, detail]);
+  const chunks = useMemo(() => {
+    if (!wantDetail || !detail) return null;
+    const halfW = drawW / 2 / k;
+    const halfH = drawH / 2 / k;
+    return chunksIn(detail, cx - halfW, cy - halfH, cx + halfW, cy + halfH);
+  }, [wantDetail, detail, cx, cy, k, drawW, drawH]);
 
   const linePoints = useMemo(
     () => MAP_LINES.map((line) => line.points.map((p) => `${p.x},${p.y}`).join(' ')),
     [MAP_LINES],
   );
+  const LINE_COLOR = useMemo(() => new Map(MAP_LINES.map((l) => [l.code, l.color])), [MAP_LINES]);
 
   const dim = (lineCodes: string[]) =>
     activeLines.size > 0 && !lineCodes.some((code) => activeLines.has(code));
@@ -439,6 +538,8 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
   const background = fills.containerLow;
   const ink = theme.colors.onSurface;
   const halo = background;
+  const relief = theme.colors.outline;
+  const water = isDark ? '#5b9bd5' : '#4a90c8';
   const labelFont = Platform.OS === 'web' ? '"Roboto Flex", Roboto, system-ui, sans-serif' : undefined;
 
   const routeCodes = route?.stationCodes;
@@ -483,33 +584,90 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
       accessibilityLabel="Metro network map. Drag to move, pinch to zoom, tap a station to see its details."
     >
       {ready ? (
-        <Svg width={width} height={height} viewBox={viewBox} pointerEvents="none">
-          <G>
-            {grid.xs.map((x) => (
-              <Line
-                key={`gx${x}`}
-                x1={x}
-                x2={x}
-                y1={cy - height / 2 / k}
-                y2={cy + height / 2 / k}
-                stroke={theme.colors.outlineVariant}
-                strokeOpacity={isDark ? 0.18 : 0.35}
-                strokeWidth={px(0.6)}
-              />
-            ))}
-            {grid.ys.map((y) => (
-              <Line
-                key={`gy${y}`}
-                y1={y}
-                y2={y}
-                x1={cx - width / 2 / k}
-                x2={cx + width / 2 / k}
-                stroke={theme.colors.outlineVariant}
-                strokeOpacity={isDark ? 0.18 : 0.35}
-                strokeWidth={px(0.6)}
-              />
-            ))}
-          </G>
+        <Animated.View style={[styles.fill, styles.layer, layerStyle]} pointerEvents="none">
+        <Svg
+          width={drawW}
+          height={drawH}
+          viewBox={viewBox}
+          style={{ position: 'absolute', left: -width * OVERSCAN, top: -height * OVERSCAN }}
+        >
+          {showTerrain ? (
+            <G>
+              {TERRAIN_OVERVIEW.high.map((band, i) => (
+                <Path key={`high${i}`} d={band} fill={relief} fillOpacity={isDark ? 0.05 : 0.06} />
+              ))}
+              {chunks ? (
+                chunks.map((chunk) => (
+                  <G key={`chunk${chunk.x},${chunk.y}`}>
+                    <Path
+                      d={chunk.minor}
+                      fill="none"
+                      stroke={relief}
+                      strokeOpacity={isDark ? 0.14 : 0.2}
+                      strokeWidth={px(0.7)}
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d={chunk.major}
+                      fill="none"
+                      stroke={relief}
+                      strokeOpacity={isDark ? 0.24 : 0.32}
+                      strokeWidth={px(1.2)}
+                      strokeLinejoin="round"
+                    />
+                    <Path d={chunk.water} fill={water} fillOpacity={isDark ? 0.26 : 0.32} />
+                    <Path
+                      d={chunk.rivers}
+                      fill="none"
+                      stroke={water}
+                      strokeOpacity={isDark ? 0.4 : 0.5}
+                      strokeWidth={px(1.6)}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <Path
+                      d={chunk.streams}
+                      fill="none"
+                      stroke={water}
+                      strokeOpacity={isDark ? 0.3 : 0.4}
+                      strokeWidth={px(1)}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </G>
+                ))
+              ) : (
+                <G>
+                  <Path
+                    d={TERRAIN_OVERVIEW.minor}
+                    fill="none"
+                    stroke={relief}
+                    strokeOpacity={isDark ? 0.14 : 0.2}
+                    strokeWidth={px(0.7)}
+                    strokeLinejoin="round"
+                  />
+                  <Path
+                    d={TERRAIN_OVERVIEW.major}
+                    fill="none"
+                    stroke={relief}
+                    strokeOpacity={isDark ? 0.24 : 0.32}
+                    strokeWidth={px(1.2)}
+                    strokeLinejoin="round"
+                  />
+                  <Path d={TERRAIN_OVERVIEW.water} fill={water} fillOpacity={isDark ? 0.26 : 0.32} />
+                  <Path
+                    d={TERRAIN_OVERVIEW.rivers}
+                    fill="none"
+                    stroke={water}
+                    strokeOpacity={isDark ? 0.3 : 0.4}
+                    strokeWidth={px(1.4)}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </G>
+              )}
+            </G>
+          ) : null}
 
           {orderedLines.map(({ line, index }) => {
             const active = activeLines.has(line.code);
@@ -585,7 +743,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
             const color = station.interchange
               ? ink
               : (route && onRoute ? route.colorFor(station.code) : null) ??
-                MAP_LINES.find((l) => l.code === station.lines[0])?.color ??
+                LINE_COLOR.get(station.lines[0]) ??
                 ink;
             const r = (big ? 5.5 : 3.5) * markerScale;
             return (
@@ -712,6 +870,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
             </G>
           ) : null}
         </Svg>
+        </Animated.View>
       ) : null}
     </View>
   );
@@ -721,5 +880,8 @@ const styles = StyleSheet.create({
   fill: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
+  },
+  layer: {
+    overflow: 'visible',
   },
 });
