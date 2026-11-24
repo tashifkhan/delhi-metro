@@ -8,7 +8,9 @@
  * any two shapes morph by plain interpolation: point i of one shape moves to
  * point i of the next, with no matching step and no self-intersection.
  *
- * Pure functions, no React, so they can be tested on their own.
+ * Pure functions, no React, so they can be tested on their own. The ones the
+ * indicator calls each frame are marked as worklets so Reanimated can run them
+ * on the UI thread; outside Reanimated the directive is an inert string.
  */
 
 export const SAMPLES = 96;
@@ -71,6 +73,7 @@ export function morphPath(
   cx: number,
   cy: number,
 ): string {
+  'worklet';
   const points: [number, number][] = [];
   for (let i = 0; i < SAMPLES; i += 1) {
     const r = (from[i] + (to[i] - from[i]) * progress) * radius;
@@ -102,6 +105,7 @@ const SPIN_MS = 4666;
 
 /** Overshooting ease, standing in for Compose's spring on the morph. */
 function springy(t: number): number {
+  'worklet';
   const c1 = 1.4;
   const c3 = c1 + 1;
   return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2;
@@ -114,6 +118,7 @@ export function frameAt(elapsedMs: number): {
   progress: number;
   rotation: number;
 } {
+  'worklet';
   const step = Math.floor(elapsedMs / STEP_MS);
   const within = (elapsedMs % STEP_MS) / STEP_MS;
   const linear = Math.min(1, within / MORPH_SHARE);
