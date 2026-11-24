@@ -361,9 +361,16 @@ export function JourneyResultsScreen() {
           ? 'the NMRC website'
           : plan.source === 'ncrtc'
             ? 'NCRTC'
-            : 'DMRC';
+            : plan.source === 'offline'
+              ? 'the offline pack'
+              : 'DMRC';
 
-  const savedLabel = savedAt
+  const savedLabel = plan.source === 'offline'
+    ? `Planned offline from data downloaded ${new Date(savedAt ?? Date.now()).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+      })}. Times and fares are estimates; check at the station.`
+    : savedAt
     ? `Saved plan from ${new Date(savedAt).toLocaleString(undefined, {
         day: 'numeric',
         month: 'short',

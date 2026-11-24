@@ -18,7 +18,7 @@ import type {
   StationSearchResult,
 } from '../types';
 import { OPERATORS, type MetroNetwork } from '../network';
-import { fromPack } from '../offline/reader';
+import { fromPack, planOffline } from '../offline/reader';
 
 const API_V1 = '/api/v1';
 const API_V2 = '/api/v2';
@@ -335,6 +335,13 @@ export class DmrcService {
       if (cached) {
         return { data: cached.plan, savedAt: cached.savedAt ?? 0, fromCache: true };
       }
+      // Never planned online: work it out from the offline pack, if there is one.
+      const offline = await planOffline(
+        request.fromStationCode,
+        request.toStationCode,
+        request.strategy,
+      ).catch(() => null);
+      if (offline) return { data: offline.plan, savedAt: offline.savedAt, fromCache: true };
       throw error;
     }
   }

@@ -169,7 +169,8 @@ export interface JourneyPlan {
 }
 
 /** Upstream that produced a v2 journey plan. */
-export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'ncrtc' | 'combined';
+/** `offline` is a plan the app worked out from the offline pack. */
+export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'ncrtc' | 'combined' | 'offline';
 
 /** What a traveller does during one leg. */
 export type LegKind = 'metro' | 'transfer';
