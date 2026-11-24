@@ -118,6 +118,9 @@ class Settings(BaseSettings):
         description="Checked-in layouts served when the image hash still matches.",
     )
 
+    offline_export_path: Path = API_ROOT / "data" / "offline-export.zip"
+    offline_export_url: AnyHttpUrl | None = None
+
     station_catalog_path: Path = Field(
         default=API_ROOT / "data" / "stations.normalized.json",
         description="Generated legacy/Sarthi station crosswalk.",

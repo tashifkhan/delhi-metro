@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter
 
-from schemas.notification import PassengerNotification
-from services.nmrc.notification import list_notifications
+from schemas.notification import PassengerNotification, PassengerNotificationDetail
+from services.nmrc.notification import get_notification_detail, list_notifications
 
 router = APIRouter(prefix="/notifications", tags=["nmrc"])
 
@@ -21,3 +21,8 @@ async def list_notifications_route() -> list[PassengerNotification]:
     """Fetch current and archived NMRC press releases."""
 
     return await list_notifications()
+
+
+@router.get("/{page_slug}")
+async def notice_detail(page_slug: str) -> PassengerNotificationDetail:
+    return await get_notification_detail(page_slug)

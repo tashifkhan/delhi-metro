@@ -221,7 +221,7 @@ def parse_press_releases(page: str) -> list[PassengerNotification]:
                 video_url=None,
                 link_to=None,
                 link_to_file=None,
-                link_to_internal_page=None,
+                link_to_internal_page=str(identifier),
                 link_to_outside_url=url,
                 date=date_text,
             )

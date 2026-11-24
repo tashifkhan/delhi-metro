@@ -1,0 +1,18 @@
+{
+  "data": {
+    "namoBharatWebMap": {
+      "web": [
+        {
+          "ext": "png",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/MAP_7_1bb12f521e/MAP_7_1bb12f521e.png"
+        }
+      ],
+      "mobile": [
+        {
+          "ext": "png",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/MAP_7_1bb12f521e/MAP_7_1bb12f521e.png"
+        }
+      ]
+    }
+  }
+}

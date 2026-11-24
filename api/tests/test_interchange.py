@@ -221,5 +221,29 @@ class CrossNetworkPlanTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(transfer.to_station_code, "SFTN")
 
 
+    async def test_fastest_ncrtc_link_is_selected_even_if_one_fails(self) -> None:
+        from core.errors import UpstreamApiError
+
+        async def fake_ride(network, origin, destination, *_args):
+            if destination == "AVIT":
+                raise UpstreamApiError("Fixture route unavailable")
+            minutes = 10 if destination == "NBAA" else 45
+            return _plan(
+                source=JourneySource.NCRTC if network is MetroNetwork.NCRTC else JourneySource.SARTHI,
+                origin=(origin, origin), destination=(destination, destination),
+                total_time=f"{minutes} min", normal_fare=30, stations=2,
+            )
+
+        with patch.object(planner, "_plan_on_network", side_effect=fake_ride) as call:
+            plan = await planner.plan_journey(from_station_code="AIIMS", to_station_code="A12")
+            cached = await planner.plan_journey(from_station_code="AIIMS", to_station_code="A12")
+
+        self.assertEqual(call.await_count, 8)
+        self.assertEqual(plan.legs[1].from_station_code, "NBAA")
+        self.assertEqual(plan.legs[1].to_station_code, "A04")
+        self.assertEqual(plan.total_time, "60 min")
+        self.assertEqual(plan, cached)
+
+
 if __name__ == "__main__":
     unittest.main()

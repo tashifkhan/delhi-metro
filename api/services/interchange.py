@@ -1,49 +1,38 @@
-"""Links between the Delhi Metro and Noida Metro networks.
-
-The two operators run separate networks with separate ticketing, connected at
-one point: Noida Sector 52 on the DMRC Blue Line and Noida Sector 51, the Aqua
-Line terminus, are adjacent stations joined by a foot-overbridge. Interchanging
-means leaving one system, walking across, and buying a second ticket.
-
-This module is the single place that knowledge lives, so `services.planner` can
-stitch a journey across both networks.
-"""
-
-from __future__ import annotations
+"""Walking links between stations on separately ticketed networks."""
 
 from dataclasses import dataclass
 
+from core.catalog import get_catalog
 from schemas.planner import MetroNetwork
 
 
 @dataclass(frozen=True, slots=True)
 class NetworkInterchange:
-    """A walking connection between a DMRC station and an NMRC station."""
-
     dmrc_code: str
     dmrc_name: str
-    nmrc_code: str
-    nmrc_name: str
+    other_network: MetroNetwork
+    other_code: str
+    other_name: str
     walk_minutes: int
-    walk_metres: int
+    walk_metres: int | None
     note: str
 
     def code_for(self, network: MetroNetwork) -> str:
-        """Return the station code on one side of the interchange."""
-
-        return self.dmrc_code if network is MetroNetwork.DMRC else self.nmrc_code
+        return self.dmrc_code if network is MetroNetwork.DMRC else self.other_code
 
     def name_for(self, network: MetroNetwork) -> str:
-        """Return the station name on one side of the interchange."""
+        return self.dmrc_name if network is MetroNetwork.DMRC else self.other_name
 
-        return self.dmrc_name if network is MetroNetwork.DMRC else self.nmrc_name
+    def other_side(self, network: MetroNetwork) -> MetroNetwork:
+        return self.other_network if network is MetroNetwork.DMRC else MetroNetwork.DMRC
 
 
 SECTOR_52_51 = NetworkInterchange(
     dmrc_code="SFTN",
     dmrc_name="SECTOR - 52 NOIDA",
-    nmrc_code="NM01",
-    nmrc_name="Noida Sector 51",
+    other_network=MetroNetwork.NMRC,
+    other_code="NM01",
+    other_name="Noida Sector 51",
     walk_minutes=6,
     walk_metres=300,
     note=(
@@ -53,24 +42,76 @@ SECTOR_52_51 = NetworkInterchange(
     ),
 )
 
-INTERCHANGES: tuple[NetworkInterchange, ...] = (SECTOR_52_51,)
+
+def _ncrtc_link(
+    slug: str,
+    ncrtc_code: str,
+    name: str,
+    minutes: int,
+    note: str,
+) -> NetworkInterchange:
+    station = get_catalog().by_slug[slug]
+    return NetworkInterchange(
+        dmrc_code=station.legacy_code,
+        dmrc_name=station.name,
+        other_network=MetroNetwork.NCRTC,
+        other_code=ncrtc_code,
+        other_name=name,
+        walk_minutes=minutes,
+        walk_metres=None,
+        note=note,
+    )
+
+
+# Initial walk-time estimates. Distances are unknown for the NCRTC connections.
+INTERCHANGES = (
+    SECTOR_52_51,
+    _ncrtc_link(
+        "sarai-kale-khan-nizamuddin",
+        "Z00",
+        "Sarai Kale Khan",
+        10,
+        "Follow signs between Sarai Kale Khan–Nizamuddin and Namo Bharat.",
+    ),
+    _ncrtc_link(
+        "new-ashok-nagar",
+        "A01",
+        "New Ashok Nagar",
+        8,
+        "Follow signs between the Delhi Metro and Namo Bharat stations.",
+    ),
+    _ncrtc_link(
+        "anand-vihar-isbt",
+        "A02",
+        "Anand Vihar",
+        10,
+        "Use the foot-overbridge at Delhi Metro gate 3.",
+    ),
+    _ncrtc_link(
+        "shaheed-sthal-new-bus-adda",
+        "A04",
+        "Ghaziabad",
+        5,
+        "Use Delhi Metro gate 3 to walk between Shaheed Sthal and Ghaziabad.",
+    ),
+)
+
+
+def find_interchanges(
+    from_network: MetroNetwork,
+    to_network: MetroNetwork,
+) -> tuple[NetworkInterchange, ...]:
+    return tuple(
+        link
+        for link in INTERCHANGES
+        if {from_network, to_network} == {MetroNetwork.DMRC, link.other_network}
+    )
 
 
 def find_interchange(
     from_network: MetroNetwork,
     to_network: MetroNetwork,
 ) -> NetworkInterchange | None:
-    """Return the interchange linking two different networks.
+    """Return the first direct link for callers that only need one."""
 
-    Returns `None` for a same-network pair, and for any future network pair
-    with no published walking connection.
-    """
-
-    if from_network is to_network:
-        return None
-
-    networks = {from_network, to_network}
-    for interchange in INTERCHANGES:
-        if networks == {MetroNetwork.DMRC, MetroNetwork.NMRC}:
-            return interchange
-    return None
+    return next(iter(find_interchanges(from_network, to_network)), None)

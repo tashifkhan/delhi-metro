@@ -1,0 +1,696 @@
+[
+  {
+    "hasParking": false,
+    "parkingCharges": {
+      "items": [
+        "Four Wheeler Cars/SUV",
+        "Two Wheelers",
+        "Helmet Charges",
+        "Bicycle Charges"
+      ],
+      "charges": [
+        {
+          "item": "Four Wheeler Cars/SUV",
+          "cycles": [
+            {
+              "cycle": "Day Charges",
+              "periods": [
+                {
+                  "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 0/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 10 min up-to 6 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 50/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 6 Hours up-to 12 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 80/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 12 hours up to 16 hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 90/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 100/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Night Charges",
+              "periods": [
+                {
+                  "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 200/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Monthly Charges",
+              "periods": [
+                {
+                  "period": "Monthly Charges Tariff A (5:00am to 11:00pm)",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 2000/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Monthly Charges for Tariff B: Available 24/7",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 3000/-"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "item": "Two Wheelers",
+          "cycles": [
+            {
+              "cycle": "Day Charges",
+              "periods": [
+                {
+                  "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 0/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 10 min up-to 6 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 20/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 6 Hours up-to 12 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 30/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 12 hours up to 16 hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 40/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 50/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Night Charges",
+              "periods": [
+                {
+                  "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 60/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Monthly Charges",
+              "periods": [
+                {
+                  "period": "Monthly Charges Tariff A (5:00am to 11:00pm)",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 600/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Monthly Charges for Tariff B: Available 24/7",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 1000/-"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "item": "Helmet Charges",
+          "cycles": [
+            {
+              "cycle": "Helmet charges for 0 up to 12 hours (per helmet).",
+              "periods": [
+                {
+                  "period": "Helmet charges for up to 12 hours (per helmet).",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 5/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Helmet charges beyond 12 hours up to 24  hours (per helmet).",
+              "periods": [
+                {
+                  "period": "Helmet charges beyond 12 hours up to 24 (per helmet).",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 10/-"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "item": "Bicycle Charges",
+          "cycles": [
+            {
+              "cycle": "Day Charges",
+              "periods": [
+                {
+                  "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 0/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 10 min up-to 6 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 5/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 6 Hours up-to 12 Hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 5/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 12 hours up to 16 hours",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 10/-"
+                    }
+                  ]
+                },
+                {
+                  "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 10/-"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "cycle": "Night Charges",
+              "periods": [
+                {
+                  "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                  "states": [
+                    {
+                      "state": "Delhi",
+                      "fare": "₹ 20/-"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "escalator": [
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E1",
+        "additionalInfo": "",
+        "location": "",
+        "id": 76
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E3",
+        "additionalInfo": "",
+        "location": "",
+        "id": 91
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Down",
+        "name": "C2-E4",
+        "additionalInfo": "",
+        "location": "",
+        "id": 78
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E5",
+        "additionalInfo": "",
+        "location": "",
+        "id": 77
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E6",
+        "additionalInfo": "",
+        "location": "",
+        "id": 79
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E7",
+        "additionalInfo": "",
+        "location": "",
+        "id": 83
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E8",
+        "additionalInfo": "",
+        "location": "",
+        "id": 84
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E9",
+        "additionalInfo": "",
+        "location": "",
+        "id": 80
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E10",
+        "additionalInfo": "",
+        "location": "",
+        "id": 81
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E11",
+        "additionalInfo": "",
+        "location": "",
+        "id": 82
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E12",
+        "additionalInfo": "",
+        "location": "",
+        "id": 85
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Down",
+        "name": "G1-E1",
+        "additionalInfo": "",
+        "location": "",
+        "id": 87
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Down",
+        "name": "G2-E1",
+        "additionalInfo": "",
+        "location": "",
+        "id": 86
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Down",
+        "name": "G3-E1",
+        "additionalInfo": "",
+        "location": "",
+        "id": 88
+      },
+      {
+        "isOpen": true,
+        "directionIndicator": "Up",
+        "name": "C2-E2",
+        "additionalInfo": "",
+        "location": "",
+        "id": 134
+      }
+    ],
+    "isDivyangFriendly": false,
+    "about": "1. Sarai Kale Khan Station is the first station from Jangpura Station, on Delhi-Ghaziabad-Meerut Namo Bharat coridor. This is an elevated station.\n2. Sarai Kale Khan station is in Delhi is close to Hazrat Nizamuddin Railway station and DMRC's Sarai Kale Khan station.\n3. Sarai Kale Khan station is a divyangjan-friendly station.",
+    "banner": {
+      "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/skk_1_45c38067a3/skk_1_45c38067a3.png"
+    },
+    "media": {
+      "geoLocation": [
+        {
+          "ext": "png",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Saraikale_970d954b62/Saraikale_970d954b62.png"
+        }
+      ],
+      "web": [
+        {
+          "ext": "png",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Sarai_RRTS_Web_1a6be0628e/Sarai_RRTS_Web_1a6be0628e.png"
+        }
+      ]
+    },
+    "trainTiming": [
+      {
+        "id": 82,
+        "time": "06:00",
+        "day": "EVERYDAY",
+        "direction": "First Train towards Modipuram (Meerut)."
+      },
+      {
+        "id": 84,
+        "time": "22:00",
+        "day": "EVERYDAY",
+        "direction": "Last Train towards Modipuram (Meerut)."
+      }
+    ],
+    "platforms": [
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 1,
+        "premiumLounge": "",
+        "isOpen": false,
+        "location": "",
+        "id": 39
+      },
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 2,
+        "premiumLounge": "",
+        "isOpen": true,
+        "location": "",
+        "id": 40
+      },
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 3,
+        "premiumLounge": "",
+        "isOpen": true,
+        "location": "",
+        "id": 41
+      },
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 4,
+        "premiumLounge": "",
+        "isOpen": true,
+        "location": "",
+        "id": 43
+      },
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 5,
+        "premiumLounge": "",
+        "isOpen": false,
+        "location": "",
+        "id": 42
+      },
+      {
+        "isPremiumLoungeAvailable": false,
+        "number": 6,
+        "premiumLounge": "",
+        "isOpen": false,
+        "location": "",
+        "id": 44
+      }
+    ],
+    "gates": [
+      {
+        "number": 1,
+        "hasSpecialAid": false,
+        "isOpen": true,
+        "location": "On road going to Meerut",
+        "id": 31
+      },
+      {
+        "number": 2,
+        "hasSpecialAid": false,
+        "isOpen": true,
+        "location": "On road going to Meerut",
+        "id": 32
+      },
+      {
+        "number": 3,
+        "hasSpecialAid": false,
+        "isOpen": true,
+        "location": "On road going to Meerut",
+        "id": 33
+      },
+      {
+        "number": 4,
+        "hasSpecialAid": false,
+        "isOpen": true,
+        "location": "On road going to Delhi",
+        "id": 35
+      },
+      {
+        "number": 5,
+        "hasSpecialAid": false,
+        "isOpen": false,
+        "location": "On road going to Delhi",
+        "id": 34
+      },
+      {
+        "number": 6,
+        "hasSpecialAid": false,
+        "isOpen": false,
+        "location": "Yet to Open",
+        "id": 44
+      }
+    ],
+    "trainInfo": [
+      {
+        "distance": "5.29km",
+        "displayName": "The next station towards Modipuram (Meerut) end is New Ashok Nagar",
+        "id": 24,
+        "time": "05:30",
+        "direction": "The next station towards Modipuram (Meerut) end is New Ashok Nagar"
+      }
+    ],
+    "stationLayout": [
+      {
+        "layout": {
+          "pdf": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/SKK_PLATFORM_min_4bfad71526/SKK_PLATFORM_min_4bfad71526.pdf",
+          "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Platform_Skk_df0279a7dc/Platform_Skk_df0279a7dc.png"
+        },
+        "level": "Platform",
+        "displayName": "Platform Level",
+        "id": 24
+      },
+      {
+        "layout": {
+          "pdf": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/SKK_CONCOURSE_35f03d2613/SKK_CONCOURSE_35f03d2613.pdf",
+          "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/SKK_Concourse_5d903721e5/SKK_Concourse_5d903721e5.png"
+        },
+        "level": "Concourse",
+        "displayName": "Concourse Level",
+        "id": 25
+      }
+    ],
+    "station": {
+      "id": 12,
+      "code": "Z00",
+      "name": "Sarai Kale Khan",
+      "images": {
+        "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/SKK_f8854d1638/SKK_f8854d1638.png"
+      },
+      "latitude": "28.5882474",
+      "longitude": "77.2556673",
+      "locationCode": 2,
+      "state": "Delhi, India",
+      "order": 0,
+      "isTerminal": true
+    },
+    "lift": [
+      {
+        "isOpen": true,
+        "name": "C2-L2 (Stretcher Lift)",
+        "isStretcherLiftAvailable": true,
+        "location": "",
+        "id": 67
+      },
+      {
+        "isOpen": true,
+        "name": "C2-L4 (Stretcher Lift)",
+        "isStretcherLiftAvailable": true,
+        "location": "",
+        "id": 71
+      },
+      {
+        "isOpen": true,
+        "name": "C2-L6 (Stretcher Lift)",
+        "isStretcherLiftAvailable": true,
+        "location": "",
+        "id": 65
+      },
+      {
+        "isOpen": true,
+        "name": "C2-L8 (Stretcher Lift)",
+        "isStretcherLiftAvailable": true,
+        "location": "",
+        "id": 64
+      },
+      {
+        "isOpen": true,
+        "name": "G1-L1 (Stretcher Lift)",
+        "isStretcherLiftAvailable": true,
+        "location": "",
+        "id": 66
+      },
+      {
+        "isOpen": true,
+        "name": "G2-L1",
+        "isStretcherLiftAvailable": false,
+        "location": "",
+        "id": 63
+      },
+      {
+        "isOpen": true,
+        "name": "G3-L1",
+        "isStretcherLiftAvailable": false,
+        "location": "",
+        "id": 70
+      },
+      {
+        "isOpen": true,
+        "name": "G4-L1",
+        "isStretcherLiftAvailable": false,
+        "location": "",
+        "id": 68
+      },
+      {
+        "isOpen": false,
+        "name": "G5-L1",
+        "isStretcherLiftAvailable": false,
+        "location": "",
+        "id": 69
+      }
+    ],
+    "feederBusRouteInfo": [],
+    "facilities": [
+      {
+        "hasSpecialAid": false,
+        "name": "First Aid",
+        "additionalInfo": "",
+        "icon": {
+          "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+          "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+        },
+        "location": "Station Control Room",
+        "id": 56
+      },
+      {
+        "hasSpecialAid": false,
+        "name": "Washroom",
+        "additionalInfo": "",
+        "icon": {
+          "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+          "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+        },
+        "location": "Inside paid concourse, at Delhi end",
+        "id": 57
+      },
+      {
+        "hasSpecialAid": false,
+        "name": "Drinking Water",
+        "additionalInfo": "",
+        "icon": {
+          "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+          "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+        },
+        "location": "Inside paid concourse, at Delhi end",
+        "id": 58
+      }
+    ],
+    "stationControlRoom": "9289928744",
+    "infoLink": "https://maps.app.goo.gl/mX3dSwXDJrknBR2j6"
+  }
+]

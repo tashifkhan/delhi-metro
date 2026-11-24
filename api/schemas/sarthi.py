@@ -16,6 +16,10 @@ class SarthiFare(BaseModel):
     special: float | None = None
 
 
+class SarthiFarePortion(SarthiFare):
+    airport_line: bool = False
+
+
 class SarthiMetroTime(BaseModel):
     """First and last train clock times for the origin station."""
 
@@ -88,6 +92,7 @@ class SarthiJourney(BaseModel):
     to_code: str
     applicable_fare: float | None = Field(default=None, alias="applicableFare")
     fare: SarthiFare
+    fare_breakup: list[SarthiFarePortion] | None = None
     metro_time: SarthiMetroTime | None = Field(default=None, alias="metroTime")
     from_station_status: SarthiStationStatus | None = None
     to_station_status: SarthiStationStatus | None = None

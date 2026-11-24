@@ -1,0 +1,62 @@
+name: Offline metro export
+
+on:
+  schedule:
+    - cron: "20 21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: offline-metro-export
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: vars.OFFLINE_EXPORT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      EXPORT_CHECKOUT: ${{ runner.temp }}/metro-export-data
+      NEXT_EXPORT: ${{ runner.temp }}/next-offline-export.zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Check out the data branch
+        run: |
+          status=0
+          git ls-remote --exit-code --heads origin refs/heads/offline-export || status=$?
+          case "$status" in
+            0)
+              git fetch origin refs/heads/offline-export
+              git worktree add --detach "$EXPORT_CHECKOUT" FETCH_HEAD
+              ;;
+            2)
+              git worktree add --detach "$EXPORT_CHECKOUT" HEAD
+              git -C "$EXPORT_CHECKOUT" switch --orphan offline-export
+              ;;
+            *) exit "$status" ;;
+          esac
+
+      - name: Build and sample
+        working-directory: api
+        run: |
+          uv sync --frozen
+          uv run python scripts/build_export.py --output "$NEXT_EXPORT"
+          uv run python scripts/sample_routes.py \
+            --bundle "$NEXT_EXPORT" \
+            --previous "$EXPORT_CHECKOUT/offline-export.zip" \
+            --state "$EXPORT_CHECKOUT/route-sample-state.json"
+          DMRC_OFFLINE_EXPORT_PATH="$NEXT_EXPORT" uv run python -m unittest discover -s tests
+
+      - name: Publish the verified export and rotation cursor
+        run: |
+          cp "$NEXT_EXPORT" "$EXPORT_CHECKOUT/offline-export.zip"
+          git -C "$EXPORT_CHECKOUT" add offline-export.zip route-sample-state.json
+          git -C "$EXPORT_CHECKOUT" \
+            -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit -m 'chore(data): refresh the offline metro export'
+          git -C "$EXPORT_CHECKOUT" push origin HEAD:refs/heads/offline-export

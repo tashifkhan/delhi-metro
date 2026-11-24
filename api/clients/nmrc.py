@@ -19,6 +19,7 @@ from urllib.request import Request, urlopen
 
 from core.config import settings
 from core.errors import UpstreamApiError
+from core.upstream_pacing import pace_request
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,6 +95,7 @@ class NmrcWebsiteClient:
         params: dict[str, str] | None = None,
         max_bytes: int | None = None,
     ) -> _Response:
+        await pace_request()
         return await asyncio.to_thread(self._get_sync, path, params, max_bytes)
 
     async def close(self) -> None:

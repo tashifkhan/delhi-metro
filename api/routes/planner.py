@@ -23,8 +23,9 @@ router = APIRouter(prefix="/journeys", tags=["planner"])
         "delhimetrorail.com planner serves any Sarthi failure. The `source` "
         "field reports which upstream answered and `fallback_reason` is set "
         "when the fallback was used.\n\n"
-        "Station codes may be given in either upstream's vocabulary — they are "
-        "translated through the generated station crosswalk."
+        "Accepts Delhi Metro station codes in either DMRC vocabulary and station "
+        "codes from Noida Metro and NCRTC. For trips across networks, the planner "
+        "tries the available walking connections and uses the fastest journey."
     ),
 )
 async def plan_journey_route(
@@ -83,12 +84,7 @@ async def plan_journey_route(
     ] = None,
     network: Annotated[
         MetroNetwork,
-        Query(
-            description=(
-                "Metro network to plan on. NMRC journeys are scraped from the "
-                "public Noida Metro journey planner."
-            )
-        ),
+        Query(description="Fallback network when neither station code resolves."),
     ] = MetroNetwork.DMRC,
 ) -> PlannedJourney:
     """Plan one journey through the preferred available upstream."""

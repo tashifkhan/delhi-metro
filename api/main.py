@@ -20,7 +20,7 @@ from clients.sarthi import sarthi_client
 from core.analytics import AnalyticsMiddleware
 from core.config import settings
 from core.errors import ApiRequestError, UpstreamApiError
-from routes import dmrc, health, nmrc, planner
+from routes import dmrc, health, ncrtc, nmrc, offline_export, planner
 from routes.docs import docs_router
 from schemas.common import ApiErrorResponse
 
@@ -83,12 +83,16 @@ app = FastAPI(
             ),
         },
         {
+            "name": "ncrtc",
+            "description": "Namo Bharat and Meerut Metro passenger data.",
+        },
+        {
             "name": "planner",
-            "description": (
-                "v2 journey planning. DMRC journeys are served by the Delhi "
-                "Metro Sarthi API with the legacy DMRC planner as fallback; "
-                "`network=nmrc` plans on the Noida Metro Aqua Line."
-            ),
+            "description": "Journey planning across Delhi Metro, Noida Metro, and NCRTC.",
+        },
+        {
+            "name": "export",
+            "description": "Metadata and download for the prebuilt offline bundle.",
         },
     ],
 )
@@ -139,6 +143,8 @@ app.include_router(docs_router)
 app.include_router(health.router, prefix=API_V1_PREFIX)
 app.include_router(dmrc.router, prefix=API_V1_PREFIX)
 app.include_router(nmrc.router, prefix=API_V1_PREFIX)
+app.include_router(ncrtc.router, prefix=API_V1_PREFIX)
+app.include_router(offline_export.router, prefix=API_V1_PREFIX)
 
 app.include_router(planner.router, prefix=API_V2_PREFIX)
 

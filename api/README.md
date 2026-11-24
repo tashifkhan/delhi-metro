@@ -1,6 +1,6 @@
 # Delhi NCR Metro FastAPI Wrapper
 
-Typed, modular FastAPI wrapper over DMRC passenger APIs and NMRC public pages.
+Typed, modular FastAPI wrapper over DMRC and NCRTC passenger APIs and NMRC public pages.
 
 ## Stack
 
@@ -19,6 +19,7 @@ routes/
   planner.py   v2 journey planner, spans both networks
   dmrc/        lines, stations, journeys, notifications, maps
   nmrc/        lines, stations, notifications, maps
+  ncrtc/       lines, stations, notices, maps, live trains and parking
 services/
   planner.py   v2 source selection with fallback, spans both networks
   dmrc/        line, station, journey, notification, map_asset, sarthi
@@ -202,3 +203,31 @@ rules, and the current unmatched-station report.
 - If DMRC does not currently publish a PDF for a family (for example, airport-express
   or rapid-metro in the observed build), PDF fields return `null` or file endpoints
   return `404`.
+
+## NCRTC, card fares, and offline data
+
+NCRTC data lives under `/api/v1/ncrtc`. Its two line codes are `RRTS` for
+Namo Bharat and `MRTS` for Meerut Metro. Both use the operator station codes
+such as `Z00`, `A04`, and `AS2`. Use `/stations`, `/stations/search`,
+`/stations/{code}`, and `/lines/{code}/stations` for station data. The
+Namo Bharat line catalog lists every station on the corridor. Journey plans
+apply the provisional express stops and Duhai Depot spur separately.
+
+The live endpoints are `/stations/{code}/next-trains`, `/trains/live`, and
+`/parking`. They return `{data, stale, fetched_at}`. Availability refreshes
+at most once a minute per resource and process. A failed refresh retains the
+last good payload and its original timestamp. Static catalog responses keep
+their shared schemas and include freshness on the NCRTC records. The static
+`/help` feed provides contacts, FAQs, and found items. Station
+lists also expose `X-NCRTC-Stale` and `X-NCRTC-Fetched-At` for empty results.
+
+`/api/v2/journeys/plan` accepts station codes from DMRC, Sarthi, NMRC, and
+NCRTC. It tries the available walking links for a combined trip and keeps
+the fastest result. A combined fare has an operator breakdown. NCRTC fares
+list the available `fare.classes`, with Standard matching `fare.normal`.
+`fare.smart_card` is a derived estimate where the operator publishes a card
+rule. It uses the departure time in Asia/Kolkata and is null for NCRTC.
+
+Notification detail endpoints for all three operators expose `body_blocks`
+alongside the existing `content` HTML. The offline snapshot and its download
+contract are documented in [Offline metro export](../docs/offline-export.md).

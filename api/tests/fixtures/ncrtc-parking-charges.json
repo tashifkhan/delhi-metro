@@ -1,0 +1,400 @@
+{
+  "data": {
+    "items": [
+      "Four Wheeler Cars/SUV",
+      "Two Wheelers",
+      "Helmet Charges",
+      "Bicycle Charges"
+    ],
+    "charges": [
+      {
+        "item": "Four Wheeler Cars/SUV",
+        "cycles": [
+          {
+            "cycle": "Day Charges",
+            "periods": [
+              {
+                "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 0/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 0/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 10 min up-to 6 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 50/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 30/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 6 Hours up-to 12 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 80/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 60/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 12 hours up to 16 hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 90/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 80/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 100/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 100/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Night Charges",
+            "periods": [
+              {
+                "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 200/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 200/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Monthly Charges",
+            "periods": [
+              {
+                "period": "Monthly Charges Tariff A (5:00am to 11:00pm)",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 2000/-"
+                  }
+                ]
+              },
+              {
+                "period": "Monthly Charges for Tariff B: Available 24/7",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 3000/-"
+                  }
+                ]
+              },
+              {
+                "period": "Monthly charges (Just Monthly rates without time limit)",
+                "states": [
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 2000/-"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "item": "Two Wheelers",
+        "cycles": [
+          {
+            "cycle": "Day Charges",
+            "periods": [
+              {
+                "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 0/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 0/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 10 min up-to 6 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 20/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 10/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 6 Hours up-to 12 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 30/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 25/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 12 hours up to 16 hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 40/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 30/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 50/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 30/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Night Charges",
+            "periods": [
+              {
+                "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 60/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 60/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Monthly Charges",
+            "periods": [
+              {
+                "period": "Monthly Charges Tariff A (5:00am to 11:00pm)",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 600/-"
+                  }
+                ]
+              },
+              {
+                "period": "Monthly Charges for Tariff B: Available 24/7",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 1000/-"
+                  }
+                ]
+              },
+              {
+                "period": "Monthly charges (Just Monthly rates without time limit)",
+                "states": [
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 600/-"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "item": "Helmet Charges",
+        "cycles": [
+          {
+            "cycle": "Helmet charges for 0 up to 12 hours (per helmet).",
+            "periods": [
+              {
+                "period": "Helmet charges for up to 12 hours (per helmet).",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 5/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 5/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Helmet charges beyond 12 hours up to 24  hours (per helmet).",
+            "periods": [
+              {
+                "period": "Helmet charges beyond 12 hours up to 24 (per helmet).",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 10/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 10/-"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "item": "Bicycle Charges",
+        "cycles": [
+          {
+            "cycle": "Day Charges",
+            "periods": [
+              {
+                "period": "Up-to 10 minutes only for Pick-up & Drop Off",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 0/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 0/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 10 min up-to 6 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 5/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 5/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 6 Hours up-to 12 Hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 5/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 5/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 12 hours up to 16 hours",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 10/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 10/-"
+                  }
+                ]
+              },
+              {
+                "period": "Beyond 16 hrs. up-to operations of Namo Bharat Station",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 10/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 10/-"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "cycle": "Night Charges",
+            "periods": [
+              {
+                "period": "Night Parking: Available during non-operational hours of Namo Bharat Trains (00:00 Hours - 05:00 Hours)",
+                "states": [
+                  {
+                    "state": "Delhi",
+                    "fare": "₹ 20/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 20/-"
+                  },
+                  {
+                    "state": "Uttar Pradesh",
+                    "fare": "₹ 20/-"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
