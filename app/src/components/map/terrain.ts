@@ -8,15 +8,16 @@
  * - `terrain.json` is bundled and drawn when the city is in view: 10 m
  *   contours, the larger lakes, rivers and canals, and two shaded bands for
  *   the highest ground.
- * - `terrainDetail.json` holds 5 m contours and every lake, pond and stream,
- *   cut into square chunks. It is loaded the first time the map zooms in,
- *   so the app doesn't parse it until it is needed, and the canvas draws only
- *   the chunks on screen.
+ * - The detail layer holds 5 m contours and every lake, pond and stream, cut
+ *   into square chunks. It ships in the offline pack, not the app, and is read
+ *   from there the first time the map zooms in; without a pack the map keeps
+ *   the overview. The canvas draws only the chunks on screen.
  *
  * Kept free of React so it can be tested on its own.
  */
 
 import overview from '../../data/terrain.json';
+import { readPack } from '../../offline/reader';
 
 export interface TerrainOverview {
   /** Contour interval, metres. */
@@ -55,18 +56,32 @@ export const TERRAIN_OVERVIEW = overview as TerrainOverview;
  */
 export const DETAIL_SPAN = 11_000;
 
-let detail: Promise<TerrainDetail> | null = null;
+let detail: Promise<TerrainDetail | null> | null = null;
 
-/** The detailed layer, loaded once and shared. */
-export function loadTerrainDetail(): Promise<TerrainDetail> {
+function isDetail(value: unknown): value is TerrainDetail {
+  const d = value as TerrainDetail;
+  return typeof d === 'object' && d !== null && Array.isArray(d.chunks) && typeof d.chunkSize === 'number';
+}
+
+/**
+ * The detailed layer from the offline pack, loaded once and shared. Null when
+ * no pack is downloaded; that answer isn't kept, so the layer appears on the
+ * next zoom after a download.
+ */
+export function loadTerrainDetail(): Promise<TerrainDetail | null> {
   if (!detail) {
-    const loading = import('../../data/terrainDetail.json').then(
-      (module) => ((module as { default?: unknown }).default ?? module) as TerrainDetail,
-    );
-    // A failed load can be tried again on the next zoom.
-    loading.catch(() => {
-      if (detail === loading) detail = null;
+    const loading = readPack().then((pack) => {
+      const value = pack?.bundle.sections.terrain_detail;
+      return isDetail(value) ? value : null;
     });
+    loading.then(
+      (value) => {
+        if (value === null && detail === loading) detail = null;
+      },
+      () => {
+        if (detail === loading) detail = null;
+      },
+    );
     detail = loading;
   }
   return detail;

@@ -54,8 +54,8 @@ _DMRC_FARES = (
     (32, 54, 44),
     (None, 64, 54),
 )
-_FALLBACK_MAP = REPO_ROOT / "app/assets/delhi-metro-network-map-2026-07.webp"
-_TERRAIN = REPO_ROOT / "app/src/data/terrainDetail.json"
+_FALLBACK_MAP = REPO_ROOT / "api/data/delhi-metro-network-map-2026-07.webp"
+_TERRAIN = REPO_ROOT / "api/data/terrainDetail.json"
 
 
 async def _cached_collect(path: Path, collect):

@@ -17,7 +17,8 @@ Writes two files the network map draws behind the lines:
   city is in view: 10 m contours from a heavily smoothed height grid, lakes
   larger than 0.05 km², rivers and canals, and two shaded bands for the
   highest ground.
-- app/src/data/terrainDetail.json, loaded the first time the map zooms in:
+- api/data/terrainDetail.json, shipped in the offline pack and loaded from it
+  the first time the map zooms in:
   5 m contours and every lake, pond, river and stream, cut into square
   chunks so the canvas only draws what is on screen.
 
@@ -63,7 +64,7 @@ ROOT = Path(__file__).resolve().parents[2]
 NETWORK_MAP = ROOT / "app" / "src" / "data" / "networkMap.json"
 NETWORK_DATA = ROOT / "app" / "src" / "components" / "map" / "networkData.ts"
 OUT_PATH = ROOT / "app" / "src" / "data" / "terrain.json"
-DETAIL_PATH = ROOT / "app" / "src" / "data" / "terrainDetail.json"
+DETAIL_PATH = ROOT / "api" / "data" / "terrainDetail.json"
 CACHE = Path(__file__).resolve().parent / ".tile-cache"
 
 USER_AGENT = "metro-map-terrain-builder"

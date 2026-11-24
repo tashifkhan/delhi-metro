@@ -25,6 +25,13 @@ export function readPack() {
   return loaded;
 }
 
+/** The operator's official map image from the pack, as a data URI. */
+export async function packMapImage(network: string): Promise<{ uri: string; key: string } | null> {
+  const image = (await readPack())?.bundle.sections.official_map?.[network];
+  if (!image?.data_base64) return null;
+  return { uri: `data:${image.content_type};base64,${image.data_base64}`, key: `pack-${network}-${image.sha256}` };
+}
+
 /** Forget the parsed copy after a sync or removal, so the next read sees the new pack. */
 export function invalidatePack(): void {
   loaded = null;

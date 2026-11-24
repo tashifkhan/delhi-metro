@@ -27,7 +27,7 @@ The root is `{schema_version: 1, sections: {…}}`. Each station key is `network
 | `notices` | Array of `{network, notice: PassengerNotification, detail: PassengerNotificationDetail \| null}`. The detail preserves HTML in `content` and provides `body_blocks` for native rendering. The builder takes up to 12 notices per operator. |
 | `map_layout` | Object keyed by network, with saved `MapLayout` responses as values. A missing key means no saved layout. |
 | `official_map` | Object keyed by network with embeddable images. A missing key means the builder could not retrieve an image. |
-| `terrain_detail` | The object from `app/src/data/terrainDetail.json`, with `interval`, `chunkSize`, and `chunks`. Use it with the same terrain decoder as the bundled map. |
+| `terrain_detail` | The object from `api/data/terrainDetail.json`, with `interval`, `chunkSize`, and `chunks`. Use it with the same terrain decoder as the bundled map. |
 | `fares` | Object with the three fare tables below. |
 | `routing_graph` | Object with `patterns`, `changes`, and `walks` arrays. |
 | `overrides` | Array of sampled Sarthi route skeletons, empty before sampling. |

@@ -85,7 +85,10 @@ export interface PackBundle {
       walks: { from: string; to: string; minutes: number; metres: number | null; note: string }[];
     };
     overrides?: PackOverride[];
-    official_map?: Record<string, { content_type: string; data_base64: string; width: number; height: number }>;
+    official_map?: Record<
+      string,
+      { content_type: string; data_base64: string; sha256: string; width: number; height: number }
+    >;
     terrain_detail?: unknown;
   };
 }

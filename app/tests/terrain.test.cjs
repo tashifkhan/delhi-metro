@@ -5,7 +5,8 @@ const vm = require('node:vm');
 const ts = require('typescript');
 
 const overview = JSON.parse(fs.readFileSync('src/data/terrain.json', 'utf8'));
-const detail = JSON.parse(fs.readFileSync('src/data/terrainDetail.json', 'utf8'));
+// The detail layer now ships in the offline pack; its source lives with the API.
+const detail = JSON.parse(fs.readFileSync('../api/data/terrainDetail.json', 'utf8'));
 
 function evaluate(path) {
   const exports = {};
@@ -15,7 +16,7 @@ function evaluate(path) {
   }).outputText;
   const requireFn = (name) => {
     if (name.endsWith('terrain.json')) return overview;
-    if (name.endsWith('terrainDetail.json')) return detail;
+    if (name.endsWith('offline/reader')) return { readPack: async () => ({ bundle: { sections: { terrain_detail: detail } } }) };
     throw new Error(`unexpected require ${name}`);
   };
   vm.runInNewContext(code, { exports, require: requireFn, Promise });
