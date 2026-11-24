@@ -96,6 +96,16 @@ class Lift(BaseModel):
     note: str | None = None
     last_update: str | None = None
 
+    @field_validator("from_platform_code", "to_platform_code", mode="before")
+    @classmethod
+    def _platform_codes(cls, value: object) -> object:
+        if isinstance(value, list):
+            return [item.get("platform_code", item) if isinstance(item, dict) else item
+                    for item in value]
+        if isinstance(value, dict):
+            return value.get("platform_code", value)
+        return value
+
 
 class StationDetail(BaseModel):
     """Detailed station response returned by `/station/{code}`."""

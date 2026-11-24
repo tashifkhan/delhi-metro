@@ -1,9 +1,9 @@
-"""WhatsApp ticket link, mounted once under each network prefix."""
+"""Ticket booking information under each network prefix."""
 
 from fastapi import APIRouter
 
-from schemas.planner import MetroNetwork, WhatsAppBooking
-from services.booking import whatsapp_booking
+from schemas.planner import AppBooking, MetroNetwork, TicketBooking, WhatsAppBooking
+from services.booking import ticket_booking
 
 
 def mount_booking(router: APIRouter, network: MetroNetwork) -> None:
@@ -11,13 +11,9 @@ def mount_booking(router: APIRouter, network: MetroNetwork) -> None:
 
     @router.get(
         "/booking",
-        response_model=WhatsAppBooking,
-        summary=f"WhatsApp ticket link for {network.value.upper()}",
-        description=(
-            "Returns the operator's WhatsApp chatbot link. The URL opens a "
-            "chat with Hi already filled in. It does not carry the stations."
-        ),
+        response_model=AppBooking if network is MetroNetwork.NCRTC else WhatsAppBooking,
+        summary=f"Official ticket booking option for {network.value.upper()}",
         tags=["booking"],
     )
-    async def get_booking() -> WhatsAppBooking:
-        return whatsapp_booking(network)
+    async def get_booking() -> TicketBooking:
+        return ticket_booking(network)

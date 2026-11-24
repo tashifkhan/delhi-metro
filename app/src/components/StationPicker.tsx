@@ -92,7 +92,7 @@ export function StationPicker({ visible, onSelect, onClose, title = 'Choose a st
             <StationSearchBar
               value={searchText}
               onChangeText={setSearchText}
-              placeholder="Search Delhi and Noida stations"
+              placeholder="Search stations"
               autoFocus
             />
           </View>

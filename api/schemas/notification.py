@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from schemas.common import AssetImage
 
@@ -46,6 +48,17 @@ class PassengerNotification(BaseModel):
         return value
 
 
+class NCRTCPassengerNotification(PassengerNotification):
+    stale: bool = False
+    fetched_at: datetime
+
+
+class NotificationBodyBlock(BaseModel):
+    type: Literal["paragraph", "heading", "list_item", "link"]
+    text: str
+    href: str | None = Field(default=None, exclude_if=lambda href: href is None)
+
+
 class PassengerNotificationDetail(BaseModel):
     """Normalized detail page linked from a passenger notification."""
 
@@ -54,6 +67,7 @@ class PassengerNotificationDetail(BaseModel):
     page_id: int | None = None
     title: str
     content: str
+    body_blocks: list[NotificationBodyBlock] = Field(default_factory=list)
     page_slug: str
     cover_photo: AssetImage | None = None
     seo_title: str | None = None

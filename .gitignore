@@ -3,3 +3,6 @@
 .env.*
 !.env.example
 .artifacts/
+
+# Tiles downloaded by api/scripts/build_terrain.py
+api/scripts/.tile-cache/

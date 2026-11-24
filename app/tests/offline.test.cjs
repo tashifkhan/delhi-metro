@@ -16,7 +16,7 @@ function transpile(path) {
  * localStorage. Native uses the same catalog cache over SQLite, so the
  * fallback rules checked here are the rules both platforms share.
  */
-function loadCache() {
+function loadCache({ pack = null } = {}) {
   const storage = new Map();
   const sandbox = {
     window: {
@@ -30,6 +30,16 @@ function loadCache() {
   function require(name) {
     if (name === './webStore') return evaluate('src/storage/webStore.ts');
     if (name === './offlineStore') return evaluate('src/storage/offlineStore.web.ts');
+    // The offline pack, when the test loads one: selectors over plain data.
+    if (name === '../offline/reader') {
+      return {
+        fromPack: async (pick) => {
+          if (!pack) return null;
+          const payload = pick(pack);
+          return payload == null || (Array.isArray(payload) && payload.length === 0) ? null : { payload, savedAt: 7 };
+        },
+      };
+    }
     throw new Error(`unexpected import ${name}`);
   }
 
@@ -155,4 +165,13 @@ test('a failed write does not turn a good response into an error', async () => {
   } finally {
     sandboxWindow.localStorage.setItem = original;
   }
+});
+
+test('a catalog never fetched online comes from the offline pack', async () => {
+  const lines = [{ id: 1, name: 'Aqua Line', network: 'nmrc' }];
+  const { cache } = loadCache({ pack: { lines: (network) => (network === 'nmrc' ? lines : []) } });
+  const offline = async () => { throw new Error('offline'); };
+  const result = await cache.lines('nmrc', offline);
+  same(result, { data: lines, savedAt: 7, fromCache: true });
+  await assert.rejects(cache.lines('dmrc', offline), /offline/, 'an operator missing from the pack still fails');
 });

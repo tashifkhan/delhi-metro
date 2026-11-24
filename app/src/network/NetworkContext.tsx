@@ -13,9 +13,14 @@ import type { MetroNetwork } from '../types';
 
 export type { MetroNetwork };
 
+/** Every operator the app covers, in display order. */
+export const OPERATORS: MetroNetwork[] = ['dmrc', 'nmrc', 'ncrtc'];
+
 export const NETWORK_NAMES: Record<MetroNetwork, string> = {
   dmrc: 'Delhi Metro',
   nmrc: 'Noida Metro',
+  // NCRTC runs both; riders know the services, not the operator.
+  ncrtc: 'Namo Bharat & Meerut',
 };
 
 interface MetroNetworkContextValue {
@@ -51,7 +56,8 @@ export function MetroNetworkProvider({ children }: { children: ReactNode }) {
 
   const toggleNetwork = useCallback(() => {
     setNetworkState((current) => {
-      const next = current === 'dmrc' ? 'nmrc' : 'dmrc';
+      // Cycles through every operator.
+      const next = OPERATORS[(OPERATORS.indexOf(current) + 1) % OPERATORS.length];
       void metroNetworkRepository.save(next);
       return next;
     });

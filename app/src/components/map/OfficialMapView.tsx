@@ -23,6 +23,7 @@ import { useAppTheme } from '../../theme/ThemeContext';
 import { spacing, radius } from '../../theme';
 import { useMetroNetwork } from '../../network';
 import { mapService } from '../../services/mapService';
+import { packMapImage } from '../../offline/reader';
 import {
   notifyMapSaveFailed,
   notifyMapUnavailable,
@@ -32,7 +33,6 @@ import {
 const MIN_SCALE = 1;
 const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
-const DELHI_NETWORK_MAP_SOURCE = require('../../../assets/delhi-metro-network-map-2026-07.webp');
 
 function getDistance(touches: { pageX: number; pageY: number }[]) {
   const dx = touches[0].pageX - touches[1].pageX;
@@ -143,12 +143,20 @@ export function OfficialMapView() {
   useEffect(() => () => { feedbackAllowed.current = false; }, []);
   const haptics = useHaptics();
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const { width } = useWindowDimensions();
   const { network, networkName } = useMetroNetwork();
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, isOfflineCopy, refetch } =
     useMapFamilyPrimaryQuery('network');
+  const [packImage, setPackImage] = useState<{ uri: string; key: string } | null>(null);
+  useEffect(() => {
+    let live = true;
+    void packMapImage(network).then((image) => live && setPackImage(image));
+    return () => {
+      live = false;
+    };
+  }, [network]);
   const [downloading, setDownloading] = useState(false);
   const downloadInFlight = useRef(false);
   const [canvasSize, setCanvasSize] = useState({ width, height: width });
@@ -300,29 +308,28 @@ export function OfficialMapView() {
     }
   };
 
-  // The Delhi map ships inside the app, so a failed metadata request must not
-  // hide it. Noida has no bundled copy and does need the response.
-  if (isLoading && network !== 'dmrc') return <LoadingState message="Loading map..." />;
-  if (isError && !data && network !== 'dmrc') {
-    return <ErrorState message="Could not load map data" onRetry={refetch} />;
+  // With the offline pack downloaded, its copy of the map is shown and a failed
+  // metadata request doesn't matter. Without it, the map comes from the API.
+  if (isLoading && !packImage) return <LoadingState message="Loading map..." />;
+  if (isError && !data && !packImage) {
+    return (
+      <ErrorState
+        message="Could not load the map. Download the offline pack in Settings to keep it on this phone."
+        onRetry={refetch}
+      />
+    );
   }
 
   const remoteImageUrl =
     network === 'nmrc' && data?.image
       ? mapService.getProxyFileUrl('network', 'image', network)
       : data?.image?.url;
-  const imageSource =
-    network === 'dmrc'
-      ? DELHI_NETWORK_MAP_SOURCE
-      : remoteImageUrl
-        ? { uri: remoteImageUrl }
-        : null;
-  const imageSourceKey =
-    network === 'dmrc' ? 'delhi-network-map-2026-07' : remoteImageUrl;
+  const imageSource = packImage ? { uri: packImage.uri } : remoteImageUrl ? { uri: remoteImageUrl } : null;
+  const imageSourceKey = packImage ? packImage.key : remoteImageUrl;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {network === 'nmrc' && isOfflineCopy ? (
+      {isOfflineCopy && !packImage ? (
         <OfflineNote inset message="Saved map. It opens from the copy stored on this device." />
       ) : null}
       {/* Canvas — fills all space between header and tab bar */}
@@ -354,7 +361,7 @@ export function OfficialMapView() {
 
       {/* Zoom controls — sibling of canvas, outside PanResponder */}
       <Surface
-        style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'] }]}
+        style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'], borderRadius: look.radius.icon }]}
         elevation={3}
       >
         <Touchable
@@ -390,7 +397,7 @@ export function OfficialMapView() {
         disabled={downloading}
         onPress={handleDownloadMap}
         accessibilityLabel={`Save the ${networkName} network map to the device`}
-        style={[styles.fab, { bottom: insets.bottom + spacing['2xl'] }]}
+        style={[styles.fab, { bottom: insets.bottom + spacing['2xl'], borderRadius: look.radius.icon }]}
       />
     </View>
   );
@@ -424,7 +431,6 @@ const styles = StyleSheet.create({
   zoomControls: {
     position: 'absolute',
     right: spacing.base,
-    borderRadius: radius.icon,
     overflow: 'hidden',
   },
   zoomBtn: {
@@ -440,6 +446,5 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     left: spacing.base,
-    borderRadius: radius.icon,
   },
 });

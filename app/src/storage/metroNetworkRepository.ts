@@ -15,7 +15,7 @@ export const metroNetworkRepository = {
         'SELECT value FROM app_settings WHERE key = ? LIMIT 1',
         [SETTING_KEY],
       );
-      return row?.value === 'nmrc' ? 'nmrc' : 'dmrc';
+      return row?.value === 'nmrc' || row?.value === 'ncrtc' ? row.value : 'dmrc';
     } catch {
       return 'dmrc';
     }

@@ -32,7 +32,7 @@ const CHIP_HEIGHT = 36;
  */
 export function StationMap({ code, height = 240, onOpenMap, onSelectStation, style }: Props) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const { geometry } = useLiveGeometry();
   const [cardWidth, setCardWidth] = useState(0);
 
@@ -62,7 +62,7 @@ export function StationMap({ code, height = 240, onOpenMap, onSelectStation, sty
   return (
     <NetworkGeometryProvider value={geometry}>
       <View
-        style={[styles.card, { height, backgroundColor: fills.containerLow }, style]}
+        style={[styles.card, { height, borderRadius: look.radius.hero, backgroundColor: fills.containerLow }, style]}
         onLayout={(e: LayoutChangeEvent) => setCardWidth(e.nativeEvent.layout.width)}
         accessibilityLabel={`${station.name} on the network map`}
       >
@@ -75,7 +75,7 @@ export function StationMap({ code, height = 240, onOpenMap, onSelectStation, sty
           }}
           fit={fit}
           wheelZoom="modifier"
-          grid={false}
+          terrain={false}
           labelObstacles={obstacles}
         />
         {onOpenMap ? (
@@ -102,7 +102,6 @@ export function StationMap({ code, height = 240, onOpenMap, onSelectStation, sty
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 28,
     overflow: 'hidden',
   },
   actions: {

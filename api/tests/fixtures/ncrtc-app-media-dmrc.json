@@ -1,0 +1,18 @@
+{
+  "data": {
+    "dmrcNcrtcMap": {
+      "web": [
+        {
+          "ext": "svg",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/MAP_DMRC_and_NCRTC_Corridor_May_2026_b143fab2e8/MAP_DMRC_and_NCRTC_Corridor_May_2026_b143fab2e8.svg"
+        }
+      ],
+      "mobile": [
+        {
+          "ext": "pdf",
+          "url": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/MAP_DMRC_and_NCRTC_Corridor_May_2026_66cebd586c/MAP_DMRC_and_NCRTC_Corridor_May_2026_66cebd586c.pdf"
+        }
+      ]
+    }
+  }
+}

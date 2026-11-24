@@ -182,7 +182,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   card: {
-    borderRadius: radius.hero,
     overflow: 'hidden',
   },
   row: {

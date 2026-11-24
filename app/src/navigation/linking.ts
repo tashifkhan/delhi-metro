@@ -8,7 +8,7 @@ import type { RootTabParamList } from './types';
  * back button works. Native ignores the https prefixes and behaves as before.
  *
  * Detail paths stay unique per tab (`/station/...` under Plan,
- * `/search/station/...` under Search) so an incoming URL resolves to exactly
+ * `/lines/station/...` under Network) so an incoming URL resolves to exactly
  * one stack. Everything not in the path segments (station names, codes left
  * over, departure time) rides along as query params automatically.
  */
@@ -26,29 +26,33 @@ export const navigationLinking: LinkingOptions<RootTabParamList> = {
           Home: '',
           JourneyResults: 'journey/:fromCode/:toCode',
           StationDetail: 'station/:stationCode',
-          Appearance: 'appearance',
+          Settings: 'settings',
+          OfflineData: 'settings/offline',
+          Appearance: 'settings/appearance',
           About: 'about',
-        },
-      },
-      SearchTab: {
-        path: 'search',
-        screens: {
-          StationSearch: '',
-          StationDetail: 'station/:stationCode',
-        },
-      },
-      LinesTab: {
-        path: 'lines',
-        screens: {
-          MetroLines: '',
-          LineStations: ':lineCode',
-          StationDetail: 'station/:stationCode',
         },
       },
       MapTab: {
         path: 'map',
         screens: {
           MetroMap: '',
+          StationDetail: 'station/:stationCode',
+        },
+      },
+      NetworkTab: {
+        // Kept at /lines so links shared before the Lines and Search tabs merged still open.
+        path: 'lines',
+        screens: {
+          Network: '',
+          LineStations: ':lineCode',
+          StationDetail: 'station/:stationCode',
+        },
+      },
+      SavedTab: {
+        path: 'saved',
+        screens: {
+          Saved: '',
+          JourneyResults: 'journey/:fromCode/:toCode',
           StationDetail: 'station/:stationCode',
         },
       },

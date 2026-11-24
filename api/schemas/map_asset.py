@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 
 from pydantic import AnyHttpUrl, BaseModel, Field
@@ -39,6 +40,8 @@ class MapAsset(BaseModel):
     display_name: str = Field(..., description="Human-readable asset title.")
     source_path: str = Field(..., description="Original static path in DMRC build.")
     url: AnyHttpUrl = Field(..., description="Fully-qualified static file URL.")
+    stale: bool = False
+    fetched_at: datetime | None = None
     content_type: str | None = Field(
         default=None,
         description="HTTP content-type when known.",

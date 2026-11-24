@@ -118,7 +118,14 @@ export function buildRouteOverlay(
       .filter((s): s is MapStation => Boolean(s));
     if (points.length === 0) return;
     if (points.length >= 2) segments.push({ points: points.map(({ x, y }) => ({ x, y })), color });
+    const stopCodes = leg.network === 'ncrtc'
+      ? new Set(leg.stops.map(({ name }) => findStation(geo, null, name)?.code).filter(Boolean))
+      : null;
     for (const s of points) {
+      // The express train follows the local track through stations it skips.
+      if (stopCodes?.size && s !== points[0] && s !== points[points.length - 1] && !stopCodes.has(s.code)) {
+        continue;
+      }
       stationCodes.add(s.code);
       if (!stationColor.has(s.code)) stationColor.set(s.code, color);
     }

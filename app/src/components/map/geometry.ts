@@ -79,6 +79,8 @@ export interface NetworkLayoutRule {
  * lines to re-draw here and enabling the flag on the server.
  */
 export const LAYOUT_REGISTRY: Record<MetroNetwork, NetworkLayoutRule> = {
+  // NCRTC stations come with real coordinates; nothing to re-draw.
+  ncrtc: { enabled: false, lines: [] },
   nmrc: {
     enabled: true,
     // The same stations `api/scripts/build_network_map.py` pins by hand

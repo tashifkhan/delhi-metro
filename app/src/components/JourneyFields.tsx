@@ -36,6 +36,8 @@ const SWAP_SIZE = 52;
  * object before and after it is planned.
  */
 export function JourneyFields({ from, to, onSwap, swapDisabled, swapLabel }: Props) {
+  const { look } = useAppTheme();
+  const swapRadius = look.style === 'material' ? shape.lg : look.radius.card;
   const theme = useTheme();
 
   // Half a turn per tap, accumulating, so the icon keeps turning the same way
@@ -61,12 +63,12 @@ export function JourneyFields({ from, to, onSwap, swapDisabled, swapLabel }: Pro
 
       <View style={styles.swapAnchor} pointerEvents="box-none">
         <Touchable
-          radius={shape.lg}
+          radius={swapRadius}
           haptic="press"
           disabled={swapDisabled}
           onPress={handleSwap}
           accessibilityLabel={swapLabel ?? 'Swap departure and destination'}
-          style={[styles.swap, { backgroundColor: theme.colors.primaryContainer }]}
+          style={[styles.swap, { backgroundColor: theme.colors.primaryContainer, borderRadius: swapRadius }]}
         >
           <View style={styles.swapInner}>
             <Animated.View
@@ -96,7 +98,8 @@ export function JourneyFields({ from, to, onSwap, swapDisabled, swapLabel }: Pro
 
 function Field({ kind, endpoint }: { kind: 'from' | 'to'; endpoint: JourneyEndpoint }) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
+  const fieldRadius = look.style === 'material' ? FIELD_RADIUS : look.radius.field;
   const isFrom = kind === 'from';
 
   // The whole card is the press target, including the strip under the swap
@@ -104,10 +107,10 @@ function Field({ kind, endpoint }: { kind: 'from' | 'to'; endpoint: JourneyEndpo
   // on its inner ripple and wraps it in a clipping view that sizes to its
   // content, so the card's width has to come from a stretching parent.
   return (
-    <View style={[styles.field, { backgroundColor: fills.containerLowest }]}>
+    <View style={[styles.field, { backgroundColor: fills.containerLowest, borderRadius: fieldRadius }]}>
       <View style={styles.fieldPress}>
         <Touchable
-          radius={FIELD_RADIUS}
+          radius={fieldRadius}
           onPress={endpoint.onPress}
           accessibilityLabel={endpoint.accessibilityLabel}
           accessibilityHint={endpoint.accessibilityHint}
@@ -154,7 +157,6 @@ const styles = StyleSheet.create({
   field: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: FIELD_RADIUS,
     overflow: 'hidden',
   },
   fieldPress: {
@@ -207,7 +209,6 @@ const styles = StyleSheet.create({
   swap: {
     width: SWAP_SIZE,
     height: SWAP_SIZE,
-    borderRadius: shape.lg,
   },
   swapInner: {
     width: SWAP_SIZE,

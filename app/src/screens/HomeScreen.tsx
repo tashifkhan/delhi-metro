@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation, useRoute, type NavigationProp, type RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,7 +7,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Text, useTheme } from 'react-native-paper';
 import {
   usePopularRoutesQuery,
-  useNotificationsQuery,
   useStationPicker,
   useMetroLinesQuery,
   useStationSearchQuery,
@@ -15,95 +14,82 @@ import {
 import { useIsDesktop } from '../hooks/useIsDesktop';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
-import { NotificationCard } from '../components/NotificationCard';
 import { Touchable } from '../components/Touchable';
-import { Reveal } from '../components/Reveal';
+import { Card } from '../components/Card';
 import { JourneyFields } from '../components/JourneyFields';
-import { OfflineNote } from '../components/OfflineNote';
 import { GetTheApp } from '../components/web/GetTheApp';
+import { useSaved } from '../saved/SavedContext';
+import { PlaceIcon } from '../saved/PlaceIcon';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
-import { spacing, radius, shape, emphasis, overline, onColor } from '../theme';
-import type { MetroLine } from '../types';
+import { spacing, radius, emphasis } from '../theme';
 import { stationName } from '../utils/format';
+import { isLineNormal } from '../utils/lineStatus';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
 const TIME_OPTIONS = [
-  { label: 'Now', value: 0 },
-  { label: '+15 min', value: 15 },
-  { label: '+30 min', value: 30 },
-  { label: '+1 h', value: 60 },
+  { label: 'Leave now', value: 0 },
+  { label: '15 min', value: 15 },
+  { label: '30 min', value: 30 },
+  { label: '1 h', value: 60 },
 ] as const;
 
-function todayLabel(): string {
-  return new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'short',
-  });
-}
+/** Trips shown on Plan before "All saved" takes over. */
+const SAVED_TRIPS_ON_HOME = 3;
 
-function isNormal(status: string): boolean {
-  return status.trim().toLowerCase() === 'normal service';
-}
-
-/** "Red Line" to "Red". The strip is narrow and every card is a line. */
-function shortLineName(line: MetroLine): string {
-  return (line.line_color || line.name).replace(/\s+line$/i, '').trim();
-}
-
+/**
+ * Plan: pick two stations and go.
+ *
+ * Kept deliberately short. Under the planner sit only things that start a
+ * trip in one tap: saved places, saved trips and the trips planned most. Line
+ * status and alerts live in their own tabs; the only thing that comes back here
+ * is a one-line banner when a line is disrupted.
+ */
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  const { semantic, fills } = useAppTheme();
+  const { semantic, fills, look } = useAppTheme();
   const isDesktop = useIsDesktop();
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
-  const notifications = useNotificationsQuery();
   const linesQuery = useMetroLinesQuery();
-  const savedAlerts = notifications.isOfflineCopy;
-  const savedLines = linesQuery.isOfflineCopy;
-  let savedNote = 'Line status is from your last visit.';
-  if (savedAlerts && savedLines) {
-    savedNote =
-      'You are offline. Search and saved journeys still work. Alerts and line status are from your last visit.';
-  } else if (savedAlerts) {
-    savedNote = 'Alerts are from your last visit.';
-  }
+  const saved = useSaved();
   const { data: allStations } = useStationSearchQuery('');
-  // Disrupted lines first, so a problem is visible without scrolling the strip.
-  const lineStrip: MetroLine[] = useMemo(() => {
-    const all = (linesQuery.data ?? []).filter((l) => l.show_in_frontend !== false);
-    return [...all.filter((l) => !isNormal(l.status)), ...all.filter((l) => isNormal(l.status))];
-  }, [linesQuery.data]);
   const [departureOffsetMinutes, setDepartureOffsetMinutes] = useState(0);
+  const tabs = navigation.getParent<NavigationProp<RootTabParamList>>();
 
-  // "Route from here" on a station or the map lands here with the From field
-  // already filled. Clear the param so a later visit doesn't refill it.
+  const disrupted = useMemo(
+    () =>
+      (linesQuery.data ?? []).filter((l) => l.show_in_frontend !== false && !isLineNormal(l.status)),
+    [linesQuery.data],
+  );
+
+  // "Route from here" on a station, or a saved place, lands here with From
+  // filled. A place also opens the To picker, since To is the only thing left.
+  // Clear the params so a later visit doesn't refill them.
   const route = useRoute<RouteProp<HomeStackParamList, 'Home'>>();
   const presetFrom = route.params?.presetFrom;
+  const openTo = route.params?.openTo;
   const setFrom = fromPicker.setStation;
+  const openToPicker = toPicker.open;
   useEffect(() => {
     if (!presetFrom) return;
     setFrom(presetFrom);
-    navigation.setParams({ presetFrom: undefined });
-  }, [presetFrom, setFrom, navigation]);
+    if (openTo) openToPicker();
+    navigation.setParams({ presetFrom: undefined, openTo: undefined });
+  }, [presetFrom, openTo, setFrom, openToPicker, navigation]);
 
   const canSearch = Boolean(fromPicker.station && toPicker.station);
 
-  // Popular routes are stored as bare codes; resolve them to names so the
-  // list reads as places rather than as identifiers.
+  // Frequent trips are stored as bare codes; resolve them to names.
   const stationNameMap = useMemo(() => {
     const map = new Map<string, string>();
-    for (const s of allStations ?? []) {
-      map.set(s.station_code.trim().toUpperCase(), s.station_name);
-    }
+    for (const s of allStations ?? []) map.set(s.station_code.trim().toUpperCase(), s.station_name);
     return map;
   }, [allStations]);
-
   const nameForCode = useCallback(
     (code: string) => stationNameMap.get(code.trim().toUpperCase()) ?? code,
     [stationNameMap],
@@ -111,22 +97,24 @@ export function HomeScreen() {
 
   const departureTime = useMemo(() => {
     if (departureOffsetMinutes === 0) return undefined;
-
     const future = new Date(Date.now() + departureOffsetMinutes * 60_000);
     const pad = (value: number) => String(value).padStart(2, '0');
     const ms = String(future.getMilliseconds()).padStart(3, '0');
     return `${future.getFullYear()}-${pad(future.getMonth() + 1)}-${pad(future.getDate())}T${pad(future.getHours())}:${pad(future.getMinutes())}:${pad(future.getSeconds())}.${ms}`;
   }, [departureOffsetMinutes]);
 
+  const openJourney = (fromCode: string, toCode: string, fromName: string, toName: string, journeyTime?: string) =>
+    navigation.navigate('JourneyResults', { fromCode, toCode, fromName, toName, journeyTime });
+
   const handleFindRoute = () => {
     if (!fromPicker.station || !toPicker.station) return;
-    navigation.navigate('JourneyResults', {
-      fromCode: fromPicker.station.code,
-      toCode: toPicker.station.code,
-      fromName: fromPicker.station.name,
-      toName: toPicker.station.name,
-      journeyTime: departureTime,
-    });
+    openJourney(
+      fromPicker.station.code,
+      toPicker.station.code,
+      fromPicker.station.name,
+      toPicker.station.name,
+      departureTime,
+    );
   };
 
   const handleSwap = useCallback(() => {
@@ -135,24 +123,24 @@ export function HomeScreen() {
     toPicker.setStation(temp);
   }, [fromPicker, toPicker]);
 
-  const handlePopularRoute = (fromCode: string, toCode: string) => {
-    navigation.navigate('JourneyResults', {
-      fromCode,
-      toCode,
-      fromName: nameForCode(fromCode),
-      toName: nameForCode(toCode),
-    });
-  };
-
-  const tabs = navigation.getParent<NavigationProp<RootTabParamList>>();
-  const goToAlerts = () => tabs?.navigate('AlertsTab', { screen: 'Notifications' } as never);
-  const goToLines = () => tabs?.navigate('LinesTab', { screen: 'MetroLines' });
-
-  const hasFrequent = (popularRoutes.data?.length ?? 0) > 0;
-  const hasAlerts = (notifications.data?.length ?? 0) > 0;
+  const savedTripKeys = new Set(saved.trips.map((t) => `${t.from.code}>${t.to.code}`));
+  // Frequent trips that are already saved would show twice.
+  const frequent = (popularRoutes.data ?? []).filter(
+    (r) => !savedTripKeys.has(`${r.fromStationCode}>${r.toStationCode}`),
+  );
 
   const planner = (
-    <View style={[styles.planner, { backgroundColor: fills.container }]}>
+    <View
+      style={[
+        styles.planner,
+        {
+          backgroundColor: fills.container,
+          borderRadius: look.style === 'material' ? 32 : look.radius.hero,
+          borderColor: fills.hairline,
+          borderWidth: look.edge === 'hairline' ? StyleSheet.hairlineWidth : 0,
+        },
+      ]}
+    >
       <JourneyFields
         from={{
           name: fromPicker.station ? stationName(fromPicker.station.name) : null,
@@ -176,23 +164,19 @@ export function HomeScreen() {
       />
 
       <View style={styles.plannerControls}>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.timeChips}
-        >
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeChips}>
           {TIME_OPTIONS.map((option) => {
             const isActive = departureOffsetMinutes === option.value;
+            const fg = isActive ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant;
             return (
               <Touchable
                 key={option.label}
-                radius={shape.sm}
+                radius={radius.badge}
                 haptic="select"
                 onPress={() => setDepartureOffsetMinutes(option.value)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isActive }}
-                accessibilityLabel={`Leave ${option.label}`}
+                accessibilityLabel={option.value === 0 ? 'Leave now' : `Leave in ${option.label}`}
                 style={[
                   styles.timeChip,
                   isActive
@@ -203,21 +187,11 @@ export function HomeScreen() {
                 <View style={styles.timeChipInner}>
                   <Ionicons
                     name={isActive ? 'checkmark' : option.value === 0 ? 'time-outline' : 'add'}
-                    size={16}
-                    color={isActive ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant}
+                    size={15}
+                    color={fg}
                   />
-                  <Text
-                    variant="labelLarge"
-                    style={[
-                      emphasis.medium,
-                      {
-                        color: isActive
-                          ? theme.colors.onSecondaryContainer
-                          : theme.colors.onSurfaceVariant,
-                      },
-                    ]}
-                  >
-                    {option.value === 0 ? 'Leave now' : option.label.replace('+', '')}
+                  <Text variant="labelLarge" style={[emphasis.medium, { color: fg }]}>
+                    {option.label}
                   </Text>
                 </View>
               </Touchable>
@@ -230,14 +204,13 @@ export function HomeScreen() {
           haptic="press"
           onPress={handleFindRoute}
           disabled={!canSearch}
-          accessibilityLabel="Find route"
+          accessibilityLabel="Show route"
           accessibilityHint={canSearch ? undefined : 'Pick both stations first'}
-          style={{ backgroundColor: theme.colors.primary, opacity: canSearch ? 1 : 0.5 }}
+          style={{ backgroundColor: theme.colors.primary, opacity: canSearch ? 1 : 0.45 }}
         >
           <View style={styles.findButton}>
-            <Ionicons name="search" size={20} color={theme.colors.onPrimary} />
             <Text variant="titleMedium" style={[emphasis.strong, { color: theme.colors.onPrimary }]}>
-              Find route
+              Show route
             </Text>
           </View>
         </Touchable>
@@ -245,219 +218,191 @@ export function HomeScreen() {
     </View>
   );
 
-  const lineStatus =
-    lineStrip.length === 0 ? null : (
-      <View style={styles.section}>
-        <SectionHeader title="Lines right now" action="All lines" onAction={goToLines} />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.lineStrip}
-          style={styles.bleed}
-        >
-          {lineStrip.map((line) => {
-            const ok = isNormal(line.status);
-            const short = shortLineName(line);
-            return (
-              <Touchable
-                key={`${line.network ?? 'dmrc'}-${line.id}`}
-                radius={20}
-                onPress={() =>
-                  tabs?.navigate('LinesTab', {
-                    screen: 'LineStations',
-                    params: {
-                      lineCode: line.line_code,
-                      lineName: line.name,
-                      lineColor: line.primary_color_code,
-                    },
-                  })
-                }
-                accessibilityLabel={`${line.name}, ${ok ? 'running normally' : line.status}`}
-                style={{ backgroundColor: fills.containerLow }}
-              >
-                <View style={styles.lineCard}>
-                  <View style={[styles.lineSquare, { backgroundColor: line.primary_color_code }]}>
-                    <Text
-                      variant="labelMedium"
-                      style={[styles.lineSquareText, { color: onColor(line.primary_color_code) }]}
-                    >
-                      {short.charAt(0).toUpperCase()}
-                    </Text>
-                  </View>
-                  <View style={styles.lineCardText}>
-                    <Text
-                      variant="labelLarge"
-                      numberOfLines={1}
-                      style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                    >
-                      {short}
-                    </Text>
-                    <View style={styles.lineStatusRow}>
-                      <View
-                        style={[
-                          styles.statusDot,
-                          { backgroundColor: ok ? semantic.success : semantic.warning },
-                        ]}
-                      />
-                      <Text
-                        variant="labelSmall"
-                        numberOfLines={1}
-                        style={[styles.lineStatusText, { color: theme.colors.onSurfaceVariant }]}
-                      >
-                        {ok ? 'Running normally' : line.status}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              </Touchable>
-            );
-          })}
-        </ScrollView>
-      </View>
+  const disruptionBanner =
+    disrupted.length === 0 ? null : (
+      <Touchable
+        radius={radius.card}
+        onPress={() => tabs?.navigate('NetworkTab', { screen: 'Network' })}
+        accessibilityLabel={`${disrupted.length === 1 ? disrupted[0].name : `${disrupted.length} lines`} disrupted. Open the network`}
+        style={{ backgroundColor: semantic.warningContainer }}
+      >
+        <View style={styles.banner}>
+          <Ionicons name="warning-outline" size={18} color={semantic.onWarningContainer} />
+          <Text variant="bodyMedium" numberOfLines={2} style={[styles.bannerText, { color: semantic.onWarningContainer }]}>
+            {disrupted.length === 1
+              ? `${disrupted[0].name}: ${disrupted[0].status}`
+              : `${disrupted.length} lines have disruptions`}
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={semantic.onWarningContainer} />
+        </View>
+      </Touchable>
     );
 
-  const frequent = !hasFrequent ? null : (
+  const places = (
     <View style={styles.section}>
-      <SectionHeader title="Frequent" />
-      {/* Separate tiles with small gaps and only the outer corners fully
-          rounded, so the group reads as one block. */}
-      <View style={styles.groupList}>
-        {popularRoutes.data!.map((route, index, all) => (
+      <SectionHeader
+        title="Places"
+        action={saved.places.length ? 'Edit' : undefined}
+        onAction={() => tabs?.navigate('SavedTab', { screen: 'Saved' })}
+      />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.placeRow} style={styles.bleed}>
+        {saved.places.map((place) => (
           <Touchable
-            key={route.routeKey}
-            radius={shape.sm}
+            key={place.label}
+            radius={radius.pill}
             haptic="press"
-            onPress={() => handlePopularRoute(route.fromStationCode, route.toStationCode)}
-            accessibilityLabel={`Plan ${nameForCode(route.fromStationCode)} to ${nameForCode(route.toStationCode)}`}
-            style={[
-              styles.groupTile,
-              { backgroundColor: fills.containerLow },
-              index === 0 && styles.groupTileFirst,
-              index === all.length - 1 && styles.groupTileLast,
-            ]}
+            onPress={() => {
+              fromPicker.setStation({ code: place.station.code, name: place.station.name });
+              toPicker.open();
+            }}
+            accessibilityLabel={`From ${place.label}, ${place.station.name}`}
+            style={[styles.placeChip, { borderColor: theme.colors.outlineVariant }]}
           >
-            <View style={styles.routeRow}>
-              <View style={styles.miniRail}>
-                <View style={[styles.miniRing, { borderColor: theme.colors.primary }]} />
-                <View style={[styles.miniLine, { backgroundColor: theme.colors.primary }]} />
-                <View style={[styles.miniDot, { backgroundColor: theme.colors.primary }]} />
-              </View>
-              <View style={styles.routeNames}>
-                <Text
-                  variant="bodyLarge"
-                  numberOfLines={1}
-                  style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                >
-                  {stationName(nameForCode(route.fromStationCode))}
-                </Text>
-                <Text
-                  variant="bodyLarge"
-                  numberOfLines={1}
-                  style={[emphasis.strong, { color: theme.colors.onSurface }]}
-                >
-                  {stationName(nameForCode(route.toStationCode))}
-                </Text>
-              </View>
-              <View style={styles.routeMeta}>
-                <Text variant="titleSmall" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
-                  {route.hitCount}×
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                  planned
-                </Text>
-              </View>
+            <View style={styles.placeChipInner}>
+              <PlaceIcon label={place.label} size={28} />
+              <Text variant="labelLarge" style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+                {place.label}
+              </Text>
             </View>
           </Touchable>
         ))}
-      </View>
+        <Touchable
+          radius={radius.pill}
+          onPress={() => tabs?.navigate('SavedTab', { screen: 'Saved' })}
+          accessibilityLabel="Add a place"
+          style={[styles.placeChip, { borderColor: theme.colors.outlineVariant, borderStyle: 'dashed' }]}
+        >
+          <View style={[styles.placeChipInner, styles.addChip]}>
+            <Ionicons name="add" size={18} color={theme.colors.onSurfaceVariant} />
+            <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>
+              {saved.places.length ? 'Add' : 'Add Home, Work…'}
+            </Text>
+          </View>
+        </Touchable>
+      </ScrollView>
     </View>
   );
 
-  const alerts = !hasAlerts ? null : (
-    <View style={styles.section}>
-      <SectionHeader title="Alerts" action="See all" onAction={goToAlerts} />
-      <View style={styles.notifList}>
-        {notifications.data!.slice(0, 3).map((notif) => (
-          <NotificationCard key={notif.id} notification={notif} />
-        ))}
-      </View>
+  const tripRow = (
+    key: string,
+    fromName: string,
+    toName: string,
+    onPress: () => void,
+    trailing: ReactNode,
+    index: number,
+  ) => (
+    <View key={key}>
+      {index > 0 ? <View style={[styles.divider, { backgroundColor: fills.hairline }]} /> : null}
+      <Touchable radius={0} haptic="press" onPress={onPress} accessibilityLabel={`Plan ${fromName} to ${toName}`}>
+        <View style={styles.routeRow}>
+          <View style={styles.miniRail} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <View style={[styles.miniRing, { borderColor: theme.colors.primary }]} />
+            <View style={[styles.miniLine, { backgroundColor: theme.colors.primary }]} />
+            <View style={[styles.miniDot, { backgroundColor: theme.colors.primary }]} />
+          </View>
+          <View style={styles.routeNames}>
+            <Text variant="bodyLarge" numberOfLines={1} style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+              {stationName(fromName)}
+            </Text>
+            <Text variant="bodyLarge" numberOfLines={1} style={[emphasis.strong, { color: theme.colors.onSurface }]}>
+              {stationName(toName)}
+            </Text>
+          </View>
+          {trailing}
+        </View>
+      </Touchable>
     </View>
   );
+
+  const savedTrips =
+    saved.trips.length === 0 ? null : (
+      <View style={styles.section}>
+        <SectionHeader
+          title="Saved trips"
+          action={saved.trips.length > SAVED_TRIPS_ON_HOME ? 'All saved' : undefined}
+          onAction={() => tabs?.navigate('SavedTab', { screen: 'Saved' })}
+        />
+        <Card>
+          {saved.trips.slice(0, SAVED_TRIPS_ON_HOME).map((trip, index) =>
+            tripRow(
+              `${trip.from.code}>${trip.to.code}`,
+              trip.from.name,
+              trip.to.name,
+              () => openJourney(trip.from.code, trip.to.code, trip.from.name, trip.to.name),
+              <Ionicons name="bookmark" size={18} color={theme.colors.primary} />,
+              index,
+            ),
+          )}
+        </Card>
+      </View>
+    );
+
+  const frequentTrips =
+    frequent.length === 0 ? null : (
+      <View style={styles.section}>
+        <SectionHeader title="Frequent" />
+        <Card>
+          {frequent.map((r, index) =>
+            tripRow(
+              r.routeKey,
+              nameForCode(r.fromStationCode),
+              nameForCode(r.toStationCode),
+              () =>
+                openJourney(
+                  r.fromStationCode,
+                  r.toStationCode,
+                  nameForCode(r.fromStationCode),
+                  nameForCode(r.toStationCode),
+                ),
+              <Text variant="labelLarge" style={[look.figures, { color: theme.colors.onSurfaceVariant }]}>
+                {r.hitCount}×
+              </Text>,
+              index,
+            ),
+          )}
+        </Card>
+      </View>
+    );
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + (isDesktop ? spacing.xl : spacing.sm) },
+        { paddingTop: insets.top + (isDesktop ? spacing.xl : spacing.md) },
         isDesktop && styles.contentDesktop,
       ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
-      <Reveal index={0}>
-        <View style={styles.masthead}>
-          <View style={styles.mastheadTop}>
-            <Text
-              variant="labelMedium"
-              style={[overline, styles.date, { color: theme.colors.onSurfaceVariant }]}
-            >
-              {todayLabel()}
-            </Text>
-            <Touchable
-              radius={radius.pill}
-              onPress={() => navigation.navigate('About')}
-              accessibilityLabel="About this app"
-            >
-              <View style={styles.iconButton}>
-                <Ionicons name="information-circle-outline" size={22} color={theme.colors.onSurfaceVariant} />
-              </View>
-            </Touchable>
-            <Touchable
-              radius={radius.pill}
-              onPress={() => navigation.navigate('Appearance')}
-              accessibilityLabel="Appearance settings"
-              style={{ backgroundColor: fills.containerHigh }}
-            >
-              <View style={styles.iconButton}>
-                <Ionicons name="color-palette-outline" size={20} color={theme.colors.onSurface} />
-              </View>
-            </Touchable>
+      <View style={styles.masthead}>
+        <Text
+          variant="headlineLarge"
+          accessibilityRole="header"
+          style={[styles.title, { color: theme.colors.onSurface }]}
+        >
+          Plan
+        </Text>
+        <Touchable
+          radius={radius.pill}
+          onPress={() => navigation.navigate('Settings')}
+          accessibilityLabel="Settings"
+        >
+          <View style={styles.iconButton}>
+            <Ionicons name="settings-outline" size={22} color={theme.colors.onSurfaceVariant} />
           </View>
-          <Text
-            variant="displaySmall"
-            accessibilityRole="header"
-            style={[styles.title, { color: theme.colors.onSurface }]}
-          >
-            Where are you{'\n'}headed today?
-          </Text>
-        </View>
-      </Reveal>
+        </Touchable>
+      </View>
 
-      {savedAlerts || savedLines ? <OfflineNote message={savedNote} /> : null}
-
-      <Reveal index={1}>{planner}</Reveal>
-      <Reveal index={2}>{lineStatus}</Reveal>
-
-      {isDesktop ? (
-        <View style={styles.desktopColumns}>
-          <View style={styles.desktopColumn}>{frequent}</View>
-          <View style={styles.desktopColumn}>{alerts}</View>
-        </View>
-      ) : (
-        <>
-          <Reveal index={3}>{frequent}</Reveal>
-          <Reveal index={4}>{alerts}</Reveal>
-        </>
-      )}
+      {disruptionBanner}
+      {planner}
+      {places}
+      {savedTrips}
+      {frequentTrips}
 
       {/* Narrow web viewports get no sidebar, so the install and download
           links sit at the foot of the screen most visitors land on. */}
-      {Platform.OS === 'web' && !isDesktop ? (
-        <Reveal index={5}>
-          <GetTheApp />
-        </Reveal>
-      ) : null}
+      {Platform.OS === 'web' && !isDesktop ? <GetTheApp /> : null}
 
       <StationPicker
         visible={fromPicker.visible}
@@ -480,46 +425,42 @@ export function HomeScreen() {
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.base,
-    gap: spacing.xl,
+    gap: spacing.lg,
     paddingBottom: spacing['4xl'],
   },
   contentDesktop: {
     padding: spacing.xl,
-  },
-  desktopColumns: {
-    flexDirection: 'row',
-    gap: spacing.xl,
-    alignItems: 'flex-start',
-  },
-  desktopColumn: {
-    flex: 1,
-    minWidth: 0,
+    maxWidth: 640,
+    width: '100%',
+    alignSelf: 'center',
   },
   masthead: {
-    gap: spacing.sm,
-  },
-  mastheadTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  date: {
-    flex: 1,
+    justifyContent: 'space-between',
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontWeight: '500',
+    fontWeight: '600',
     letterSpacing: -0.5,
   },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  bannerText: {
+    flex: 1,
+  },
   planner: {
-    borderRadius: 32,
     padding: spacing.sm,
-    marginHorizontal: -spacing.xs,
   },
   plannerControls: {
     gap: spacing.md,
@@ -536,17 +477,15 @@ const styles = StyleSheet.create({
   timeChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     height: 30,
     paddingLeft: spacing.sm,
     paddingRight: spacing.md,
   },
   findButton: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    height: 56,
+    height: 52,
   },
   section: {
     gap: spacing.xs,
@@ -554,66 +493,35 @@ const styles = StyleSheet.create({
   bleed: {
     marginHorizontal: -spacing.base,
   },
-  lineStrip: {
+  placeRow: {
     gap: spacing.sm,
     paddingHorizontal: spacing.base,
   },
-  lineCard: {
+  placeChip: {
+    borderWidth: 1,
+  },
+  placeChipInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingVertical: 10,
-    paddingLeft: 10,
-    paddingRight: spacing.base,
-    maxWidth: 220,
+    gap: spacing.sm,
+    paddingVertical: 5,
+    paddingLeft: 5,
+    paddingRight: spacing.md,
   },
-  lineSquare: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+  addChip: {
+    paddingLeft: spacing.sm,
+    minHeight: 38,
   },
-  lineSquareText: {
-    fontWeight: '800',
-  },
-  lineCardText: {
-    flexShrink: 1,
-    gap: 1,
-  },
-  lineStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  lineStatusText: {
-    flexShrink: 1,
-  },
-  groupList: {
-    gap: 3,
-  },
-  groupTile: {
-    borderRadius: shape.sm,
-  },
-  groupTileFirst: {
-    borderTopLeftRadius: shape.xl,
-    borderTopRightRadius: shape.xl,
-  },
-  groupTileLast: {
-    borderBottomLeftRadius: shape.xl,
-    borderBottomRightRadius: shape.xl,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: spacing.base,
   },
   routeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     paddingHorizontal: spacing.base,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   miniRail: {
     alignItems: 'center',
@@ -627,7 +535,7 @@ const styles = StyleSheet.create({
   },
   miniLine: {
     width: 3,
-    height: 16,
+    height: 14,
     opacity: 0.6,
   },
   miniDot: {
@@ -637,12 +545,6 @@ const styles = StyleSheet.create({
   },
   routeNames: {
     flex: 1,
-    gap: 6,
-  },
-  routeMeta: {
-    alignItems: 'flex-end',
-  },
-  notifList: {
-    gap: spacing.sm,
+    gap: 4,
   },
 });

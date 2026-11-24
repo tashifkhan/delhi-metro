@@ -1,6 +1,7 @@
 import { useHaptics } from '../hooks/useHaptics';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   PanResponder,
   Platform,
@@ -22,7 +23,7 @@ import {
 import { StrategyToggle } from '../components/StrategyToggle';
 import { RouteSegmentView } from '../components/RouteSegmentView';
 import { TransferSegmentView } from '../components/TransferSegmentView';
-import { WhatsAppBookingCard } from '../components/WhatsAppBookingCard';
+import { TicketBookingCards } from '../components/TicketBookingCards';
 import { TicketPass, type PassColumn } from '../components/TicketPass';
 import { SectionHeader } from '../components/SectionHeader';
 import { LoadingState } from '../components/LoadingState';
@@ -33,12 +34,14 @@ import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { RouteMap } from '../components/map/RouteMap';
 import { useAppTheme } from '../theme/ThemeContext';
+import { useSaved } from '../saved/SavedContext';
 import { NETWORK_NAMES } from '../network';
-import type { MetroNetwork, PlannedFare, RouteStrategy, WhatsAppBooking } from '../types';
+import type { MetroNetwork, PlannedFare, RouteStrategy } from '../types';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
-import { spacing, shape, emphasis, tabular } from '../theme';
+import { spacing, radius, emphasis, tabular } from '../theme';
 import { clockTime, durationLabel, stationName } from '../utils/format';
-import { bookingsFor } from '../services/whatsappBooking';
+import { ticketBookingsFor } from '../services/ticketBooking';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'JourneyResults'>;
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
@@ -53,8 +56,13 @@ function inr(value: number): string {
   return `₹${Number.isInteger(value) ? value : value.toFixed(2)}`;
 }
 
-/** "₹50 + ₹40" for a two-operator trip, else the fare that applies now. */
-function fareChip(fare: PlannedFare): string {
+/**
+ * The fare to lead with: the card fare for someone who uses a smart card,
+ * "₹50 + ₹40" for a trip on two operators' tickets, otherwise the fare that
+ * applies now.
+ */
+function fareChip(fare: PlannedFare, smartCard: boolean): string {
+  if (smartCard && fare.smart_card) return `${inr(fare.smart_card.amount)} card`;
   if (fare.breakdown.length > 1) {
     return fare.breakdown.map((part) => inr(part.applicable ?? part.normal)).join(' + ');
   }
@@ -64,6 +72,7 @@ function fareChip(fare: PlannedFare): string {
 type ChipTone = 'accent' | 'tonal' | 'outline';
 
 export function JourneyResultsScreen() {
+  const styles = useAdaptedStyles(baseStyles);
   const haptics = useHaptics();
   const route = useRoute<Route>();
   const isFocused = useIsFocused();
@@ -71,16 +80,14 @@ export function JourneyResultsScreen() {
   const navigation = useNavigation<Nav>();
   const { fromCode, toCode, journeyTime } = route.params;
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, settings } = useAppTheme();
+  const saved = useSaved();
   const [strategy, setStrategy] = useState<RouteStrategy>(
     route.params.strategy ?? 'least-distance',
   );
   const [editing, setEditing] = useState<'from' | 'to' | null>(null);
   const scrollRef = useRef<ScrollView>(null);
-  const [bookY, setBookY] = useState(0);
-  // Hide the jump-to-booking button once the booking cards are on screen.
-  const [bookingVisible, setBookingVisible] = useState(false);
-  const viewportH = useRef(0);
+  const bookingOffset = useRef(0);
 
   const { data: plan, isPending, isError, isPlaceholderData, savedAt, refetch } =
     useJourneyPlanCachedQuery(fromCode, toCode, strategy, journeyTime);
@@ -107,10 +114,31 @@ export function JourneyResultsScreen() {
     Share.share(content).catch(() => undefined);
   }, [fromCode, toCode, fromName, toName]);
 
+  const isSaved = saved.isTripSaved(fromCode, toCode);
+  const toggleSaved = useCallback(() => {
+    const nowSaved = saved.toggleTrip(
+      { code: fromCode, name: route.params.fromName ?? plan?.origin.name ?? fromCode },
+      { code: toCode, name: route.params.toName ?? plan?.destination.name ?? toCode },
+    );
+    haptics.toggle(nowSaved);
+    AccessibilityInfo.announceForAccessibility(
+      nowSaved ? 'Trip saved. It is in the Saved tab.' : 'Trip removed from Saved.',
+    );
+  }, [saved, fromCode, toCode, route.params.fromName, route.params.toName, plan, haptics]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: ({ tintColor }) => (
         <>
+          <Appbar.Action
+            icon={({ size, color }) => (
+              <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={size} color={color} />
+            )}
+            color={tintColor}
+            accessibilityLabel={isSaved ? 'Remove this trip from Saved' : 'Save this trip'}
+            accessibilityState={{ selected: isSaved }}
+            onPress={toggleSaved}
+          />
           <Appbar.Action
             icon={({ size, color }) => <Ionicons name="swap-vertical" size={size} color={color} />}
             color={tintColor}
@@ -129,7 +157,7 @@ export function JourneyResultsScreen() {
         </>
       ),
     });
-  }, [navigation, handleSwapStations, handleShare, haptics]);
+  }, [navigation, handleSwapStations, handleShare, haptics, isSaved, toggleSaved]);
 
   const handleStationSelect = useCallback(
     (station: { code: string; name: string }) => {
@@ -146,16 +174,6 @@ export function JourneyResultsScreen() {
     },
     [editing, navigation, fromCode, toCode, handleSwapStations],
   );
-
-  // The API attaches booking links to fresh plans. Saved plans, and an API
-  // deploy without the field, get the app's own copy of the same links.
-  const bookings: WhatsAppBooking[] = !plan
-    ? []
-    : plan.bookings && plan.bookings.length > 0
-      ? plan.bookings
-      : bookingsFor(
-          plan.networks.length > 0 ? plan.networks : [plan.source === 'nmrc' ? 'nmrc' : 'dmrc'],
-        );
 
   // One outcome per requested journey, including cached results. Refetches stay quiet.
   const journeyKey = JSON.stringify([fromCode, toCode, strategy, journeyTime]);
@@ -234,6 +252,8 @@ export function JourneyResultsScreen() {
   if (!plan) return <ErrorState message="No route data available" />;
 
   const rideLegs = plan.legs.filter((leg) => leg.kind !== 'transfer');
+  const bookings = ticketBookingsFor(plan);
+  const bookingTitle = bookings.length > 1 ? 'Book tickets' : 'Book a ticket';
   // Strategies only differ where the network has alternate paths; the Aqua
   // Line has one, so an NMRC-only journey has a single route.
   const hasStrategyChoice = plan.networks.length === 0 || plan.networks.includes('dmrc');
@@ -246,7 +266,6 @@ export function JourneyResultsScreen() {
   const leave = clockTime(rideLegs[0]?.start_time);
   const arrive = clockTime(rideLegs[rideLegs.length - 1]?.end_time);
   const totalTime = durationLabel(plan.total_time) ?? plan.total_time;
-  const transfer = plan.legs.find((leg) => leg.kind === 'transfer');
 
   // Each operator's share of the trip, for the booking cards and the pass.
   const networkEnds: Partial<Record<MetroNetwork, { from: string; to: string; color: string }>> =
@@ -267,32 +286,20 @@ export function JourneyResultsScreen() {
   ][]) {
     networkRoutes[network] = `${ends.from} to ${ends.to}`;
   }
-  if (plan.networks.length <= 1 && bookings[0]) {
+  if (bookings.length === 1 && !networkRoutes[bookings[0].network]) {
     networkRoutes[bookings[0].network] = `${fromName} to ${toName}`;
   }
 
   const weekend = plan.fare.special ?? plan.fare.normal;
   const breakdown = plan.fare.breakdown;
-  const passColumns: [PassColumn, PassColumn] =
+  const passColumns: PassColumn[] =
     breakdown.length > 1
-      ? [
-          {
-            label: `Leg 1, ${breakdown[0].network.toUpperCase()}`,
-            value: inr(breakdown[0].applicable ?? breakdown[0].normal),
-            note: networkEnds[breakdown[0].network]
-              ? `To ${networkEnds[breakdown[0].network]!.to}`
-              : NETWORK_NAMES[breakdown[0].network],
-            color: networkEnds[breakdown[0].network]?.color,
-          },
-          {
-            label: `Leg 2, ${breakdown[1].network.toUpperCase()}`,
-            value: inr(breakdown[1].applicable ?? breakdown[1].normal),
-            note: networkEnds[breakdown[1].network]
-              ? `From ${networkEnds[breakdown[1].network]!.from}`
-              : NETWORK_NAMES[breakdown[1].network],
-            color: networkEnds[breakdown[1].network]?.color,
-          },
-        ]
+      ? breakdown.map((fare, index) => ({
+          label: `Ticket ${index + 1}, ${fare.network.toUpperCase()}`,
+          value: inr(fare.applicable ?? fare.normal),
+          note: networkRoutes[fare.network] ?? NETWORK_NAMES[fare.network],
+          color: networkEnds[fare.network]?.color,
+        }))
       : [
           { label: 'Weekday', value: inr(plan.fare.normal), note: 'Monday to Saturday' },
           { label: 'Weekend', value: inr(weekend), note: 'Sunday and holidays' },
@@ -309,17 +316,39 @@ export function JourneyResultsScreen() {
   ) {
     fareRows.push({ label: 'At your departure time', value: inr(plan.fare.applicable) });
   }
+  // Namo Bharat prices by class; Standard is the fare above.
+  const premium = plan.fare.classes?.find((c) => c.class === 'premium');
+  if (premium) fareRows.push({ label: 'Namo Bharat Premium', value: inr(premium.amount) });
+  // The card fare is worked out from the operator's rule, so it is labelled as such.
+  const card = plan.fare.smart_card;
+  if (card) {
+    const row = {
+      label: card.off_peak ? 'Smart card, off-peak' : 'Smart card',
+      value: inr(card.amount),
+    };
+    if (settings.smartCard) fareRows.unshift(row);
+    else fareRows.push(row);
+  }
 
   const sourceLabel =
     plan.source === 'combined'
-      ? 'Delhi Metro and Noida Metro'
+      ? plan.networks.map((n) => NETWORK_NAMES[n]).join(' and ')
       : plan.source === 'sarthi'
         ? 'Sarthi'
         : plan.source === 'nmrc'
           ? 'the NMRC website'
-          : 'DMRC';
+          : plan.source === 'ncrtc'
+            ? 'NCRTC'
+            : plan.source === 'offline'
+              ? 'the offline pack'
+              : 'DMRC';
 
-  const savedLabel = savedAt
+  const savedLabel = plan.source === 'offline'
+    ? `Planned offline from data downloaded ${new Date(savedAt ?? Date.now()).toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'short',
+      })}. Times and fares are estimates; check at the station.`
+    : savedAt
     ? `Saved plan from ${new Date(savedAt).toLocaleString(undefined, {
         day: 'numeric',
         month: 'short',
@@ -331,7 +360,7 @@ export function JourneyResultsScreen() {
   const chips: { key: string; icon: keyof typeof Ionicons.glyphMap; text: string; tone: ChipTone }[] =
     [
       { key: 'time', icon: 'time-outline', text: totalTime, tone: 'accent' },
-      { key: 'fare', icon: 'cash-outline', text: fareChip(plan.fare), tone: 'tonal' },
+      { key: 'fare', icon: 'cash-outline', text: fareChip(plan.fare, settings.smartCard), tone: 'tonal' },
       {
         key: 'changes',
         icon: 'swap-horizontal',
@@ -345,7 +374,7 @@ export function JourneyResultsScreen() {
   const lastTrain = clockTime(plan.metro_service?.last?.trim());
 
   const scrollToBooking = () =>
-    scrollRef.current?.scrollTo({ y: Math.max(0, bookY - spacing.base), animated: true });
+    scrollRef.current?.scrollTo({ y: Math.max(0, bookingOffset.current - spacing.base), animated: true });
 
   return (
     <View
@@ -355,15 +384,6 @@ export function JourneyResultsScreen() {
       <ScrollView
         ref={scrollRef}
         style={{ flex: 1 }}
-        scrollEventThrottle={100}
-        onLayout={(e) => {
-          viewportH.current = e.nativeEvent.layout.height;
-        }}
-        onScroll={(e) => {
-          const bottom = e.nativeEvent.contentOffset.y + viewportH.current;
-          const visible = bookY > 0 && bottom > bookY + 160;
-          if (visible !== bookingVisible) setBookingVisible(visible);
-        }}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
@@ -434,8 +454,6 @@ export function JourneyResultsScreen() {
           </View>
         </Reveal>
 
-        {/* The preference sits above the map it changes, clear of the
-            floating booking button that hovers over the lower half. */}
         {hasStrategyChoice ? (
           <Reveal index={1} replayOnFocus={false}>
             <Animated.View style={{ transform: [{ translateX: swipeHint }] }}>
@@ -458,22 +476,38 @@ export function JourneyResultsScreen() {
           />
         </Reveal>
 
-        {plan.separate_tickets ? (
+        {bookings.length > 0 ? (
           <Reveal index={2} replayOnFocus={false}>
-            <View style={[styles.note, { backgroundColor: theme.colors.tertiaryContainer }]}>
-              <Ionicons name="ticket" size={22} color={theme.colors.onTertiaryContainer} />
-              <View style={styles.noteText}>
-                <Text
-                  variant="titleSmall"
-                  style={[emphasis.strong, { color: theme.colors.onTertiaryContainer }]}
-                >
-                  You need two tickets
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onTertiaryContainer }}>
-                  Delhi Metro and Noida Metro don't share tickets.
-                  {transfer ? ` Buy the second one at ${stationName(transfer.to_station)}.` : ''}
-                </Text>
-              </View>
+            <View style={styles.bookingSummary}>
+              {bookings.length > 1 ? (
+                <View style={[styles.note, { backgroundColor: theme.colors.tertiaryContainer }]}>
+                  <Ionicons name="ticket" size={22} color={theme.colors.onTertiaryContainer} />
+                  <View style={styles.noteText}>
+                    <Text
+                      variant="titleSmall"
+                      style={[emphasis.strong, { color: theme.colors.onTertiaryContainer }]}
+                    >
+                      You need {bookings.length} tickets
+                    </Text>
+                    <Text variant="bodySmall" style={{ color: theme.colors.onTertiaryContainer }}>
+                      Buy a separate ticket for each operator you ride.
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+              <Touchable
+                radius={radius.pill}
+                onPress={scrollToBooking}
+                accessibilityLabel={bookingTitle}
+                style={{ backgroundColor: theme.colors.primaryContainer }}
+              >
+                <View style={styles.bookingButton}>
+                  <Ionicons name="ticket-outline" size={20} color={theme.colors.onPrimaryContainer} />
+                  <Text variant="titleSmall" style={[emphasis.strong, { color: theme.colors.onPrimaryContainer }]}>
+                    {bookingTitle}
+                  </Text>
+                </View>
+              </Touchable>
             </View>
           </Reveal>
         ) : null}
@@ -537,13 +571,10 @@ export function JourneyResultsScreen() {
           </View>
         ) : null}
 
-        <View onLayout={(e) => setBookY(e.nativeEvent.layout.y)} style={styles.section}>
-          <SectionHeader
-            title={
-              bookings.length > 1 ? 'Book tickets' : bookings.length === 1 ? 'Book a ticket' : 'Your ticket'
-            }
-          />
+        <View onLayout={(e) => { bookingOffset.current = e.nativeEvent.layout.y; }} style={styles.section}>
+          <SectionHeader title={bookings.length ? 'Booking options' : 'Your ticket'} />
           <View style={styles.bookStack}>
+            <TicketBookingCards key={journeyKey} bookings={bookings} routes={networkRoutes} />
             <TicketPass
               fromCode={plan.origin.code || fromCode}
               toCode={plan.destination.code || toCode}
@@ -557,7 +588,6 @@ export function JourneyResultsScreen() {
               duration={totalTime}
               columns={passColumns}
             />
-            <WhatsAppBookingCard bookings={bookings} routes={networkRoutes} />
           </View>
         </View>
 
@@ -590,28 +620,6 @@ export function JourneyResultsScreen() {
         </View>
       </ScrollView>
 
-      {bookings.length > 0 && !bookingVisible ? (
-        <View style={styles.fabWrap} pointerEvents="box-none">
-          <Touchable
-            radius={shape.lg + 2}
-            haptic="navigate"
-            onPress={scrollToBooking}
-            accessibilityLabel="Jump to booking"
-            style={[styles.fab, { backgroundColor: theme.colors.primaryContainer }]}
-          >
-            <View style={styles.fabInner}>
-              <Ionicons name="logo-whatsapp" size={22} color={theme.colors.onPrimaryContainer} />
-              <Text
-                variant="titleSmall"
-                style={[emphasis.strong, { color: theme.colors.onPrimaryContainer }]}
-              >
-                {bookings.length > 1 ? 'Book tickets' : 'Book ticket'}
-              </Text>
-            </View>
-          </Touchable>
-        </View>
-      ) : null}
-
       <StationPicker
         visible={editing !== null}
         selectedCode={editing === 'from' ? fromCode : toCode}
@@ -623,11 +631,11 @@ export function JourneyResultsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.xs,
-    paddingBottom: 120,
+    paddingBottom: spacing.xl,
     gap: spacing.base,
   },
   head: {
@@ -664,6 +672,17 @@ const styles = StyleSheet.create({
   noteText: {
     flex: 1,
     gap: 2,
+  },
+  bookingSummary: {
+    gap: spacing.sm,
+  },
+  bookingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    minHeight: 48,
+    padding: spacing.sm,
   },
   timeline: {
     borderRadius: 28,
@@ -706,25 +725,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-  },
-  fabWrap: {
-    position: 'absolute',
-    right: spacing.base,
-    bottom: spacing.xl,
-  },
-  fab: {
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 3 },
-  },
-  fabInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    height: 56,
-    paddingLeft: spacing.base,
-    paddingRight: spacing.lg,
   },
 });

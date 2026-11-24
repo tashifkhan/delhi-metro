@@ -2,7 +2,7 @@
   "expo": {
     "name": "Delhi NCR Metro",
     "slug": "delhi-metro",
-    "version": "1.8.1",
+    "version": "1.9.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -25,7 +25,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "codes.tashif.delhimetro",
-      "versionCode": 29
+      "versionCode": 31
     },
     "web": {
       "bundler": "metro",
@@ -59,12 +59,6 @@
       "eas": {
         "projectId": "ddb1eb79-9db9-4b54-9880-473323f60b6d"
       }
-    },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/ddb1eb79-9db9-4b54-9880-473323f60b6d"
     }
   }
 }

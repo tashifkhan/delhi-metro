@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radius as radii } from '../theme';
+import { adaptRadius } from '../theme/look';
 
 type Tone = 'low' | 'default' | 'high';
 
@@ -27,7 +28,7 @@ interface Props {
  * to see on some panels.
  */
 export function Card({ children, style, radius = radii.card, tone, elevated = false }: Props) {
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const resolved: Tone = tone ?? (elevated ? 'default' : 'low');
   const background =
     resolved === 'high'
@@ -40,7 +41,7 @@ export function Card({ children, style, radius = radii.card, tone, elevated = fa
     <View
       style={[
         styles.base,
-        { borderRadius: radius, borderColor: fills.hairline, backgroundColor: background },
+        { borderRadius: adaptRadius(look, radius), borderColor: fills.hairline, backgroundColor: background },
         style,
       ]}
     >

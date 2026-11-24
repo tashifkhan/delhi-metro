@@ -1,24 +1,14 @@
-"""Journey planner orchestration across networks and planner services.
-
-Two independent decisions live here:
-
-1. **Which network(s)** a journey runs on. Station codes are resolved against
-   both catalogs, so a journey whose endpoints sit on different networks is
-   stitched together through the Sector 52/51 interchange in
-   `services.interchange`.
-2. **Which upstream** answers the Delhi Metro portion. Sarthi is preferred
-   because its response is richer and its routes come from the same
-   precomputed matrix the official app ships. It is an undocumented vendor
-   API, so every failure degrades to the legacy DMRC planner rather than to an
-   error, and the served plan records which source answered.
-"""
+"""Plan trips within and across DMRC, NMRC and NCRTC."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 import re
+from collections import OrderedDict
 from datetime import datetime
+from itertools import product
+from time import monotonic
 
 from core.catalog import resolve_station as resolve_dmrc_station
 from core.catalog import to_legacy_code
@@ -26,6 +16,7 @@ from core.config import settings
 from core.errors import ApiRequestError, UpstreamApiError
 from schemas.journey import RouteStrategy
 from schemas.planner import (
+    FareClass,
     JourneySource,
     LegKind,
     MetroNetwork,
@@ -37,10 +28,18 @@ from schemas.planner import (
     PlannedStation,
 )
 from services import nmrc as nmrc_planner
-from services.booking import bookings_for
+from services.booking import booking_options_for, bookings_for
 from services.dmrc import journey as dmrc_planner
 from services.dmrc import sarthi as sarthi_planner
-from services.interchange import NetworkInterchange, find_interchange
+from services.interchange import NetworkInterchange, find_interchanges
+from services.ncrtc import journey as ncrtc_planner
+from services.ncrtc.catalog import STATION_CODES
+from services.smart_card import (
+    combined_card_fare,
+    is_airport_leg,
+    local_departure,
+    smart_card_fare,
+)
 from services.nmrc.catalog import get_station_catalog as get_nmrc_catalog
 
 logger = logging.getLogger(__name__)
@@ -80,6 +79,9 @@ async def _detect_network(code: str) -> MetroNetwork | None:
     if resolve_dmrc_station(code) is not None:
         return MetroNetwork.DMRC
 
+    if code.strip().upper() in STATION_CODES:
+        return MetroNetwork.NCRTC
+
     normalized = code.strip().casefold()
     for station in await get_nmrc_catalog():
         if normalized in {
@@ -96,6 +98,8 @@ async def _canonical_code(code: str, network: MetroNetwork) -> str:
 
     if network is MetroNetwork.DMRC:
         return to_legacy_code(code) or code.strip().upper()
+    if network is MetroNetwork.NCRTC:
+        return code.strip().upper()
 
     normalized = code.strip().casefold()
     for station in await get_nmrc_catalog():
@@ -166,6 +170,7 @@ def _stamp_network(plan: PlannedJourney, network: MetroNetwork) -> PlannedJourne
         update={
             "networks": [network],
             "bookings": bookings_for([network]),
+            "booking_options": booking_options_for([network]),
             "legs": [
                 leg.model_copy(update={"network": network, "source": plan.source})
                 for leg in plan.legs
@@ -180,9 +185,7 @@ def _transfer_leg(
 ) -> PlannedLeg:
     """Build the walking leg between the two networks."""
 
-    to_network = (
-        MetroNetwork.NMRC if from_network is MetroNetwork.DMRC else MetroNetwork.DMRC
-    )
+    to_network = interchange.other_side(from_network)
     return PlannedLeg(
         kind=LegKind.TRANSFER,
         network=None,
@@ -216,6 +219,50 @@ def _interchange_station(
     )
 
 
+_CROSS_TTL_SECONDS = 300
+_CROSS_CACHE_LIMIT = 256
+_cross_cache: OrderedDict[tuple, tuple[float, PlannedJourney]] = OrderedDict()
+_cross_pending: dict[tuple, asyncio.Task] = {}
+
+
+async def _plan_on_network(
+    network: MetroNetwork,
+    origin: str,
+    destination: str,
+    strategy: RouteStrategy,
+    journey_time: datetime | None,
+    exclude_airport_line: bool,
+    source: JourneySource | None,
+) -> PlannedJourney:
+    kwargs = {
+        "from_station_code": origin,
+        "to_station_code": destination,
+        "strategy": strategy,
+        "journey_time": journey_time,
+    }
+    if network is MetroNetwork.NMRC:
+        plan = await nmrc_planner.plan_journey(**kwargs)
+    elif network is MetroNetwork.NCRTC:
+        return await ncrtc_planner.plan_journey(**kwargs)
+    else:
+        plan = await _plan_on_dmrc(
+            **kwargs, exclude_airport_line=exclude_airport_line, source=source
+        )
+    if plan.fare.smart_card is None:
+        plan.fare.smart_card = smart_card_fare(
+            plan.fare,
+            network,
+            journey_time,
+            airport_line=any(is_airport_leg(leg) for leg in plan.legs),
+        )
+    return plan
+
+
+def _sum_optional(values: list[float | None]) -> float | None:
+    present = [value for value in values if value is not None]
+    return sum(present) if present else None
+
+
 async def _plan_cross_network(
     *,
     from_station_code: str,
@@ -225,160 +272,233 @@ async def _plan_cross_network(
     strategy: RouteStrategy,
     journey_time: datetime | None,
     exclude_airport_line: bool,
+    source: JourneySource | None = None,
 ) -> PlannedJourney:
-    """Stitch a journey that crosses between the two networks.
+    from_code, to_code = await asyncio.gather(
+        _canonical_code(from_station_code, from_network),
+        _canonical_code(to_station_code, to_network),
+    )
+    departure = local_departure(journey_time)
+    key = (
+        from_network,
+        from_code,
+        to_network,
+        to_code,
+        strategy,
+        departure.replace(second=0, microsecond=0)
+        if journey_time is not None
+        else departure.replace(minute=0, second=0, microsecond=0),
+        exclude_airport_line,
+        source,
+        settings.sarthi_enabled,
+    )
+    cached = _cross_cache.get(key)
+    if cached and monotonic() < cached[0]:
+        _cross_cache.move_to_end(key)
+        return cached[1]
 
-    Each half is planned on its own network against the interchange station,
-    then joined by a walking leg. Fares are summed because the networks ticket
-    separately.
-    """
+    async def compute() -> PlannedJourney:
+        plan = await _find_fastest(
+            from_code,
+            to_code,
+            from_network,
+            to_network,
+            strategy,
+            journey_time,
+            exclude_airport_line,
+            source,
+        )
+        _cross_cache[key] = (monotonic() + _CROSS_TTL_SECONDS, plan)
+        _cross_cache.move_to_end(key)
+        if len(_cross_cache) > _CROSS_CACHE_LIMIT:
+            _cross_cache.popitem(last=False)
+        return plan
 
-    interchange = find_interchange(from_network, to_network)
-    if interchange is None:
+    task = _cross_pending.get(key)
+    if task is None:
+        task = asyncio.create_task(compute())
+        _cross_pending[key] = task
+
+        def clear_pending(finished: asyncio.Task) -> None:
+            _cross_pending.pop(key, None)
+            if not finished.cancelled():
+                finished.exception()
+
+        task.add_done_callback(clear_pending)
+    return await asyncio.shield(task)
+
+
+async def _find_fastest(
+    from_code: str,
+    to_code: str,
+    from_network: MetroNetwork,
+    to_network: MetroNetwork,
+    strategy: RouteStrategy,
+    journey_time: datetime | None,
+    exclude_airport_line: bool,
+    source: JourneySource | None,
+) -> PlannedJourney:
+    networks = [from_network, to_network]
+    if MetroNetwork.DMRC not in networks:
+        networks.insert(1, MetroNetwork.DMRC)
+    connections = [find_interchanges(a, b) for a, b in zip(networks, networks[1:])]
+    if not all(connections):
         raise ApiRequestError(
             f"No interchange links {from_network.value} and {to_network.value}",
-            status_code=400,
+            400,
         )
 
-    from_code = await _canonical_code(from_station_code, from_network)
-    to_code = await _canonical_code(to_station_code, to_network)
+    rides: dict[tuple[MetroNetwork, str, str], asyncio.Task[PlannedJourney]] = {}
 
-    # A traveller already standing at one side of the interchange has no ride
-    # on that network, only the walk.
-    first_needed = from_code != interchange.code_for(from_network)
-    second_needed = to_code != interchange.code_for(to_network)
+    async def stitch(
+        links: tuple[NetworkInterchange, ...],
+    ) -> tuple[float, PlannedJourney]:
+        starts = [from_code] + [
+            link.code_for(network) for link, network in zip(links, networks[1:])
+        ]
+        ends = [link.code_for(network) for link, network in zip(links, networks)] + [
+            to_code
+        ]
+        needed = []
+        for network, origin, destination in zip(networks, starts, ends, strict=True):
+            ride = None
+            if origin != destination:
+                key = (network, origin, destination)
+                if key not in rides:
+                    rides[key] = asyncio.create_task(
+                        _plan_on_network(
+                            network,
+                            origin,
+                            destination,
+                            strategy,
+                            journey_time,
+                            exclude_airport_line,
+                            source,
+                        )
+                    )
+                ride = rides[key]
+            needed.append(ride)
 
-    async def plan_half(
-        network: MetroNetwork,
-        origin: str,
-        destination: str,
-    ) -> PlannedJourney:
-        if network is MetroNetwork.NMRC:
-            return await nmrc_planner.plan_journey(
-                from_station_code=origin,
-                to_station_code=destination,
-                strategy=strategy,
-                journey_time=journey_time,
+        await asyncio.gather(*(ride for ride in needed if ride is not None))
+        halves = [ride.result() if ride is not None else None for ride in needed]
+        legs = []
+        interchanges = []
+        fares = []
+        fallback_reasons = []
+        total_minutes = 0.0
+        for index, (half, network) in enumerate(zip(halves, networks, strict=True)):
+            if index:
+                link = links[index - 1]
+                previous_network = networks[index - 1]
+                legs.append(_transfer_leg(link, previous_network))
+                interchanges.append(
+                    PlannedInterchange(
+                        station=link.name_for(previous_network),
+                        minutes=link.walk_minutes,
+                    )
+                )
+                total_minutes += link.walk_minutes
+            if half is None:
+                continue
+            minutes = _duration_minutes(half.total_time)
+            if minutes is None:
+                raise UpstreamApiError(
+                    f"{network.value} returned an invalid journey duration"
+                )
+            total_minutes += minutes
+            legs.extend(
+                leg.model_copy(update={"network": network, "source": half.source})
+                for leg in half.legs
             )
-        return await _plan_on_dmrc(
-            from_station_code=origin,
-            to_station_code=destination,
-            strategy=strategy,
-            journey_time=journey_time,
-            exclude_airport_line=exclude_airport_line,
-            source=None,
-        )
-
-    tasks = []
-    if first_needed:
-        tasks.append(
-            plan_half(from_network, from_code, interchange.code_for(from_network))
-        )
-    if second_needed:
-        tasks.append(plan_half(to_network, interchange.code_for(to_network), to_code))
-
-    results: list[PlannedJourney] = list(await asyncio.gather(*tasks))
-    first_half = results.pop(0) if first_needed else None
-    second_half = results.pop(0) if second_needed else None
-
-    legs: list[PlannedLeg] = []
-    interchanges: list[PlannedInterchange] = []
-    fare_breakdown: list[NetworkFare] = []
-    fallback_reasons: list[str] = []
-    total_minutes = float(interchange.walk_minutes)
-    station_count = 0
-    total_distance: float | None = None
-
-    for half, network in ((first_half, from_network), (second_half, to_network)):
-        if half is None:
-            continue
-
-        if half is second_half:
-            legs.append(_transfer_leg(interchange, from_network))
-            interchanges.append(
-                PlannedInterchange(
-                    station=interchange.name_for(from_network),
-                    minutes=interchange.walk_minutes,
+            interchanges.extend(half.interchanges)
+            fares.append(
+                NetworkFare(
+                    network=network,
+                    normal=half.fare.normal,
+                    special=half.fare.special,
+                    applicable=half.fare.applicable,
                 )
             )
+            if half.fallback_reason:
+                fallback_reasons.append(half.fallback_reason)
 
-        legs.extend(
-            leg.model_copy(update={"network": network, "source": half.source})
-            for leg in half.legs
+        planned = [half for half in halves if half is not None]
+        normal = sum(fare.normal for fare in fares)
+        applicable = _sum_optional([fare.applicable for fare in fares])
+        special = _sum_optional([fare.special for fare in fares])
+        rail_fare = next(
+            (half.fare for half in planned if half.source is JourneySource.NCRTC), None
         )
-        interchanges.extend(half.interchanges)
-        station_count += half.station_count
-        half_minutes = _duration_minutes(half.total_time)
-        if half_minutes is not None:
-            total_minutes += half_minutes
-        if half.total_distance_km is not None:
-            total_distance = (total_distance or 0.0) + half.total_distance_km
-        if half.fallback_reason:
-            fallback_reasons.append(half.fallback_reason)
-
-        fare_breakdown.append(
-            NetworkFare(
-                network=network,
-                normal=half.fare.normal,
-                special=half.fare.special,
-                applicable=half.fare.applicable,
-            )
+        classes = []
+        if rail_fare is not None:
+            other_amount = normal - rail_fare.normal
+            classes = [
+                FareClass.model_validate(
+                    {"class": item.name, "amount": item.amount + other_amount}
+                )
+                for item in rail_fare.classes
+            ]
+            if applicable is not None:
+                applicable = sum(
+                    fare.applicable if fare.applicable is not None else fare.normal
+                    for fare in fares
+                )
+            if special is not None:
+                special = sum(
+                    fare.special if fare.special is not None else fare.normal
+                    for fare in fares
+                )
+        distance = _sum_optional([half.total_distance_km for half in planned])
+        return total_minutes, PlannedJourney(
+            source=JourneySource.COMBINED,
+            networks=networks,
+            separate_tickets=len(fares) > 1,
+            fallback_reason="; ".join(fallback_reasons) or None,
+            strategy=strategy,
+            exclude_airport_line=any(half.exclude_airport_line for half in planned),
+            origin=halves[0].origin
+            if halves[0]
+            else _interchange_station(links[0], from_network),
+            destination=halves[-1].destination
+            if halves[-1]
+            else _interchange_station(links[-1], to_network),
+            station_count=sum(half.station_count for half in planned),
+            total_time=_format_minutes(total_minutes),
+            total_distance_km=round(distance, 3) if distance is not None else None,
+            fare=PlannedFare(
+                normal=normal,
+                special=special,
+                applicable=applicable,
+                breakdown=fares,
+                classes=classes,
+                smart_card=combined_card_fare(
+                    [half.fare for half in planned], local_departure(journey_time)
+                ),
+            ),
+            legs=legs,
+            interchanges=interchanges,
+            metro_service=halves[0].metro_service if halves[0] else None,
+            service_available=all(
+                half.service_available is not False for half in planned
+            ),
+            ticket_available=False,
+            bookings=bookings_for(networks),
+            booking_options=booking_options_for([fare.network for fare in fares]),
         )
 
-    # Both halves skipped means the journey is the interchange walk itself.
-    if not legs:
-        legs.append(_transfer_leg(interchange, from_network))
-
-    def _sum(values: list[float | None]) -> float | None:
-        present = [value for value in values if value is not None]
-        return sum(present) if present else None
-
-    return PlannedJourney(
-        source=JourneySource.COMBINED,
-        networks=[from_network, to_network],
-        # Only a journey that actually rides both networks needs two tickets.
-        separate_tickets=len(fare_breakdown) > 1,
-        fallback_reason="; ".join(fallback_reasons) or None,
-        strategy=strategy,
-        exclude_airport_line=(
-            first_half.exclude_airport_line
-            if first_half and from_network is MetroNetwork.DMRC
-            else second_half.exclude_airport_line
-            if second_half and to_network is MetroNetwork.DMRC
-            else False
-        ),
-        origin=(
-            first_half.origin
-            if first_half
-            else _interchange_station(interchange, from_network)
-        ),
-        destination=(
-            second_half.destination
-            if second_half
-            else _interchange_station(interchange, to_network)
-        ),
-        station_count=station_count,
-        total_time=_format_minutes(total_minutes),
-        total_distance_km=(
-            round(total_distance, 3) if total_distance is not None else None
-        ),
-        fare=PlannedFare(
-            normal=sum(item.normal for item in fare_breakdown),
-            special=_sum([item.special for item in fare_breakdown]),
-            applicable=_sum([item.applicable for item in fare_breakdown]),
-            breakdown=fare_breakdown,
-        ),
-        legs=legs,
-        interchanges=interchanges,
-        metro_service=first_half.metro_service if first_half else None,
-        service_available=all(
-            half.service_available is not False
-            for half in (first_half, second_half)
-            if half is not None
-        ),
-        ticket_available=False,
-        bookings=bookings_for([from_network, to_network]),
+    outcomes = await asyncio.gather(
+        *(stitch(links) for links in product(*connections)),
+        return_exceptions=True,
     )
+    for outcome in outcomes:
+        if isinstance(outcome, BaseException) and not isinstance(
+            outcome, (ApiRequestError, UpstreamApiError)
+        ):
+            raise outcome
+    plans = [outcome for outcome in outcomes if not isinstance(outcome, BaseException)]
+    if plans:
+        return min(plans, key=lambda item: item[0])[1]
+    raise outcomes[0]
 
 
 async def plan_journey(
@@ -391,35 +511,15 @@ async def plan_journey(
     source: JourneySource | None = None,
     network: MetroNetwork = MetroNetwork.DMRC,
 ) -> PlannedJourney:
-    """Plan one journey, choosing the network(s) and the answering upstream.
-
-    Args:
-        source: Pin the Delhi Metro portion to one upstream. When omitted,
-            Sarthi is tried first (unless disabled) and DMRC serves failures.
-        network: Hint used only when a station code resolves in neither
-            catalog. Endpoints that do resolve decide the network themselves,
-            including a journey that spans both.
-
-    Raises:
-        ApiRequestError: If the network/source combination is invalid.
-        UpstreamApiError: If the selected source fails, or if both fail.
-    """
-
     from_network, to_network = await asyncio.gather(
         _detect_network(from_station_code),
         _detect_network(to_station_code),
     )
-
-    if (
-        from_network is not None
-        and to_network is not None
-        and from_network is not to_network
-    ):
+    if from_network and to_network and from_network is not to_network:
         if source not in {None, JourneySource.SARTHI, JourneySource.DMRC}:
             raise ApiRequestError(
-                f"Source '{source.value}' cannot plan a journey that crosses "
-                f"networks",
-                status_code=400,
+                f"Source '{source.value}' cannot plan a journey that crosses networks",
+                400,
             )
         return await _plan_cross_network(
             from_station_code=from_station_code,
@@ -429,36 +529,27 @@ async def plan_journey(
             strategy=strategy,
             journey_time=journey_time,
             exclude_airport_line=exclude_airport_line,
+            source=source,
         )
 
     resolved_network = from_network or to_network or network
-
-    if resolved_network is MetroNetwork.NMRC:
-        if source not in {None, JourneySource.NMRC}:
-            raise ApiRequestError(
-                f"Source '{source.value}' cannot plan an NMRC journey",
-                status_code=400,
-            )
-        plan = await nmrc_planner.plan_journey(
-            from_station_code=from_station_code,
-            to_station_code=to_station_code,
-            strategy=strategy,
-            journey_time=journey_time,
-        )
-        return _stamp_network(plan, MetroNetwork.NMRC)
-
-    if source is JourneySource.NMRC:
+    allowed = {
+        MetroNetwork.DMRC: {None, JourneySource.SARTHI, JourneySource.DMRC},
+        MetroNetwork.NMRC: {None, JourneySource.NMRC},
+        MetroNetwork.NCRTC: {None, JourneySource.NCRTC},
+    }
+    if source not in allowed[resolved_network]:
         raise ApiRequestError(
-            "Source 'nmrc' requires an NMRC station",
-            status_code=400,
+            f"Source '{source.value}' cannot plan a {resolved_network.value} journey",
+            400,
         )
-
-    plan = await _plan_on_dmrc(
-        from_station_code=from_station_code,
-        to_station_code=to_station_code,
-        strategy=strategy,
-        journey_time=journey_time,
-        exclude_airport_line=exclude_airport_line,
-        source=source,
+    plan = await _plan_on_network(
+        resolved_network,
+        from_station_code,
+        to_station_code,
+        strategy,
+        journey_time,
+        exclude_airport_line,
+        source,
     )
-    return _stamp_network(plan, MetroNetwork.DMRC)
+    return _stamp_network(plan, resolved_network)

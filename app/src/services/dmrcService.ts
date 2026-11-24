@@ -12,12 +12,13 @@ import type {
   PassengerNotificationDetail,
   PlannedJourney,
   RouteStrategy,
-  WhatsAppBooking,
+  TicketBooking,
   StationByLineItem,
   StationDetail,
   StationSearchResult,
 } from '../types';
-import type { MetroNetwork } from '../network';
+import { OPERATORS, type MetroNetwork } from '../network';
+import { fromPack, planOffline } from '../offline/reader';
 
 const API_V1 = '/api/v1';
 const API_V2 = '/api/v2';
@@ -67,7 +68,7 @@ export class DmrcService {
 
   /** Both networks' stored line lists, merged the same way a live fetch merges them. */
   async getCachedLines(): Promise<Cached<MetroLine[]> | null> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
     const stored = await Promise.all(
       order.map((network) => catalogCache.readLines(network)),
     );
@@ -104,7 +105,7 @@ export class DmrcService {
   async getAllLinesAcrossNetworks(
     shown?: Cached<MetroLine[]>,
   ): Promise<Cached<MetroLine[]>> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
     const results = await Promise.allSettled(
       order.map((network) => {
         const half = shown?.data.filter((line) => line.network === network);
@@ -210,6 +211,8 @@ export class DmrcService {
       if (cachedStations) {
         return cachedStations;
       }
+      const packed = await fromPack((pack) => pack.stations(network)).catch(() => null);
+      if (packed) return packed.payload;
       throw error;
     }
   }
@@ -222,7 +225,7 @@ export class DmrcService {
    * operator being down still leaves the other searchable.
    */
   async getAllStationsAcrossNetworks(): Promise<StationSearchResult[]> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
 
     const results = await Promise.allSettled(
       order.map((network) => this.getAllStationsAndRefreshCache(network)),
@@ -271,9 +274,9 @@ export class DmrcService {
    * Plan one journey via the v2 planner (Sarthi first, DMRC fallback).
    * Station codes may be in either upstream's vocabulary.
    */
-  /** The operator's WhatsApp ticket link. Stations are not included. */
-  getBooking(network: MetroNetwork): Promise<WhatsAppBooking> {
-    return this.apiClient.get<WhatsAppBooking>(`${API_V1}/${network}/booking`);
+  /** The operator's official ticket booking option. */
+  getBooking(network: MetroNetwork): Promise<TicketBooking> {
+    return this.apiClient.get<TicketBooking>(`${API_V1}/${network}/booking`);
   }
 
   planJourney(request: PlanJourneyRequest): Promise<PlannedJourney> {
@@ -332,6 +335,13 @@ export class DmrcService {
       if (cached) {
         return { data: cached.plan, savedAt: cached.savedAt ?? 0, fromCache: true };
       }
+      // Never planned online: work it out from the offline pack, if there is one.
+      const offline = await planOffline(
+        request.fromStationCode,
+        request.toStationCode,
+        request.strategy,
+      ).catch(() => null);
+      if (offline) return { data: offline.plan, savedAt: offline.savedAt, fromCache: true };
       throw error;
     }
   }

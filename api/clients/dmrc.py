@@ -10,6 +10,7 @@ import httpx
 
 from core.config import settings
 from core.errors import UpstreamApiError
+from core.upstream_pacing import pace_request
 
 
 class DmrcApiClient:
@@ -84,6 +85,7 @@ class DmrcApiClient:
 
         client = await self._get_client()
         try:
+            await pace_request()
             response = await client.get(path)
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC upstream request timed out") from exc

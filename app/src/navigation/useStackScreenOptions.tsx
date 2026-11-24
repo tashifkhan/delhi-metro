@@ -1,10 +1,9 @@
 import { useHaptics } from '../hooks/useHaptics';
 import { useIsDesktop } from '../hooks/useIsDesktop';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import type { NativeStackNavigationOptions } from '@react-navigation/native-stack';
 import { Appbar, Text, useTheme } from 'react-native-paper';
 import { duration } from '../theme/motion';
-import { NetworkSwitcher } from '../components/NetworkSwitcher';
 import { emphasis, spacing } from '../theme';
 import { useAppTheme } from '../theme/ThemeContext';
 import { animationPreference } from '../theme/animationPreferences';
@@ -22,23 +21,8 @@ type OptionsFactory = (props: {
  *
  * The push uses a horizontal slide, Material's "shared axis X" for forward and
  * backward movement within a hierarchy.
- *
- * `networkSwitcher` is opt-in: journey planning and station search work across
- * both operators, so a network toggle there would suggest a scope that no
- * longer exists. Only the screens that genuinely show one operator's content
- * at a time — alerts and the network map — ask for it.
- *
- * Every element below is a *direct* child of `Appbar.Header`. It inspects its
- * children to decide alignment and spacing, so grouping them in a fragment
- * hides them from that check and silently left-aligns every title on iOS.
- *
- * On the two screens that do carry the switcher, iOS needs the space left of
- * the title to match it, or the centred title lands off-centre. Rather than
- * measure the switcher, the left side renders it again at zero opacity: the
- * sides are then identical by construction, and the title ellipsises before it
- * can reach either. Android left-aligns throughout, so it never needs this.
  */
-export function useStackScreenOptions({ networkSwitcher = false } = {}): OptionsFactory {
+export function useStackScreenOptions(): OptionsFactory {
   const theme = useTheme();
   const haptics = useHaptics();
   const isDesktop = useIsDesktop();
@@ -49,7 +33,6 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
     animationDuration: duration.medium2,
     header: ({ options, back }) => {
       const title = options.title ?? '';
-      const showSwitcher = !back && networkSwitcher;
 
       // Desktop headings are plain page titles, not app bars. The level2 band
       // next to the sidebar read as a second navbar.
@@ -70,15 +53,12 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
             >
               {title}
             </Text>
-            {showSwitcher ? <NetworkSwitcher compact /> : null}
             {options.headerRight
               ? options.headerRight({ canGoBack: Boolean(back), tintColor: theme.colors.onSurface })
               : null}
           </View>
         );
       }
-
-      const centreAroundSwitcher = showSwitcher && Platform.OS === 'ios';
 
       return (
         <Appbar.Header
@@ -89,38 +69,11 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
             <Appbar.BackAction onPress={() => { haptics.navigate(); navigation.goBack(); }} color={theme.colors.onSurface} />
           ) : null}
 
-          {centreAroundSwitcher ? (
-            <View
-              style={styles.mirror}
-              pointerEvents="none"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              <NetworkSwitcher compact />
-            </View>
-          ) : null}
-
-          {centreAroundSwitcher ? (
-            <Text
-              variant="titleLarge"
-              numberOfLines={1}
-              // A title that only just overruns should shrink rather than lose
-              // characters; anything genuinely long still ellipsises.
-              adjustsFontSizeToFit
-              minimumFontScale={0.85}
-              style={[emphasis.heavy, styles.title, { color: theme.colors.onSurface }]}
-            >
-              {title}
-            </Text>
-          ) : (
-            <Appbar.Content
-              title={title}
-              color={theme.colors.onSurface}
-              titleStyle={{ fontWeight: '600' }}
-            />
-          )}
-
-          {showSwitcher ? <NetworkSwitcher compact /> : null}
+          <Appbar.Content
+            title={title}
+            color={theme.colors.onSurface}
+            titleStyle={{ fontWeight: '600' }}
+          />
           {options.headerRight
             ? options.headerRight({ canGoBack: Boolean(back), tintColor: theme.colors.onSurface })
             : null}
@@ -132,14 +85,6 @@ export function useStackScreenOptions({ networkSwitcher = false } = {}): Options
 }
 
 const styles = StyleSheet.create({
-  mirror: {
-    opacity: 0,
-  },
-  title: {
-    flex: 1,
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
   desktopHeader: {
     flexDirection: 'row',
     alignItems: 'center',

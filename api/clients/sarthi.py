@@ -16,6 +16,7 @@ import httpx
 
 from core.config import settings
 from core.errors import UpstreamApiError
+from core.upstream_pacing import pace_request
 
 
 class SarthiApiClient:
@@ -78,6 +79,7 @@ class SarthiApiClient:
 
         client = await self._get_client()
         try:
+            await pace_request()
             response = await client.get(path, params=params)
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("Sarthi upstream request timed out") from exc

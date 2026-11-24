@@ -4,7 +4,7 @@ export type RouteStrategy = 'least-distance' | 'minimum-interchange';
  * Passenger network, mirroring the API's `network` parameter. Declared here
  * rather than in the network context so the type layer stays dependency-free.
  */
-export type MetroNetwork = 'dmrc' | 'nmrc';
+export type MetroNetwork = 'dmrc' | 'nmrc' | 'ncrtc';
 
 /** Cache/query scope for a journey, which may span both networks. */
 export type JourneyScope = MetroNetwork | 'combined';
@@ -58,10 +58,19 @@ export interface PassengerNotification {
   date: string;
 }
 
+/** One block of a notice, converted from the operator's HTML by the API. */
+export interface NoticeBlock {
+  type: 'paragraph' | 'heading' | 'list_item' | 'link';
+  text: string;
+  href?: string | null;
+}
+
 export interface PassengerNotificationDetail {
   page_id: number | null;
   title: string;
   content: string;
+  /** Absent from API deploys that predate it; the app then reads `content`. */
+  body_blocks?: NoticeBlock[];
   page_slug: string;
   cover_photo: NotificationImage | null;
   seo_title: string | null;
@@ -93,6 +102,7 @@ export interface StationSearchResult {
   station_code: string;
   station_facility: StationFacility[];
   metro_lines: StationLineBadge[];
+  interchange?: boolean;
   /**
    * Which operator publishes this station. Added by the app when the two
    * catalogs are merged, not returned by the API.
@@ -160,7 +170,8 @@ export interface JourneyPlan {
 }
 
 /** Upstream that produced a v2 journey plan. */
-export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'combined';
+/** `offline` is a plan the app worked out from the offline pack. */
+export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'ncrtc' | 'combined' | 'offline';
 
 /** What a traveller does during one leg. */
 export type LegKind = 'metro' | 'transfer';
@@ -181,10 +192,27 @@ export interface PlannedStation {
   status: string | null;
 }
 
+/** A smart card fare the API worked out from the operator's published rule. */
+export interface SmartCardFare {
+  amount: number;
+  off_peak: boolean;
+  rule: string;
+  derived: true;
+}
+
+export interface FareClass {
+  class: 'standard' | 'premium';
+  amount: number;
+}
+
 export interface PlannedFare {
   normal: number;
   special: number | null;
   applicable: number | null;
+  /** Absent on plans saved before card fares existed. */
+  smart_card?: SmartCardFare | null;
+  /** Namo Bharat's Standard and Premium; empty or absent elsewhere. */
+  classes?: FareClass[];
   /** Per-network split, set only when the journey crosses networks. */
   breakdown: NetworkFare[];
 }
@@ -240,6 +268,18 @@ export interface WhatsAppBooking {
   note: string;
 }
 
+export interface AppBooking {
+  channel: 'app';
+  network: MetroNetwork;
+  label: string;
+  url: string;
+  android_url: string;
+  ios_url: string;
+  note: string;
+}
+
+export type TicketBooking = WhatsAppBooking | AppBooking;
+
 /** Normalized journey plan from GET /api/v2/journeys/plan. */
 export interface PlannedJourney {
   source: JourneySource;
@@ -261,11 +301,10 @@ export interface PlannedJourney {
   metro_service: ServiceTimes | null;
   service_available: boolean | null;
   ticket_available: boolean | null;
-  /**
-   * One link per network the journey rides. Missing on plans saved before
-   * this field existed.
-   */
+  /** WhatsApp links returned by older API deployments. */
   bookings?: WhatsAppBooking[];
+  /** Official options for the operators ridden, including app booking. */
+  booking_options?: TicketBooking[];
 }
 
 export interface StationByLineItem {

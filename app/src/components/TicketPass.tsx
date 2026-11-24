@@ -3,6 +3,7 @@ import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { rgba } from '../theme/colorMath';
 import { emphasis, spacing, tabular } from '../theme';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 export interface PassColumn {
   label: string;
@@ -19,7 +20,7 @@ interface Props {
   toName: string;
   date: string;
   duration: string;
-  columns: [PassColumn, PassColumn];
+  columns: PassColumn[];
 }
 
 const NOTCH = 24;
@@ -30,6 +31,7 @@ const NOTCH = 24;
  * notches are cut with that colour.
  */
 export function TicketPass({ fromCode, toCode, fromName, toName, date, duration, columns }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const fg = theme.colors.onPrimary;
   const soft = rgba(fg, 0.16);
@@ -91,31 +93,34 @@ export function TicketPass({ fromCode, toCode, fromName, toName, date, duration,
         <View style={[styles.notch, styles.notchRight, { backgroundColor: theme.colors.background }]} />
       </View>
 
-      <View style={styles.columns}>
-        {columns.map((column, index) => (
-          <View key={column.label} style={[styles.column, index === 1 && styles.endRight]}>
-            <Text variant="labelSmall" style={[styles.colLabel, { color: fg }]}>
-              {column.label}
-            </Text>
-            <Text variant="headlineSmall" style={[emphasis.strong, tabular, { color: fg }]}>
-              {column.value}
-            </Text>
-            {column.note ? (
-              <View style={[styles.noteRow, index === 1 && styles.noteRight]}>
-                {column.color ? <View style={[styles.dot, { backgroundColor: column.color }]} /> : null}
-                <Text variant="bodySmall" numberOfLines={1} style={[styles.noteText, { color: fg }]}>
-                  {column.note}
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        ))}
+      <View style={[styles.columns, columns.length > 2 && styles.stackedColumns]}>
+        {columns.map((column, index) => {
+          const rightAligned = columns.length === 2 && index === 1;
+          return (
+            <View key={column.label} style={[styles.column, rightAligned && styles.endRight]}>
+              <Text variant="labelSmall" style={[styles.colLabel, { color: fg }]}>
+                {column.label}
+              </Text>
+              <Text variant="headlineSmall" style={[emphasis.strong, tabular, { color: fg }]}>
+                {column.value}
+              </Text>
+              {column.note ? (
+                <View style={[styles.noteRow, rightAligned && styles.noteRight]}>
+                  {column.color ? <View style={[styles.dot, { backgroundColor: column.color }]} /> : null}
+                  <Text variant="bodySmall" style={[styles.noteText, { color: fg }]}>
+                    {column.note}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   pass: {
     borderRadius: 28,
     overflow: 'hidden',
@@ -206,6 +211,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: 18,
     gap: 10,
+  },
+  stackedColumns: {
+    flexDirection: 'column',
   },
   column: {
     flex: 1,

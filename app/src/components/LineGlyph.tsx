@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { onColor } from '../theme';
+import { useAppTheme } from '../theme/ThemeContext';
 import { stationName } from '../utils/format';
 import type { MetroLine } from '../types';
 
@@ -11,20 +12,21 @@ import type { MetroLine } from '../types';
  * operator's number ("Line 2"). A few lines carry an internal code in
  * `line_color` instead (RMGL, FOB), so those fall back to `name`.
  */
-export function lineTitle(line: Pick<MetroLine, 'name' | 'line_color'>): string {
+export function lineTitle(line: Pick<MetroLine, 'name' | 'line_color' | 'network'>): string {
+  if (line.network === 'ncrtc') return line.name;
   const color = line.line_color?.trim() ?? '';
   if (!color || /^[A-Z]{2,5}$/.test(color)) return line.name;
   return color.replace(/\(Ext\.\)/i, 'extension').replace(/\s+/g, ' ').trim();
 }
 
 /** "Line 2" stays as the secondary label, but not when it repeats the title. */
-export function lineSubtitle(line: Pick<MetroLine, 'name' | 'line_color'>): string | null {
+export function lineSubtitle(line: Pick<MetroLine, 'name' | 'line_color' | 'network'>): string | null {
   const title = lineTitle(line);
   return title === line.name ? null : line.name;
 }
 
 /** Short glyph for the badge: the line number, or the first letter. */
-export function lineGlyph(line: Pick<MetroLine, 'name' | 'line_color' | 'line_code'>): string {
+export function lineGlyph(line: Pick<MetroLine, 'name' | 'line_color' | 'network'>): string {
   const number = line.name.match(/^Line\s+(\d+)/i)?.[1];
   if (number) return number;
   return lineTitle(line).charAt(0).toUpperCase();
@@ -55,11 +57,14 @@ interface Props {
 
 /** Rounded-square badge in the line colour carrying its number or letter. */
 export function LineGlyph({ color, glyph, size = 40 }: Props) {
+  const { look } = useAppTheme();
+  const borderRadius = look.style === 'material' ? Math.round(size * 0.32) : look.radius.icon;
+
   return (
     <View
       style={[
         styles.badge,
-        { width: size, height: size, borderRadius: Math.round(size * 0.32), backgroundColor: color },
+        { width: size, height: size, borderRadius, backgroundColor: color },
       ]}
     >
       <Text

@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "started_at": "2026-11-24T05:58:31.769796+00:00",
+  "finished_at": "2026-11-24T06:00:45.090857+00:00",
+  "polls": [
+    {
+      "station": "A10",
+      "at": "2026-11-24T05:58:31.770164+00:00",
+      "error": null
+    },
+    {
+      "station": "A11",
+      "at": "2026-11-24T05:58:33.269477+00:00",
+      "error": null
+    },
+    {
+      "station": "A12",
+      "at": "2026-11-24T05:58:34.362034+00:00",
+      "error": null
+    },
+    {
+      "station": "A13",
+      "at": "2026-11-24T05:58:35.772231+00:00",
+      "error": null
+    },
+    {
+      "station": "A14",
+      "at": "2026-11-24T05:58:36.936439+00:00",
+      "error": null
+    },
+    {
+      "station": "A15",
+      "at": "2026-11-24T05:58:38.044437+00:00",
+      "error": null
+    },
+    {
+      "station": "A16",
+      "at": "2026-11-24T05:58:39.148445+00:00",
+      "error": null
+    },
+    {
+      "station": "A17",
+      "at": "2026-11-24T05:58:40.236749+00:00",
+      "error": null
+    },
+    {
+      "station": "A18",
+      "at": "2026-11-24T05:58:41.329112+00:00",
+      "error": null
+    },
+    {
+      "station": "A19",
+      "at": "2026-11-24T05:58:42.425835+00:00",
+      "error": null
+    },
+    {
+      "station": "A20",
+      "at": "2026-11-24T05:58:43.535313+00:00",
+      "error": null
+    },
+    {
+      "station": "A21",
+      "at": "2026-11-24T05:58:44.635145+00:00",
+      "error": null
+    },
+    {
+      "station": "A10",
+      "at": "2026-11-24T06:00:31.774078+00:00",
+      "error": null
+    },
+    {
+      "station": "A11",
+      "at": "2026-11-24T06:00:32.897946+00:00",
+      "error": null
+    },
+    {
+      "station": "A12",
+      "at": "2026-11-24T06:00:34.042412+00:00",
+      "error": null
+    },
+    {
+      "station": "A13",
+      "at": "2026-11-24T06:00:35.160380+00:00",
+      "error": null
+    },
+    {
+      "station": "A14",
+      "at": "2026-11-24T06:00:36.278938+00:00",
+      "error": null
+    },
+    {
+      "station": "A15",
+      "at": "2026-11-24T06:00:37.378178+00:00",
+      "error": null
+    },
+    {
+      "station": "A16",
+      "at": "2026-11-24T06:00:38.477975+00:00",
+      "error": null
+    },
+    {
+      "station": "A17",
+      "at": "2026-11-24T06:00:39.596933+00:00",
+      "error": null
+    },
+    {
+      "station": "A18",
+      "at": "2026-11-24T06:00:40.695799+00:00",
+      "error": null
+    },
+    {
+      "station": "A19",
+      "at": "2026-11-24T06:00:41.783493+00:00",
+      "error": null
+    },
+    {
+      "station": "A20",
+      "at": "2026-11-24T06:00:42.886355+00:00",
+      "error": null
+    },
+    {
+      "station": "A21",
+      "at": "2026-11-24T06:00:43.980124+00:00",
+      "error": null
+    }
+  ],
+  "services": [
+    {
+      "source": "A01",
+      "destination": "A21",
+      "train_id": "13432105",
+      "observed_stops": [
+        "A13",
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "A01",
+      "destination": "A21",
+      "train_id": "13432305",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "A01",
+      "destination": "A21",
+      "train_id": "13433404",
+      "observed_stops": [
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428111",
+      "observed_stops": [
+        "A10"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428210",
+      "observed_stops": [
+        "A13",
+        "A14",
+        "A15",
+        "A17",
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428309",
+      "observed_stops": [
+        "A21"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428410",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A14",
+        "A15",
+        "A17",
+        "A19"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428509",
+      "observed_stops": [
+        "A17",
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428610",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A14",
+        "A15"
+      ]
+    },
+    {
+      "source": "A10",
+      "destination": "A21",
+      "train_id": "13428810",
+      "observed_stops": [
+        "A10",
+        "A13"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328110",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A14",
+        "A15",
+        "A17",
+        "A19"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328211",
+      "observed_stops": [
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328310",
+      "observed_stops": [
+        "A13",
+        "A14",
+        "A15",
+        "A17",
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328510",
+      "observed_stops": [
+        "A17",
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328609",
+      "observed_stops": [
+        "A10",
+        "A13"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "A10",
+      "train_id": "12328809",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A14",
+        "A15"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "Z00",
+      "train_id": "11132106",
+      "observed_stops": [
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "Z00",
+      "train_id": "11132805",
+      "observed_stops": [
+        "A10"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "Z00",
+      "train_id": "11133005",
+      "observed_stops": [
+        "A10",
+        "A13"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "Z00",
+      "train_id": "11133205",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "A21",
+      "destination": "Z00",
+      "train_id": "11133405",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A17",
+        "A21"
+      ]
+    },
+    {
+      "source": "Z00",
+      "destination": "A10",
+      "train_id": "12325803",
+      "observed_stops": [
+        "A10"
+      ]
+    },
+    {
+      "source": "Z00",
+      "destination": "A21",
+      "train_id": "13432505",
+      "observed_stops": [
+        "A10",
+        "A13",
+        "A17"
+      ]
+    },
+    {
+      "source": "Z00",
+      "destination": "A21",
+      "train_id": "13432705",
+      "observed_stops": [
+        "A10"
+      ]
+    }
+  ]
+}

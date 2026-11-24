@@ -1,6 +1,8 @@
 import type { Query } from '@tanstack/react-query';
 
 import { offlineStore } from './offlineStore';
+import { fromPack } from '../offline/reader';
+import type { PackSelectors } from '../offline/bundle';
 import type {
   MetroLine,
   MetroNetwork,
@@ -38,6 +40,8 @@ async function readThrough<T>(
   key: string,
   load: () => Promise<T>,
   shown?: Cached<T>,
+  /** Last resort: the same catalog from the downloaded offline pack. */
+  pack?: (select: PackSelectors) => T | null,
 ): Promise<Cached<T>> {
   try {
     const data = await load();
@@ -62,6 +66,10 @@ async function readThrough<T>(
     }
     if (stored) {
       return { data: stored.payload, savedAt: stored.savedAt, fromCache: true };
+    }
+    const packed = pack ? await fromPack(pack).catch(() => null) : null;
+    if (packed) {
+      return { data: packed.payload, savedAt: packed.savedAt, fromCache: true };
     }
     throw error;
   }
@@ -111,33 +119,39 @@ export const catalogCache = {
     offlineStore.get<MapAssetByFormatResponse>(mapKey(network)),
 
   lines: (network: MetroNetwork, load: () => Promise<MetroLine[]>, shown?: Cached<MetroLine[]>) =>
-    readThrough(linesKey(network), load, shown),
+    readThrough(linesKey(network), load, shown, (pack) => pack.lines(network)),
 
   notifications: (
     network: MetroNetwork,
     load: () => Promise<PassengerNotification[]>,
     shown?: Cached<PassengerNotification[]>,
-  ) => readThrough(notificationsKey(network), load, shown),
+  ) => readThrough(notificationsKey(network), load, shown, (pack) => pack.notifications(network)),
 
   notificationDetail: (
     slug: string,
     load: () => Promise<PassengerNotificationDetail>,
     shown?: Cached<PassengerNotificationDetail>,
-  ) => readThrough(notificationDetailKey(slug), load, shown),
+  ) => readThrough(notificationDetailKey(slug), load, shown, (pack) => pack.notificationDetail(slug)),
 
   stationsByLine: (
     network: MetroNetwork,
     lineCode: string,
     load: () => Promise<StationByLineItem[]>,
     shown?: Cached<StationByLineItem[]>,
-  ) => readThrough(stationsByLineKey(network, lineCode), load, shown),
+  ) =>
+    readThrough(stationsByLineKey(network, lineCode), load, shown, (pack) =>
+      pack.stationsByLine(network, lineCode),
+    ),
 
   stationDetail: (
     network: MetroNetwork,
     stationCode: string,
     load: () => Promise<StationDetail>,
     shown?: Cached<StationDetail>,
-  ) => readThrough(stationDetailKey(network, stationCode), load, shown),
+  ) =>
+    readThrough(stationDetailKey(network, stationCode), load, shown, (pack) =>
+      pack.stationDetail(network, stationCode),
+    ),
 
   map: (
     network: MetroNetwork,

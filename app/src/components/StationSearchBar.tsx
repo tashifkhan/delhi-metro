@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Touchable } from './Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
 import { radius, spacing } from '../theme';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 interface Props {
   value: string;
@@ -22,6 +23,7 @@ export const StationSearchBar = forwardRef<TextInput, Props>(function StationSea
   { value, onChangeText, placeholder = 'Search stations', autoFocus },
   ref,
 ) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
 
@@ -62,7 +64,7 @@ export const StationSearchBar = forwardRef<TextInput, Props>(function StationSea
   );
 });
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   bar: {
     height: 56,
     borderRadius: 28,

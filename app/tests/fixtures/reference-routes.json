@@ -1,0 +1,1922 @@
+[
+{
+"from": "dmrc:OVA",
+"to": "dmrc:IPE",
+"strategy": "least-distance",
+"km": 18.535,
+"minutes": 43.472,
+"changes": 2
+},
+{
+"from": "dmrc:SFTN",
+"to": "dmrc:CDLI",
+"strategy": "least-distance",
+"km": 18.128,
+"minutes": 38.917,
+"changes": 1
+},
+{
+"from": "dmrc:DLIC",
+"to": "ncrtc:A21",
+"strategy": "least-distance",
+"km": 87.747,
+"minutes": 121.758,
+"changes": 4
+},
+{
+"from": "dmrc:DST",
+"to": "dmrc:RHW",
+"strategy": "least-distance",
+"km": 26.77,
+"minutes": 68.592,
+"changes": 2
+},
+{
+"from": "dmrc:CTST",
+"to": "ncrtc:A06",
+"strategy": "least-distance",
+"km": 30.391,
+"minutes": 53.248,
+"changes": 2
+},
+{
+"from": "dmrc:KNR",
+"to": "dmrc:BLSW",
+"strategy": "least-distance",
+"km": 14.651,
+"minutes": 51.126,
+"changes": 4
+},
+{
+"from": "dmrc:DSFN",
+"to": "dmrc:SPBI",
+"strategy": "least-distance",
+"km": 28.076,
+"minutes": 80.023,
+"changes": 4
+},
+{
+"from": "dmrc:SMPK",
+"to": "dmrc:DL2",
+"strategy": "least-distance",
+"km": 43.656,
+"minutes": 99.409,
+"changes": 2
+},
+{
+"from": "dmrc:MIAA",
+"to": "dmrc:DSHP",
+"strategy": "least-distance",
+"km": 23.476,
+"minutes": 67.435,
+"changes": 3
+},
+{
+"from": "nmrc:NM06",
+"to": "dmrc:SNVH",
+"strategy": "least-distance",
+"km": 34.974,
+"minutes": 80.83,
+"changes": 3
+},
+{
+"from": "dmrc:CWBR",
+"to": "nmrc:NM13",
+"strategy": "least-distance",
+"km": 36.081,
+"minutes": 74.411,
+"changes": 2
+},
+{
+"from": "dmrc:GNPK",
+"to": "dmrc:LKM",
+"strategy": "least-distance",
+"km": 4.258,
+"minutes": 7.74,
+"changes": 0
+},
+{
+"from": "dmrc:DACY",
+"to": "nmrc:NM19",
+"strategy": "least-distance",
+"km": 58.532,
+"minutes": 121.689,
+"changes": 4
+},
+{
+"from": "dmrc:SHD",
+"to": "dmrc:CHK",
+"strategy": "least-distance",
+"km": 7.147,
+"minutes": 22.998,
+"changes": 1
+},
+{
+"from": "dmrc:LJPN",
+"to": "dmrc:BVHM",
+"strategy": "least-distance",
+"km": 30.499,
+"minutes": 55.435,
+"changes": 0
+},
+{
+"from": "nmrc:NM09",
+"to": "dmrc:HKS",
+"strategy": "least-distance",
+"km": 29.493,
+"minutes": 65.491,
+"changes": 2
+},
+{
+"from": "dmrc:NHPC",
+"to": "dmrc:SMPK",
+"strategy": "least-distance",
+"km": 43.298,
+"minutes": 93.717,
+"changes": 2
+},
+{
+"from": "dmrc:IICC",
+"to": "ncrtc:Z00",
+"strategy": "least-distance",
+"km": 28.796,
+"minutes": 58.017,
+"changes": 2
+},
+{
+"from": "dmrc:GHEM",
+"to": "nmrc:NM16",
+"strategy": "least-distance",
+"km": 66.304,
+"minutes": 124.309,
+"changes": 2
+},
+{
+"from": "dmrc:NSHP",
+"to": "nmrc:NM10",
+"strategy": "least-distance",
+"km": 42.515,
+"minutes": 97.986,
+"changes": 3
+},
+{
+"from": "dmrc:JPE",
+"to": "dmrc:DW",
+"strategy": "least-distance",
+"km": 6.814,
+"minutes": 12.386,
+"changes": 0
+},
+{
+"from": "nmrc:NM21",
+"to": "nmrc:NM16",
+"strategy": "least-distance",
+"km": 5.87,
+"minutes": 10.0,
+"changes": 0
+},
+{
+"from": "dmrc:JW",
+"to": "dmrc:RJBH",
+"strategy": "least-distance",
+"km": 18.14,
+"minutes": 47.986,
+"changes": 2
+},
+{
+"from": "dmrc:DSTN",
+"to": "nmrc:NM04",
+"strategy": "least-distance",
+"km": 47.496,
+"minutes": 91.557,
+"changes": 1
+},
+{
+"from": "dmrc:DBMR",
+"to": "nmrc:NM12",
+"strategy": "least-distance",
+"km": 49.369,
+"minutes": 100.245,
+"changes": 2
+},
+{
+"from": "dmrc:CWBR",
+"to": "dmrc:KKDA",
+"strategy": "least-distance",
+"km": 11.895,
+"minutes": 26.618,
+"changes": 1
+},
+{
+"from": "ncrtc:A01",
+"to": "ncrtc:A19",
+"strategy": "least-distance",
+"km": 78.447,
+"minutes": 59.0,
+"changes": 1
+},
+{
+"from": "dmrc:SOEN",
+"to": "dmrc:NV",
+"strategy": "least-distance",
+"km": 14.647,
+"minutes": 46.594,
+"changes": 3
+},
+{
+"from": "dmrc:TN",
+"to": "dmrc:SVVR",
+"strategy": "least-distance",
+"km": 26.41,
+"minutes": 77.812,
+"changes": 5
+},
+{
+"from": "dmrc:RG",
+"to": "dmrc:NPPR",
+"strategy": "least-distance",
+"km": 11.615,
+"minutes": 35.342,
+"changes": 2
+},
+{
+"from": "dmrc:MLCD",
+"to": "dmrc:JPE",
+"strategy": "least-distance",
+"km": 21.38,
+"minutes": 53.072,
+"changes": 2
+},
+{
+"from": "dmrc:MIEE",
+"to": "dmrc:DPCK",
+"strategy": "least-distance",
+"km": 26.611,
+"minutes": 68.14,
+"changes": 3
+},
+{
+"from": "nmrc:NM18",
+"to": "dmrc:NPPR",
+"strategy": "least-distance",
+"km": 59.264,
+"minutes": 126.206,
+"changes": 4
+},
+{
+"from": "ncrtc:A15",
+"to": "dmrc:YMVR",
+"strategy": "least-distance",
+"km": 66.16,
+"minutes": 81.402,
+"changes": 3
+},
+{
+"from": "dmrc:PSPK",
+"to": "dmrc:STVR",
+"strategy": "least-distance",
+"km": 7.995,
+"minutes": 24.924,
+"changes": 1
+},
+{
+"from": "dmrc:NFGH",
+"to": "dmrc:DLIC",
+"strategy": "least-distance",
+"km": 19.71,
+"minutes": 50.771,
+"changes": 2
+},
+{
+"from": "dmrc:GHEM",
+"to": "ncrtc:A09",
+"strategy": "least-distance",
+"km": 68.249,
+"minutes": 107.659,
+"changes": 2
+},
+{
+"from": "dmrc:SMPK",
+"to": "dmrc:JGPA",
+"strategy": "least-distance",
+"km": 25.044,
+"minutes": 60.539,
+"changes": 2
+},
+{
+"from": "dmrc:PSPK",
+"to": "dmrc:IPE",
+"strategy": "least-distance",
+"km": 22.238,
+"minutes": 60.108,
+"changes": 2
+},
+{
+"from": "dmrc:VW",
+"to": "dmrc:SMSM",
+"strategy": "least-distance",
+"km": 16.66,
+"minutes": 40.422,
+"changes": 2
+},
+{
+"from": "dmrc:BRKR",
+"to": "dmrc:DM",
+"strategy": "least-distance",
+"km": 20.284,
+"minutes": 36.872,
+"changes": 0
+},
+{
+"from": "nmrc:NM09",
+"to": "nmrc:NM17",
+"strategy": "least-distance",
+"km": 12.62,
+"minutes": 16.0,
+"changes": 0
+},
+{
+"from": "dmrc:NV",
+"to": "dmrc:PRA",
+"strategy": "least-distance",
+"km": 14.287,
+"minutes": 40.97,
+"changes": 2
+},
+{
+"from": "dmrc:PTVR",
+"to": "ncrtc:A01",
+"strategy": "least-distance",
+"km": 8.761,
+"minutes": 19.634,
+"changes": 1
+},
+{
+"from": "nmrc:NM20",
+"to": "dmrc:TG",
+"strategy": "least-distance",
+"km": 57.088,
+"minutes": 101.419,
+"changes": 1
+},
+{
+"from": "dmrc:DL2",
+"to": "dmrc:DSN",
+"strategy": "least-distance",
+"km": 40.437,
+"minutes": 94.941,
+"changes": 4
+},
+{
+"from": "dmrc:MYPI",
+"to": "dmrc:UNRG",
+"strategy": "least-distance",
+"km": 10.23,
+"minutes": 23.416,
+"changes": 1
+},
+{
+"from": "dmrc:DDSC",
+"to": "dmrc:DACY",
+"strategy": "least-distance",
+"km": 7.168,
+"minutes": 14.552,
+"changes": 1
+},
+{
+"from": "dmrc:NSST",
+"to": "nmrc:NM19",
+"strategy": "least-distance",
+"km": 31.316,
+"minutes": 54.88,
+"changes": 1
+},
+{
+"from": "dmrc:STTA",
+"to": "dmrc:NDI",
+"strategy": "least-distance",
+"km": 28.166,
+"minutes": 56.195,
+"changes": 1
+},
+{
+"from": "dmrc:S55",
+"to": "dmrc:PTMD",
+"strategy": "least-distance",
+"km": 33.236,
+"minutes": 80.77,
+"changes": 3
+},
+{
+"from": "dmrc:BACH",
+"to": "dmrc:TKLM",
+"strategy": "least-distance",
+"km": 61.151,
+"minutes": 120.167,
+"changes": 2
+},
+{
+"from": "dmrc:PVW",
+"to": "dmrc:JIEE",
+"strategy": "least-distance",
+"km": 23.63,
+"minutes": 57.978,
+"changes": 3
+},
+{
+"from": "dmrc:GEC",
+"to": "dmrc:YB",
+"strategy": "least-distance",
+"km": 11.008,
+"minutes": 20.009,
+"changes": 0
+},
+{
+"from": "dmrc:CWBR",
+"to": "dmrc:KPEN",
+"strategy": "least-distance",
+"km": 20.265,
+"minutes": 59.292,
+"changes": 2
+},
+{
+"from": "dmrc:NFGH",
+"to": "dmrc:HCC",
+"strategy": "least-distance",
+"km": 46.018,
+"minutes": 107.996,
+"changes": 3
+},
+{
+"from": "dmrc:MKPR",
+"to": "dmrc:SHD",
+"strategy": "least-distance",
+"km": 15.216,
+"minutes": 42.654,
+"changes": 2
+},
+{
+"from": "dmrc:SAKT",
+"to": "ncrtc:A01",
+"strategy": "least-distance",
+"km": 18.804,
+"minutes": 51.653,
+"changes": 2
+},
+{
+"from": "dmrc:DPCK",
+"to": "dmrc:JGPI",
+"strategy": "least-distance",
+"km": 8.425,
+"minutes": 18.961,
+"changes": 1
+},
+{
+"from": "dmrc:STVR",
+"to": "dmrc:SHPK",
+"strategy": "least-distance",
+"km": 22.563,
+"minutes": 56.014,
+"changes": 2
+},
+{
+"from": "nmrc:NM05",
+"to": "dmrc:NCAJ",
+"strategy": "least-distance",
+"km": 39.638,
+"minutes": 93.304,
+"changes": 3
+},
+{
+"from": "dmrc:IDPT",
+"to": "dmrc:SOOG",
+"strategy": "least-distance",
+"km": 20.23,
+"minutes": 42.033,
+"changes": 1
+},
+{
+"from": "nmrc:NM05",
+"to": "dmrc:NCAJ",
+"strategy": "least-distance",
+"km": 39.638,
+"minutes": 93.304,
+"changes": 3
+},
+{
+"from": "dmrc:SLTP",
+"to": "dmrc:RCK",
+"strategy": "least-distance",
+"km": 17.308,
+"minutes": 31.463,
+"changes": 0
+},
+{
+"from": "dmrc:RN",
+"to": "dmrc:MAPR",
+"strategy": "least-distance",
+"km": 5.809,
+"minutes": 25.34,
+"changes": 2
+},
+{
+"from": "dmrc:IPE",
+"to": "dmrc:DSE",
+"strategy": "least-distance",
+"km": 39.247,
+"minutes": 76.288,
+"changes": 1
+},
+{
+"from": "dmrc:JLNS",
+"to": "dmrc:IPE",
+"strategy": "least-distance",
+"km": 16.838,
+"minutes": 35.259,
+"changes": 1
+},
+{
+"from": "dmrc:MAPR",
+"to": "dmrc:MDHS",
+"strategy": "least-distance",
+"km": 15.253,
+"minutes": 32.736,
+"changes": 1
+},
+{
+"from": "dmrc:APOT",
+"to": "dmrc:VS",
+"strategy": "least-distance",
+"km": 25.14,
+"minutes": 41.199,
+"changes": 1
+},
+{
+"from": "dmrc:JPVE",
+"to": "dmrc:MVE",
+"strategy": "least-distance",
+"km": 24.335,
+"minutes": 54.547,
+"changes": 2
+},
+{
+"from": "dmrc:NCC",
+"to": "dmrc:AIIMS",
+"strategy": "least-distance",
+"km": 20.894,
+"minutes": 54.166,
+"changes": 2
+},
+{
+"from": "dmrc:IIT",
+"to": "dmrc:SMPK",
+"strategy": "least-distance",
+"km": 29.575,
+"minutes": 73.733,
+"changes": 2
+},
+{
+"from": "ncrtc:A20",
+"to": "dmrc:RISE",
+"strategy": "least-distance",
+"km": 87.102,
+"minutes": 123.078,
+"changes": 3
+},
+{
+"from": "nmrc:NM13",
+"to": "dmrc:OKBS",
+"strategy": "least-distance",
+"km": 21.14,
+"minutes": 47.255,
+"changes": 2
+},
+{
+"from": "dmrc:GTBR",
+"to": "ncrtc:A10",
+"strategy": "least-distance",
+"km": 56.993,
+"minutes": 82.587,
+"changes": 2
+},
+{
+"from": "dmrc:CIPK",
+"to": "dmrc:TG",
+"strategy": "least-distance",
+"km": 26.53,
+"minutes": 63.04,
+"changes": 2
+},
+{
+"from": "nmrc:NM10",
+"to": "dmrc:SAKT",
+"strategy": "least-distance",
+"km": 33.175,
+"minutes": 82.185,
+"changes": 3
+},
+{
+"from": "dmrc:SHD",
+"to": "dmrc:SHDN",
+"strategy": "least-distance",
+"km": 4.379,
+"minutes": 7.964,
+"changes": 0
+},
+{
+"from": "dmrc:SFNN",
+"to": "dmrc:EANR",
+"strategy": "least-distance",
+"km": 25.432,
+"minutes": 56.132,
+"changes": 2
+},
+{
+"from": "dmrc:VNNR",
+"to": "dmrc:SHPK",
+"strategy": "least-distance",
+"km": 11.934,
+"minutes": 26.501,
+"changes": 1
+},
+{
+"from": "dmrc:DACY",
+"to": "dmrc:KB",
+"strategy": "least-distance",
+"km": 20.694,
+"minutes": 40.747,
+"changes": 2
+},
+{
+"from": "dmrc:DKV",
+"to": "dmrc:KKDC",
+"strategy": "least-distance",
+"km": 20.411,
+"minutes": 50.488,
+"changes": 3
+},
+{
+"from": "dmrc:SSON",
+"to": "dmrc:JFRB",
+"strategy": "least-distance",
+"km": 26.912,
+"minutes": 58.761,
+"changes": 2
+},
+{
+"from": "dmrc:GAT",
+"to": "dmrc:PRA",
+"strategy": "least-distance",
+"km": 34.286,
+"minutes": 82.231,
+"changes": 2
+},
+{
+"from": "dmrc:CHTP",
+"to": "dmrc:DW",
+"strategy": "least-distance",
+"km": 29.357,
+"minutes": 72.669,
+"changes": 2
+},
+{
+"from": "dmrc:AHNR",
+"to": "nmrc:NM14",
+"strategy": "least-distance",
+"km": 47.882,
+"minutes": 105.135,
+"changes": 3
+},
+{
+"from": "dmrc:IPE",
+"to": "ncrtc:A21",
+"strategy": "least-distance",
+"km": 65.26,
+"minutes": 66.197,
+"changes": 1
+},
+{
+"from": "dmrc:DSW",
+"to": "dmrc:RHE",
+"strategy": "least-distance",
+"km": 23.163,
+"minutes": 62.033,
+"changes": 2
+},
+{
+"from": "dmrc:BCGN",
+"to": "dmrc:DL3",
+"strategy": "least-distance",
+"km": 33.797,
+"minutes": 82.726,
+"changes": 2
+},
+{
+"from": "dmrc:KKDC",
+"to": "dmrc:RKAM",
+"strategy": "least-distance",
+"km": 11.65,
+"minutes": 26.162,
+"changes": 1
+},
+{
+"from": "dmrc:INA",
+"to": "dmrc:MN",
+"strategy": "least-distance",
+"km": 15.173,
+"minutes": 32.58,
+"changes": 1
+},
+{
+"from": "dmrc:PTMD",
+"to": "dmrc:RHE",
+"strategy": "least-distance",
+"km": 18.382,
+"minutes": 48.427,
+"changes": 2
+},
+{
+"from": "dmrc:UNRG",
+"to": "dmrc:GKPR",
+"strategy": "least-distance",
+"km": 24.415,
+"minutes": 59.392,
+"changes": 3
+},
+{
+"from": "dmrc:GEC",
+"to": "dmrc:VTVR",
+"strategy": "least-distance",
+"km": 21.455,
+"minutes": 45.562,
+"changes": 1
+},
+{
+"from": "dmrc:TN",
+"to": "dmrc:VENT",
+"strategy": "least-distance",
+"km": 25.527,
+"minutes": 51.321,
+"changes": 1
+},
+{
+"from": "dmrc:VNPR",
+"to": "dmrc:NUEE",
+"strategy": "least-distance",
+"km": 6.461,
+"minutes": 26.649,
+"changes": 2
+},
+{
+"from": "dmrc:DSET",
+"to": "dmrc:IICC",
+"strategy": "least-distance",
+"km": 3.193,
+"minutes": 9.718,
+"changes": 1
+},
+{
+"from": "dmrc:DW",
+"to": "dmrc:PSPK",
+"strategy": "least-distance",
+"km": 24.906,
+"minutes": 54.681,
+"changes": 1
+},
+{
+"from": "dmrc:MVNR",
+"to": "dmrc:VENT",
+"strategy": "least-distance",
+"km": 20.986,
+"minutes": 47.768,
+"changes": 1
+},
+{
+"from": "dmrc:JB",
+"to": "ncrtc:A11",
+"strategy": "least-distance",
+"km": 61.408,
+"minutes": 88.165,
+"changes": 4
+},
+{
+"from": "dmrc:BACH",
+"to": "dmrc:KKDA",
+"strategy": "least-distance",
+"km": 42.404,
+"minutes": 82.071,
+"changes": 1
+},
+{
+"from": "ncrtc:A17",
+"to": "dmrc:RG",
+"strategy": "least-distance",
+"km": 77.219,
+"minutes": 109.166,
+"changes": 3
+},
+{
+"from": "dmrc:ILOK",
+"to": "nmrc:NM02",
+"strategy": "least-distance",
+"km": 30.888,
+"minutes": 76.299,
+"changes": 3
+},
+{
+"from": "dmrc:BCGN",
+"to": "ncrtc:A17",
+"strategy": "least-distance",
+"km": 66.669,
+"minutes": 67.942,
+"changes": 1
+},
+{
+"from": "dmrc:NP",
+"to": "dmrc:DSHP",
+"strategy": "least-distance",
+"km": 20.571,
+"minutes": 47.23,
+"changes": 1
+},
+{
+"from": "dmrc:MUPR",
+"to": "ncrtc:A12",
+"strategy": "least-distance",
+"km": 54.839,
+"minutes": 73.252,
+"changes": 3
+},
+{
+"from": "dmrc:RHW",
+"to": "dmrc:JGPI",
+"strategy": "least-distance",
+"km": 8.507,
+"minutes": 24.527,
+"changes": 2
+},
+{
+"from": "dmrc:QM",
+"to": "dmrc:LKM",
+"strategy": "least-distance",
+"km": 10.386,
+"minutes": 18.88,
+"changes": 0
+},
+{
+"from": "ncrtc:A19",
+"to": "nmrc:NM01",
+"strategy": "least-distance",
+"km": 87.823,
+"minutes": 89.498,
+"changes": 3
+},
+{
+"from": "ncrtc:A04",
+"to": "dmrc:PBGA",
+"strategy": "least-distance",
+"km": 27.64,
+"minutes": 60.307,
+"changes": 2
+},
+{
+"from": "dmrc:LKM",
+"to": "dmrc:KG",
+"strategy": "least-distance",
+"km": 8.198,
+"minutes": 14.903,
+"changes": 0
+},
+{
+"from": "dmrc:MGRO",
+"to": "dmrc:SHPK",
+"strategy": "least-distance",
+"km": 32.125,
+"minutes": 68.4,
+"changes": 1
+},
+{
+"from": "dmrc:LN",
+"to": "dmrc:KIKJ",
+"strategy": "least-distance",
+"km": 14.567,
+"minutes": 36.475,
+"changes": 2
+},
+{
+"from": "ncrtc:A12",
+"to": "dmrc:YB",
+"strategy": "least-distance",
+"km": 53.487,
+"minutes": 61.924,
+"changes": 2
+},
+{
+"from": "dmrc:QM",
+"to": "dmrc:BEL",
+"strategy": "least-distance",
+"km": 11.544,
+"minutes": 31.04,
+"changes": 1
+},
+{
+"from": "dmrc:BEL",
+"to": "dmrc:NCBC",
+"strategy": "least-distance",
+"km": 47.689,
+"minutes": 117.098,
+"changes": 3
+},
+{
+"from": "dmrc:UNE",
+"to": "dmrc:MUDK",
+"strategy": "least-distance",
+"km": 20.368,
+"minutes": 51.82,
+"changes": 2
+},
+{
+"from": "dmrc:KG",
+"to": "dmrc:PTCK",
+"strategy": "least-distance",
+"km": 5.334,
+"minutes": 9.696,
+"changes": 0
+},
+{
+"from": "dmrc:STTA",
+"to": "dmrc:PTP",
+"strategy": "least-distance",
+"km": 42.429,
+"minutes": 92.133,
+"changes": 2
+},
+{
+"from": "dmrc:RHE",
+"to": "dmrc:DPCK",
+"strategy": "least-distance",
+"km": 2.9,
+"minutes": 9.857,
+"changes": 1
+},
+{
+"from": "dmrc:OVA",
+"to": "dmrc:IPE",
+"strategy": "minimum-interchange",
+"km": 18.535,
+"minutes": 43.472,
+"changes": 2
+},
+{
+"from": "dmrc:SFTN",
+"to": "dmrc:CDLI",
+"strategy": "minimum-interchange",
+"km": 18.128,
+"minutes": 38.917,
+"changes": 1
+},
+{
+"from": "dmrc:DLIC",
+"to": "ncrtc:A21",
+"strategy": "minimum-interchange",
+"km": 91.304,
+"minutes": 104.146,
+"changes": 1
+},
+{
+"from": "dmrc:DST",
+"to": "dmrc:RHW",
+"strategy": "minimum-interchange",
+"km": 26.77,
+"minutes": 68.592,
+"changes": 2
+},
+{
+"from": "dmrc:CTST",
+"to": "ncrtc:A06",
+"strategy": "minimum-interchange",
+"km": 30.391,
+"minutes": 53.248,
+"changes": 2
+},
+{
+"from": "dmrc:KNR",
+"to": "dmrc:BLSW",
+"strategy": "minimum-interchange",
+"km": 15.013,
+"minutes": 36.898,
+"changes": 2
+},
+{
+"from": "dmrc:DSFN",
+"to": "dmrc:SPBI",
+"strategy": "minimum-interchange",
+"km": 42.074,
+"minutes": 81.482,
+"changes": 1
+},
+{
+"from": "dmrc:SMPK",
+"to": "dmrc:DL2",
+"strategy": "minimum-interchange",
+"km": 43.656,
+"minutes": 99.409,
+"changes": 2
+},
+{
+"from": "dmrc:MIAA",
+"to": "dmrc:DSHP",
+"strategy": "minimum-interchange",
+"km": 27.616,
+"minutes": 65.191,
+"changes": 2
+},
+{
+"from": "nmrc:NM06",
+"to": "dmrc:SNVH",
+"strategy": "minimum-interchange",
+"km": 37.915,
+"minutes": 79.294,
+"changes": 2
+},
+{
+"from": "dmrc:CWBR",
+"to": "nmrc:NM13",
+"strategy": "minimum-interchange",
+"km": 36.081,
+"minutes": 74.411,
+"changes": 2
+},
+{
+"from": "dmrc:GNPK",
+"to": "dmrc:LKM",
+"strategy": "minimum-interchange",
+"km": 4.258,
+"minutes": 7.74,
+"changes": 0
+},
+{
+"from": "dmrc:DACY",
+"to": "nmrc:NM19",
+"strategy": "minimum-interchange",
+"km": 81.753,
+"minutes": 146.419,
+"changes": 2
+},
+{
+"from": "dmrc:SHD",
+"to": "dmrc:CHK",
+"strategy": "minimum-interchange",
+"km": 7.147,
+"minutes": 22.998,
+"changes": 1
+},
+{
+"from": "dmrc:LJPN",
+"to": "dmrc:BVHM",
+"strategy": "minimum-interchange",
+"km": 30.499,
+"minutes": 55.435,
+"changes": 0
+},
+{
+"from": "nmrc:NM09",
+"to": "dmrc:HKS",
+"strategy": "minimum-interchange",
+"km": 29.493,
+"minutes": 65.491,
+"changes": 2
+},
+{
+"from": "dmrc:NHPC",
+"to": "dmrc:SMPK",
+"strategy": "minimum-interchange",
+"km": 45.526,
+"minutes": 92.766,
+"changes": 1
+},
+{
+"from": "dmrc:IICC",
+"to": "ncrtc:Z00",
+"strategy": "minimum-interchange",
+"km": 28.796,
+"minutes": 58.017,
+"changes": 2
+},
+{
+"from": "dmrc:GHEM",
+"to": "nmrc:NM16",
+"strategy": "minimum-interchange",
+"km": 66.304,
+"minutes": 124.309,
+"changes": 2
+},
+{
+"from": "dmrc:NSHP",
+"to": "nmrc:NM10",
+"strategy": "minimum-interchange",
+"km": 46.457,
+"minutes": 100.069,
+"changes": 2
+},
+{
+"from": "dmrc:JPE",
+"to": "dmrc:DW",
+"strategy": "minimum-interchange",
+"km": 6.814,
+"minutes": 12.386,
+"changes": 0
+},
+{
+"from": "nmrc:NM21",
+"to": "nmrc:NM16",
+"strategy": "minimum-interchange",
+"km": 5.87,
+"minutes": 10.0,
+"changes": 0
+},
+{
+"from": "dmrc:JW",
+"to": "dmrc:RJBH",
+"strategy": "minimum-interchange",
+"km": 18.14,
+"minutes": 47.986,
+"changes": 2
+},
+{
+"from": "dmrc:DSTN",
+"to": "nmrc:NM04",
+"strategy": "minimum-interchange",
+"km": 47.496,
+"minutes": 91.557,
+"changes": 1
+},
+{
+"from": "dmrc:DBMR",
+"to": "nmrc:NM12",
+"strategy": "minimum-interchange",
+"km": 49.369,
+"minutes": 100.245,
+"changes": 2
+},
+{
+"from": "dmrc:CWBR",
+"to": "dmrc:KKDA",
+"strategy": "minimum-interchange",
+"km": 11.895,
+"minutes": 26.618,
+"changes": 1
+},
+{
+"from": "ncrtc:A01",
+"to": "ncrtc:A19",
+"strategy": "minimum-interchange",
+"km": 78.447,
+"minutes": 59.0,
+"changes": 1
+},
+{
+"from": "dmrc:SOEN",
+"to": "dmrc:NV",
+"strategy": "minimum-interchange",
+"km": 21.846,
+"minutes": 44.268,
+"changes": 1
+},
+{
+"from": "dmrc:TN",
+"to": "dmrc:SVVR",
+"strategy": "minimum-interchange",
+"km": 29.83,
+"minutes": 69.982,
+"changes": 2
+},
+{
+"from": "dmrc:RG",
+"to": "dmrc:NPPR",
+"strategy": "minimum-interchange",
+"km": 17.871,
+"minutes": 36.078,
+"changes": 1
+},
+{
+"from": "dmrc:MLCD",
+"to": "dmrc:JPE",
+"strategy": "minimum-interchange",
+"km": 26.335,
+"minutes": 52.869,
+"changes": 1
+},
+{
+"from": "dmrc:MIEE",
+"to": "dmrc:DPCK",
+"strategy": "minimum-interchange",
+"km": 30.103,
+"minutes": 64.379,
+"changes": 2
+},
+{
+"from": "nmrc:NM18",
+"to": "dmrc:NPPR",
+"strategy": "minimum-interchange",
+"km": 59.645,
+"minutes": 116.9,
+"changes": 3
+},
+{
+"from": "ncrtc:A15",
+"to": "dmrc:YMVR",
+"strategy": "minimum-interchange",
+"km": 67.854,
+"minutes": 75.42,
+"changes": 2
+},
+{
+"from": "dmrc:PSPK",
+"to": "dmrc:STVR",
+"strategy": "minimum-interchange",
+"km": 7.995,
+"minutes": 24.924,
+"changes": 1
+},
+{
+"from": "dmrc:NFGH",
+"to": "dmrc:DLIC",
+"strategy": "minimum-interchange",
+"km": 19.71,
+"minutes": 50.771,
+"changes": 2
+},
+{
+"from": "dmrc:GHEM",
+"to": "ncrtc:A09",
+"strategy": "minimum-interchange",
+"km": 68.249,
+"minutes": 107.659,
+"changes": 2
+},
+{
+"from": "dmrc:SMPK",
+"to": "dmrc:JGPA",
+"strategy": "minimum-interchange",
+"km": 27.272,
+"minutes": 59.588,
+"changes": 1
+},
+{
+"from": "dmrc:PSPK",
+"to": "dmrc:IPE",
+"strategy": "minimum-interchange",
+"km": 22.663,
+"minutes": 56.24,
+"changes": 2
+},
+{
+"from": "dmrc:VW",
+"to": "dmrc:SMSM",
+"strategy": "minimum-interchange",
+"km": 16.66,
+"minutes": 40.422,
+"changes": 2
+},
+{
+"from": "dmrc:BRKR",
+"to": "dmrc:DM",
+"strategy": "minimum-interchange",
+"km": 20.284,
+"minutes": 36.872,
+"changes": 0
+},
+{
+"from": "nmrc:NM09",
+"to": "nmrc:NM17",
+"strategy": "minimum-interchange",
+"km": 12.62,
+"minutes": 16.0,
+"changes": 0
+},
+{
+"from": "dmrc:NV",
+"to": "dmrc:PRA",
+"strategy": "minimum-interchange",
+"km": 15.101,
+"minutes": 37.339,
+"changes": 2
+},
+{
+"from": "dmrc:PTVR",
+"to": "ncrtc:A01",
+"strategy": "minimum-interchange",
+"km": 8.761,
+"minutes": 19.634,
+"changes": 1
+},
+{
+"from": "nmrc:NM20",
+"to": "dmrc:TG",
+"strategy": "minimum-interchange",
+"km": 57.088,
+"minutes": 101.419,
+"changes": 1
+},
+{
+"from": "dmrc:DL2",
+"to": "dmrc:DSN",
+"strategy": "minimum-interchange",
+"km": 53.535,
+"minutes": 112.237,
+"changes": 2
+},
+{
+"from": "dmrc:MYPI",
+"to": "dmrc:UNRG",
+"strategy": "minimum-interchange",
+"km": 10.23,
+"minutes": 23.416,
+"changes": 1
+},
+{
+"from": "dmrc:DDSC",
+"to": "dmrc:DACY",
+"strategy": "minimum-interchange",
+"km": 7.168,
+"minutes": 14.552,
+"changes": 1
+},
+{
+"from": "dmrc:NSST",
+"to": "nmrc:NM19",
+"strategy": "minimum-interchange",
+"km": 31.316,
+"minutes": 54.88,
+"changes": 1
+},
+{
+"from": "dmrc:STTA",
+"to": "dmrc:NDI",
+"strategy": "minimum-interchange",
+"km": 28.166,
+"minutes": 56.195,
+"changes": 1
+},
+{
+"from": "dmrc:S55",
+"to": "dmrc:PTMD",
+"strategy": "minimum-interchange",
+"km": 34.027,
+"minutes": 77.209,
+"changes": 2
+},
+{
+"from": "dmrc:BACH",
+"to": "dmrc:TKLM",
+"strategy": "minimum-interchange",
+"km": 61.151,
+"minutes": 120.167,
+"changes": 2
+},
+{
+"from": "dmrc:PVW",
+"to": "dmrc:JIEE",
+"strategy": "minimum-interchange",
+"km": 27.05,
+"minutes": 60.148,
+"changes": 2
+},
+{
+"from": "dmrc:GEC",
+"to": "dmrc:YB",
+"strategy": "minimum-interchange",
+"km": 11.008,
+"minutes": 20.009,
+"changes": 0
+},
+{
+"from": "dmrc:CWBR",
+"to": "dmrc:KPEN",
+"strategy": "minimum-interchange",
+"km": 32.338,
+"minutes": 75.545,
+"changes": 1
+},
+{
+"from": "dmrc:NFGH",
+"to": "dmrc:HCC",
+"strategy": "minimum-interchange",
+"km": 54.043,
+"minutes": 108.278,
+"changes": 2
+},
+{
+"from": "dmrc:MKPR",
+"to": "dmrc:SHD",
+"strategy": "minimum-interchange",
+"km": 15.9,
+"minutes": 34.658,
+"changes": 1
+},
+{
+"from": "dmrc:SAKT",
+"to": "ncrtc:A01",
+"strategy": "minimum-interchange",
+"km": 18.804,
+"minutes": 51.653,
+"changes": 2
+},
+{
+"from": "dmrc:DPCK",
+"to": "dmrc:JGPI",
+"strategy": "minimum-interchange",
+"km": 8.425,
+"minutes": 18.961,
+"changes": 1
+},
+{
+"from": "dmrc:STVR",
+"to": "dmrc:SHPK",
+"strategy": "minimum-interchange",
+"km": 24.791,
+"minutes": 55.063,
+"changes": 1
+},
+{
+"from": "nmrc:NM05",
+"to": "dmrc:NCAJ",
+"strategy": "minimum-interchange",
+"km": 55.369,
+"minutes": 111.207,
+"changes": 2
+},
+{
+"from": "dmrc:IDPT",
+"to": "dmrc:SOOG",
+"strategy": "minimum-interchange",
+"km": 20.23,
+"minutes": 42.033,
+"changes": 1
+},
+{
+"from": "nmrc:NM05",
+"to": "dmrc:NCAJ",
+"strategy": "minimum-interchange",
+"km": 55.369,
+"minutes": 111.207,
+"changes": 2
+},
+{
+"from": "dmrc:SLTP",
+"to": "dmrc:RCK",
+"strategy": "minimum-interchange",
+"km": 17.308,
+"minutes": 31.463,
+"changes": 0
+},
+{
+"from": "dmrc:RN",
+"to": "dmrc:MAPR",
+"strategy": "minimum-interchange",
+"km": 7.999,
+"minutes": 19.549,
+"changes": 1
+},
+{
+"from": "dmrc:IPE",
+"to": "dmrc:DSE",
+"strategy": "minimum-interchange",
+"km": 39.247,
+"minutes": 76.288,
+"changes": 1
+},
+{
+"from": "dmrc:JLNS",
+"to": "dmrc:IPE",
+"strategy": "minimum-interchange",
+"km": 16.838,
+"minutes": 35.259,
+"changes": 1
+},
+{
+"from": "dmrc:MAPR",
+"to": "dmrc:MDHS",
+"strategy": "minimum-interchange",
+"km": 15.253,
+"minutes": 32.736,
+"changes": 1
+},
+{
+"from": "dmrc:APOT",
+"to": "dmrc:VS",
+"strategy": "minimum-interchange",
+"km": 25.14,
+"minutes": 41.199,
+"changes": 1
+},
+{
+"from": "dmrc:JPVE",
+"to": "dmrc:MVE",
+"strategy": "minimum-interchange",
+"km": 24.681,
+"minutes": 50.009,
+"changes": 1
+},
+{
+"from": "dmrc:NCC",
+"to": "dmrc:AIIMS",
+"strategy": "minimum-interchange",
+"km": 25.033,
+"minutes": 50.505,
+"changes": 1
+},
+{
+"from": "dmrc:IIT",
+"to": "dmrc:SMPK",
+"strategy": "minimum-interchange",
+"km": 29.575,
+"minutes": 73.733,
+"changes": 2
+},
+{
+"from": "ncrtc:A20",
+"to": "dmrc:RISE",
+"strategy": "minimum-interchange",
+"km": 110.835,
+"minutes": 120.078,
+"changes": 3
+},
+{
+"from": "nmrc:NM13",
+"to": "dmrc:OKBS",
+"strategy": "minimum-interchange",
+"km": 21.14,
+"minutes": 47.255,
+"changes": 2
+},
+{
+"from": "dmrc:GTBR",
+"to": "ncrtc:A10",
+"strategy": "minimum-interchange",
+"km": 56.993,
+"minutes": 82.587,
+"changes": 2
+},
+{
+"from": "dmrc:CIPK",
+"to": "dmrc:TG",
+"strategy": "minimum-interchange",
+"km": 30.67,
+"minutes": 60.795,
+"changes": 1
+},
+{
+"from": "nmrc:NM10",
+"to": "dmrc:SAKT",
+"strategy": "minimum-interchange",
+"km": 42.388,
+"minutes": 87.748,
+"changes": 2
+},
+{
+"from": "dmrc:SHD",
+"to": "dmrc:SHDN",
+"strategy": "minimum-interchange",
+"km": 4.379,
+"minutes": 7.964,
+"changes": 0
+},
+{
+"from": "dmrc:SFNN",
+"to": "dmrc:EANR",
+"strategy": "minimum-interchange",
+"km": 25.778,
+"minutes": 51.594,
+"changes": 1
+},
+{
+"from": "dmrc:VNNR",
+"to": "dmrc:SHPK",
+"strategy": "minimum-interchange",
+"km": 11.934,
+"minutes": 26.501,
+"changes": 1
+},
+{
+"from": "dmrc:DACY",
+"to": "dmrc:KB",
+"strategy": "minimum-interchange",
+"km": 34.361,
+"minutes": 62.315,
+"changes": 1
+},
+{
+"from": "dmrc:DKV",
+"to": "dmrc:KKDC",
+"strategy": "minimum-interchange",
+"km": 26.413,
+"minutes": 54.669,
+"changes": 1
+},
+{
+"from": "dmrc:SSON",
+"to": "dmrc:JFRB",
+"strategy": "minimum-interchange",
+"km": 27.258,
+"minutes": 54.224,
+"changes": 1
+},
+{
+"from": "dmrc:GAT",
+"to": "dmrc:PRA",
+"strategy": "minimum-interchange",
+"km": 34.286,
+"minutes": 82.231,
+"changes": 2
+},
+{
+"from": "dmrc:CHTP",
+"to": "dmrc:DW",
+"strategy": "minimum-interchange",
+"km": 37.382,
+"minutes": 72.951,
+"changes": 1
+},
+{
+"from": "dmrc:AHNR",
+"to": "nmrc:NM14",
+"strategy": "minimum-interchange",
+"km": 48.263,
+"minutes": 95.829,
+"changes": 2
+},
+{
+"from": "dmrc:IPE",
+"to": "ncrtc:A21",
+"strategy": "minimum-interchange",
+"km": 65.26,
+"minutes": 66.197,
+"changes": 1
+},
+{
+"from": "dmrc:DSW",
+"to": "dmrc:RHE",
+"strategy": "minimum-interchange",
+"km": 23.163,
+"minutes": 62.033,
+"changes": 2
+},
+{
+"from": "dmrc:BCGN",
+"to": "dmrc:DL3",
+"strategy": "minimum-interchange",
+"km": 33.797,
+"minutes": 82.726,
+"changes": 2
+},
+{
+"from": "dmrc:KKDC",
+"to": "dmrc:RKAM",
+"strategy": "minimum-interchange",
+"km": 11.65,
+"minutes": 26.162,
+"changes": 1
+},
+{
+"from": "dmrc:INA",
+"to": "dmrc:MN",
+"strategy": "minimum-interchange",
+"km": 15.173,
+"minutes": 32.58,
+"changes": 1
+},
+{
+"from": "dmrc:PTMD",
+"to": "dmrc:RHE",
+"strategy": "minimum-interchange",
+"km": 18.382,
+"minutes": 48.427,
+"changes": 2
+},
+{
+"from": "dmrc:UNRG",
+"to": "dmrc:GKPR",
+"strategy": "minimum-interchange",
+"km": 27.836,
+"minutes": 61.562,
+"changes": 2
+},
+{
+"from": "dmrc:GEC",
+"to": "dmrc:VTVR",
+"strategy": "minimum-interchange",
+"km": 21.455,
+"minutes": 45.562,
+"changes": 1
+},
+{
+"from": "dmrc:TN",
+"to": "dmrc:VENT",
+"strategy": "minimum-interchange",
+"km": 25.527,
+"minutes": 51.321,
+"changes": 1
+},
+{
+"from": "dmrc:VNPR",
+"to": "dmrc:NUEE",
+"strategy": "minimum-interchange",
+"km": 6.461,
+"minutes": 26.649,
+"changes": 2
+},
+{
+"from": "dmrc:DSET",
+"to": "dmrc:IICC",
+"strategy": "minimum-interchange",
+"km": 3.193,
+"minutes": 9.718,
+"changes": 1
+},
+{
+"from": "dmrc:DW",
+"to": "dmrc:PSPK",
+"strategy": "minimum-interchange",
+"km": 24.906,
+"minutes": 54.681,
+"changes": 1
+},
+{
+"from": "dmrc:MVNR",
+"to": "dmrc:VENT",
+"strategy": "minimum-interchange",
+"km": 20.986,
+"minutes": 47.768,
+"changes": 1
+},
+{
+"from": "dmrc:JB",
+"to": "ncrtc:A11",
+"strategy": "minimum-interchange",
+"km": 62.199,
+"minutes": 84.604,
+"changes": 3
+},
+{
+"from": "dmrc:BACH",
+"to": "dmrc:KKDA",
+"strategy": "minimum-interchange",
+"km": 42.404,
+"minutes": 82.071,
+"changes": 1
+},
+{
+"from": "ncrtc:A17",
+"to": "dmrc:RG",
+"strategy": "minimum-interchange",
+"km": 77.506,
+"minutes": 95.926,
+"changes": 1
+},
+{
+"from": "dmrc:ILOK",
+"to": "nmrc:NM02",
+"strategy": "minimum-interchange",
+"km": 32.431,
+"minutes": 74.135,
+"changes": 3
+},
+{
+"from": "dmrc:BCGN",
+"to": "ncrtc:A17",
+"strategy": "minimum-interchange",
+"km": 66.669,
+"minutes": 67.942,
+"changes": 1
+},
+{
+"from": "dmrc:NP",
+"to": "dmrc:DSHP",
+"strategy": "minimum-interchange",
+"km": 20.571,
+"minutes": 47.23,
+"changes": 1
+},
+{
+"from": "dmrc:MUPR",
+"to": "ncrtc:A12",
+"strategy": "minimum-interchange",
+"km": 56.527,
+"minutes": 67.271,
+"changes": 2
+},
+{
+"from": "dmrc:RHW",
+"to": "dmrc:JGPI",
+"strategy": "minimum-interchange",
+"km": 23.528,
+"minutes": 52.783,
+"changes": 1
+},
+{
+"from": "dmrc:QM",
+"to": "dmrc:LKM",
+"strategy": "minimum-interchange",
+"km": 10.386,
+"minutes": 18.88,
+"changes": 0
+},
+{
+"from": "ncrtc:A19",
+"to": "nmrc:NM01",
+"strategy": "minimum-interchange",
+"km": 87.823,
+"minutes": 89.498,
+"changes": 3
+},
+{
+"from": "ncrtc:A04",
+"to": "dmrc:PBGA",
+"strategy": "minimum-interchange",
+"km": 27.64,
+"minutes": 60.307,
+"changes": 2
+},
+{
+"from": "dmrc:LKM",
+"to": "dmrc:KG",
+"strategy": "minimum-interchange",
+"km": 8.198,
+"minutes": 14.903,
+"changes": 0
+},
+{
+"from": "dmrc:MGRO",
+"to": "dmrc:SHPK",
+"strategy": "minimum-interchange",
+"km": 32.125,
+"minutes": 68.4,
+"changes": 1
+},
+{
+"from": "dmrc:LN",
+"to": "dmrc:KIKJ",
+"strategy": "minimum-interchange",
+"km": 52.269,
+"minutes": 105.505,
+"changes": 1
+},
+{
+"from": "ncrtc:A12",
+"to": "dmrc:YB",
+"strategy": "minimum-interchange",
+"km": 53.487,
+"minutes": 61.924,
+"changes": 2
+},
+{
+"from": "dmrc:QM",
+"to": "dmrc:BEL",
+"strategy": "minimum-interchange",
+"km": 11.544,
+"minutes": 31.04,
+"changes": 1
+},
+{
+"from": "dmrc:BEL",
+"to": "dmrc:NCBC",
+"strategy": "minimum-interchange",
+"km": 60.545,
+"minutes": 124.969,
+"changes": 2
+},
+{
+"from": "dmrc:UNE",
+"to": "dmrc:MUDK",
+"strategy": "minimum-interchange",
+"km": 24.508,
+"minutes": 49.575,
+"changes": 1
+},
+{
+"from": "dmrc:KG",
+"to": "dmrc:PTCK",
+"strategy": "minimum-interchange",
+"km": 5.334,
+"minutes": 9.696,
+"changes": 0
+},
+{
+"from": "dmrc:STTA",
+"to": "dmrc:PTP",
+"strategy": "minimum-interchange",
+"km": 44.657,
+"minutes": 91.182,
+"changes": 1
+},
+{
+"from": "dmrc:RHE",
+"to": "dmrc:DPCK",
+"strategy": "minimum-interchange",
+"km": 2.9,
+"minutes": 9.857,
+"changes": 1
+}
+]

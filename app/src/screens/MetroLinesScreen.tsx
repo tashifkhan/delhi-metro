@@ -15,22 +15,25 @@ import { SectionHeader } from '../components/SectionHeader';
 import { OperatorMark } from '../components/OperatorMark';
 import { LineGlyph, lineGlyph, lineSubtitle, lineTitle, terminalName } from '../components/LineGlyph';
 import { useAppTheme } from '../theme/ThemeContext';
-import { NETWORK_NAMES } from '../network';
+import { NETWORK_NAMES, OPERATORS } from '../network';
+import { isLineNormal } from '../utils/lineStatus';
 import type { MetroLine, MetroNetwork } from '../types';
-import type { LinesStackParamList } from '../navigation/types';
+import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis } from '../theme';
 
-type Nav = NativeStackNavigationProp<LinesStackParamList, 'MetroLines'>;
+type Nav = NativeStackNavigationProp<NetworkStackParamList, 'Network'>;
 
-const NORMAL_STATUS = 'normal service';
-const NETWORK_ORDER: MetroNetwork[] = ['dmrc', 'nmrc'];
+const NETWORK_ORDER: MetroNetwork[] = OPERATORS;
 
 function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last: boolean }) {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
-  const { semantic, fills } = useAppTheme();
+  const { semantic, fills, look } = useAppTheme();
+  // Rows in a group touch the group's outer corners only, so the group reads as one block.
+  const outer = look.radius.hero;
+  const inner = look.style === 'material' ? shape.sm : 0;
 
-  const disrupted = line.status.trim().toLowerCase() !== NORMAL_STATUS;
+  const disrupted = !isLineNormal(line.status);
   const title = lineTitle(line);
   const subtitle = lineSubtitle(line);
   const from = terminalName(line.start_station);
@@ -38,7 +41,7 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
 
   return (
     <Touchable
-      radius={shape.sm}
+      radius={inner}
       onPress={() =>
         navigation.navigate('LineStations', {
           lineCode: line.line_code,
@@ -47,12 +50,16 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
         })
       }
       accessibilityLabel={`${title}, ${from} to ${to}, ${disrupted ? line.status : 'running normally'}`}
-      style={[
-        styles.row,
-        { backgroundColor: fills.containerLow },
-        first && styles.rowFirst,
-        last && styles.rowLast,
-      ]}
+      style={
+        look.style === 'material'
+          ? [
+              { backgroundColor: fills.containerLow, borderRadius: inner },
+              first && { borderTopLeftRadius: outer, borderTopRightRadius: outer },
+              last && { borderBottomLeftRadius: outer, borderBottomRightRadius: outer },
+            ]
+          : // Studio and Plain: rows inside one hairline card, divided by hairlines.
+            [{ borderTopWidth: first ? 0 : StyleSheet.hairlineWidth, borderTopColor: fills.hairline }]
+      }
     >
       <View style={styles.rowInner}>
         <LineGlyph color={line.primary_color_code} glyph={lineGlyph(line)} />
@@ -110,6 +117,7 @@ export function MetroLinesScreen() {
   const { data, isLoading, isError, isOfflineCopy, refetch, isRefetching } =
     useMetroLinesQuery();
   const theme = useTheme();
+  const { look, fills } = useAppTheme();
   const isDesktop = useIsDesktop();
 
   // Group by operator, keeping the API's order inside each group.
@@ -128,7 +136,7 @@ export function MetroLinesScreen() {
 
   const total = groups.reduce((sum, group) => sum + group.lines.length, 0);
   const disrupted = (data ?? []).filter(
-    (line) => line.status.trim().toLowerCase() !== NORMAL_STATUS,
+    (line) => !isLineNormal(line.status),
   ).length;
 
   return (
@@ -168,7 +176,21 @@ export function MetroLinesScreen() {
               </View>
             </View>
           ) : null}
-          <View style={[styles.list, isDesktop && styles.listDesktop]}>
+          <View
+            style={[
+              styles.list,
+              isDesktop && styles.listDesktop,
+              look.style !== 'material' &&
+                !isDesktop && {
+                  gap: 0,
+                  backgroundColor: fills.containerLow,
+                  borderColor: fills.hairline,
+                  borderWidth: StyleSheet.hairlineWidth,
+                  borderRadius: look.radius.hero,
+                  overflow: 'hidden',
+                },
+            ]}
+          >
             {group.lines.map((line, index) => (
               <View key={`${group.network}-${line.id}`} style={isDesktop ? styles.gridCell : undefined}>
                 <LineRow
@@ -220,17 +242,6 @@ const styles = StyleSheet.create({
   },
   gridCell: {
     width: '49%',
-  },
-  row: {
-    borderRadius: shape.sm,
-  },
-  rowFirst: {
-    borderTopLeftRadius: shape.xl,
-    borderTopRightRadius: shape.xl,
-  },
-  rowLast: {
-    borderBottomLeftRadius: shape.xl,
-    borderBottomRightRadius: shape.xl,
   },
   rowInner: {
     flexDirection: 'row',

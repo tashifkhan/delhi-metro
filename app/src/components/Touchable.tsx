@@ -10,6 +10,8 @@ import { TouchableRipple, useTheme } from 'react-native-paper';
 import { radius as radii, tint } from '../theme';
 import { spring } from '../theme/motion';
 import { useHaptics } from '../hooks/useHaptics';
+import { useAppTheme } from '../theme/ThemeContext';
+import { adaptRadius } from '../theme/look';
 
 interface Props {
   onPress?: () => void;
@@ -51,7 +53,7 @@ export function Touchable({
   onLongPress,
   disabled,
   children,
-  radius = radii.card,
+  radius: requestedRadius = radii.card,
   style,
   scaleOnPress = false,
   rippleColor,
@@ -62,6 +64,8 @@ export function Touchable({
   accessibilityState,
 }: Props) {
   const theme = useTheme();
+  const { look } = useAppTheme();
+  const radius = adaptRadius(look, requestedRadius);
   const haptics = useHaptics();
   const scale = useRef(new Animated.Value(1)).current;
 

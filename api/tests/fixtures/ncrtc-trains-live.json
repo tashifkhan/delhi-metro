@@ -1,0 +1,94 @@
+{
+  "data": {
+    "lastUpdatedAt": {
+      "value": "2026-11-24T09:54",
+      "zone": "IST"
+    },
+    "isLive": true,
+    "trainsStatus": [
+      {
+        "trainId": "12328207",
+        "direction": "U",
+        "crossingStations": [
+          {
+            "station": {
+              "id": 17,
+              "code": "A14",
+              "name": "Brahampuri",
+              "images": {
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Brahampuri_04a8c3fbb5/Brahampuri_04a8c3fbb5.png"
+              },
+              "latitude": "28.9506041",
+              "longitude": "77.586652",
+              "locationCode": 17,
+              "state": "Uttar Pradesh, India",
+              "order": 16,
+              "isTerminal": false
+            },
+            "platformNo": 2,
+            "trainStatusAtPlatform": "NOT ARRIVED",
+            "time": "2026-11-24T09:55:40",
+            "position": 3
+          },
+          {
+            "station": {
+              "id": 16,
+              "code": "A13",
+              "name": "Shatabdi Nagar",
+              "images": {
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Shatabdi_nagar_b2e5f3b22a/Shatabdi_nagar_b2e5f3b22a.png"
+              },
+              "latitude": "28.9474292",
+              "longitude": "77.6709983",
+              "locationCode": 16,
+              "state": "Uttar Pradesh, India",
+              "order": 15,
+              "isTerminal": false
+            },
+            "platformNo": 4,
+            "trainStatusAtPlatform": "NOT ARRIVED",
+            "time": "2026-11-24T09:58:20"
+          },
+          {
+            "station": {
+              "id": 15,
+              "code": "A12",
+              "name": "Rithani",
+              "images": {
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/04_Rithani_Station_7c4dce20b1/04_Rithani_Station_7c4dce20b1.png"
+              },
+              "latitude": "28.9344098",
+              "longitude": "77.6605114",
+              "locationCode": 15,
+              "state": "Uttar Pradesh, India",
+              "order": 14,
+              "isTerminal": false
+            },
+            "platformNo": 2,
+            "trainStatusAtPlatform": "NOT ARRIVED",
+            "time": "2026-11-24T10:01:20"
+          },
+          {
+            "station": {
+              "id": 9,
+              "code": "A10",
+              "name": "Meerut South",
+              "images": {
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Meerut_South_a92d19f99e/Meerut_South_a92d19f99e.png"
+              },
+              "latitude": "28.90437",
+              "longitude": "77.63245",
+              "locationCode": 13,
+              "state": "Uttar Pradesh, India",
+              "order": 11,
+              "isTerminal": true
+            },
+            "platformNo": 2,
+            "trainStatusAtPlatform": "NOT ARRIVED",
+            "time": "2026-11-24T10:07:00"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -33,6 +33,11 @@ const SOURCES: SourceEntry[] = [
     operator: 'Noida Metro',
     detail: "Aqua Line stations, fares and notices are read from NMRC's public passenger pages.",
   },
+  {
+    network: 'ncrtc',
+    operator: 'Namo Bharat & Meerut',
+    detail: 'NCRTC publishes the stations, fares, train information and notices for both services.',
+  },
 ];
 
 interface LinkEntry {
@@ -137,9 +142,8 @@ export function AboutScreen() {
             NCR Metro
           </Text>
           <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            Plan a journey across Delhi Metro and Noida Metro in one search. Fares,
-            interchanges and first and last trains are read from the operators as you
-            ask for them, not from a copy kept inside the app.
+            Plan trips across Delhi Metro, Noida Metro, Namo Bharat and Meerut Metro.
+            Download the offline pack to use maps, station details and estimated routes without a connection.
           </Text>
         </View>
       </Card>
@@ -169,10 +173,12 @@ export function AboutScreen() {
           ))}
         </View>
         <Text variant="bodySmall" style={[styles.note, { color: theme.colors.onSurfaceVariant }]}>
-          Both operators publish this data for passengers, and neither runs this app.
-          When one of them changes a page or goes down, what you see here is wrong until
-          it is fixed. Check the station or the operator before a journey that has to be
-          right.
+          NCR Metro is an independent app. Check with the operator for current service information.
+        </Text>
+        <Text variant="bodySmall" style={[styles.note, { color: theme.colors.onSurfaceVariant }]}>
+          The map's background shows real contours and water. Heights come from AWS
+          Terrain Tiles (SRTM). Lakes and rivers are © OpenStreetMap contributors, served
+          by OpenFreeMap, under the Open Database License.
         </Text>
       </View>
 

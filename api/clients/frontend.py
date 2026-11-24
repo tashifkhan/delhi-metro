@@ -13,6 +13,7 @@ import httpx
 
 from core.config import settings
 from core.errors import UpstreamApiError
+from core.upstream_pacing import pace_request
 
 
 class DmrcFrontendClient:
@@ -106,6 +107,7 @@ class DmrcFrontendClient:
 
         client = await self._get_client()
         try:
+            await pace_request()
             response = await client.get("asset-manifest.json")
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC frontend request timed out") from exc
@@ -146,6 +148,7 @@ class DmrcFrontendClient:
         client = await self._get_client()
         clean_path = self._normalize_relative_path(path)
         try:
+            await pace_request()
             response = await client.get(clean_path)
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC frontend bundle request timed out") from exc
@@ -213,6 +216,7 @@ class DmrcFrontendClient:
         client = await self._get_client()
         clean_path = self._normalize_relative_path(path)
         try:
+            await pace_request()
             response = await client.head(clean_path)
         except httpx.TimeoutException as exc:
             raise UpstreamApiError("DMRC frontend HEAD request timed out") from exc
@@ -231,6 +235,7 @@ class DmrcFrontendClient:
         client = await self._get_client()
         clean_path = self._normalize_relative_path(path)
         try:
+            await pace_request()
             async with client.stream("GET", clean_path) as response:
                 if response.status_code >= 400:
                     raise UpstreamApiError(

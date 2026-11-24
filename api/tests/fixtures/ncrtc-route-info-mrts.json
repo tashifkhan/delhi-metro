@@ -1,0 +1,580 @@
+[
+  {
+    "routeInfo": [
+      {
+        "stationInfo": {
+          "id": 9,
+          "name": "Meerut South",
+          "code": "A10",
+          "time": {
+            "value": "0",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 43
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Meerut end",
+              "id": 41
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Meerut end",
+              "id": 42
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "EV Charging",
+              "additionalInfo": "EV charging facility available",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/power_socket_36x36_black_background_1a2a08104b/power_socket_36x36_black_background_1a2a08104b.svg"
+              },
+              "location": "Gate No.1",
+              "id": 95
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 14,
+          "name": "Partapur",
+          "code": "A11",
+          "time": {
+            "value": "120",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 51
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 50
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 52
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 15,
+          "name": "Rithani",
+          "code": "A12",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 72
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 71
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 73
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 16,
+          "name": "Shatabdi Nagar",
+          "code": "A13",
+          "time": {
+            "value": "140",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 76
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 75
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 74
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 17,
+          "name": "Brahampuri",
+          "code": "A14",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 77
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 81
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 82
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 18,
+          "name": "Meerut Central",
+          "code": "A15",
+          "time": {
+            "value": "120",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 85
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 83
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 84
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 19,
+          "name": "Bhaisali",
+          "code": "A16",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 79
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 80
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 78
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 20,
+          "name": "Begumpul",
+          "code": "A17",
+          "time": {
+            "value": "100",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 66
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 65
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 67
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 21,
+          "name": "MES Colony",
+          "code": "A18",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 62
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 64
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 63
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 22,
+          "name": "Daurli",
+          "code": "A19",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 68
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 70
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 69
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 23,
+          "name": "Meerut North",
+          "code": "A20",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 59
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 60
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 61
+            }
+          ]
+        }
+      },
+      {
+        "stationInfo": {
+          "id": 13,
+          "name": "Modipuram",
+          "code": "A21",
+          "time": {
+            "value": "90",
+            "unit": "s"
+          },
+          "facilities": [
+            {
+              "hasSpecialAid": false,
+              "name": "First Aid",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_893dc730e7/Mdeical_Center_893dc730e7.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Mdeical_Center_4b481f544b/Mdeical_Center_4b481f544b.png"
+              },
+              "location": "Station Control Room",
+              "id": 53
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Washroom",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_0582882e64/Washroom_0582882e64.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Washroom_c83950c272/Washroom_c83950c272.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 54
+            },
+            {
+              "hasSpecialAid": false,
+              "name": "Drinking Water",
+              "additionalInfo": "",
+              "icon": {
+                "svg": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_551737e2a4/Drinking_Water_551737e2a4.svg",
+                "png": "https://storage.googleapis.com/rapidx-cms/rapidx-cms/Drinking_Water_cb6670444b/Drinking_Water_cb6670444b.png"
+              },
+              "location": "Inside paid concourse, at Delhi end",
+              "id": 55
+            }
+          ]
+        }
+      }
+    ],
+    "journeyInfo": {
+      "stationCount": 12,
+      "distance": {
+        "value": "21139",
+        "unit": "m"
+      },
+      "time": {
+        "value": "1110",
+        "unit": "s"
+      },
+      "convertedTime": "18m 30s"
+    }
+  }
+]

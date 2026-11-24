@@ -1,6 +1,6 @@
 """Unified journey planner models served by the v2 API.
 
-Every planner service (Sarthi, legacy DMRC, and NMRC) normalizes into these
+Every planner service normalizes into these
 models, so a client sees one contract regardless of which upstream answered.
 Fields that only one upstream can supply are optional and documented as such.
 """
@@ -8,6 +8,7 @@ Fields that only one upstream can supply are optional and documented as such.
 from __future__ import annotations
 
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +21,7 @@ class JourneySource(str, Enum):
     SARTHI = "sarthi"
     DMRC = "dmrc"
     NMRC = "nmrc"
+    NCRTC = "ncrtc"
     COMBINED = "combined"
 
 
@@ -28,6 +30,7 @@ class MetroNetwork(str, Enum):
 
     DMRC = "dmrc"
     NMRC = "nmrc"
+    NCRTC = "ncrtc"
 
 
 class LegKind(str, Enum):
@@ -69,6 +72,18 @@ class NetworkFare(BaseModel):
     applicable: float | None = None
 
 
+class FareClass(BaseModel):
+    name: Literal["standard", "premium"] = Field(alias="class")
+    amount: float
+
+
+class SmartCardFare(BaseModel):
+    amount: float
+    off_peak: bool
+    rule: str
+    derived: Literal[True] = True
+
+
 class PlannedFare(BaseModel):
     """Fare for the journey in INR."""
 
@@ -81,12 +96,13 @@ class PlannedFare(BaseModel):
         default=None,
         description="Fare that applies at the requested time. Sarthi only.",
     )
+    smart_card: SmartCardFare | None = None
+    classes: list[FareClass] = Field(default_factory=list)
     breakdown: list[NetworkFare] = Field(
         default_factory=list,
         description=(
-            "Per-network split, set only on a journey spanning both networks. "
-            "Delhi Metro and Noida Metro fares are not integrated, so the "
-            "totals above are the sum of two separate tickets."
+            "Per-network fare split for a journey spanning networks. Each "
+            "operator charges its own fare."
         ),
     )
 
@@ -208,13 +224,28 @@ class WhatsAppBooking(BaseModel):
     )
 
 
+class AppBooking(BaseModel):
+    """Official passenger app and website for ticket purchases."""
+
+    channel: Literal["app"] = "app"
+    network: MetroNetwork
+    label: str
+    url: str
+    android_url: str
+    ios_url: str
+    note: str
+
+
+TicketBooking = WhatsAppBooking | AppBooking
+
+
 class PlannedJourney(BaseModel):
-    """A journey plan normalized across both upstreams."""
+    """A journey plan normalized across metro operators."""
 
     source: JourneySource = Field(
         ...,
         description=(
-            "Upstream that answered, or `combined` when the journey spans both "
+            "Upstream that answered, or `combined` when the journey spans multiple "
             "networks and each leg carries its own `source`."
         ),
     )
@@ -273,4 +304,8 @@ class PlannedJourney(BaseModel):
             "WhatsApp ticket links for the networks this journey rides, in "
             "travel order. A cross-network trip has one link per operator."
         ),
+    )
+    booking_options: list[TicketBooking] = Field(
+        default_factory=list,
+        description="Official ticket booking options for the networks ridden, in travel order.",
     )

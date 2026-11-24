@@ -1,7 +1,7 @@
 name: Build and Release APK
 
-# Builds a production APK with EAS, attaches it to a GitHub Release, then
-# dispatches the F-Droid publish workflow on tashif.codes.
+# Builds one APK per ARM ABI with EAS, attaches both to a GitHub Release,
+# then dispatches the F-Droid publish workflow on tashif.codes.
 #
 # Required secrets:
 #   EXPO_TOKEN                    — Expo account token for EAS builds
@@ -52,28 +52,32 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install app dependencies
         working-directory: app
-        run: npm install
+        run: bun install --frozen-lockfile
 
-      - name: Build APK on EAS
+      - name: Build and download ARM APKs
         working-directory: app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: eas build --platform android --profile github-release --non-interactive --wait
-
-      - name: Resolve APK artifact URL
-        id: apk
-        working-directory: app
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          BUILDS_JSON=$(eas build:list --platform android --status finished --build-profile github-release --git-commit-hash "${GITHUB_SHA}" --limit 1 --non-interactive --json)
-          APK_URL=$(echo "$BUILDS_JSON" | node -e "const fs = require('fs'); const data = JSON.parse(fs.readFileSync(0, 'utf8')); const build = Array.isArray(data) ? data[0] : null; if (!build) { console.error('No finished Android build found for this commit.'); process.exit(1); } const url = build?.artifacts?.applicationArchiveUrl || build?.artifacts?.buildUrl; if (!url) { console.error('No APK artifact URL found on the finished build.'); process.exit(1); } process.stdout.write(url);")
-          echo "apk_url=${APK_URL}" >> "$GITHUB_OUTPUT"
-
-      - name: Download APK
-        run: curl -L "${{ steps.apk.outputs.apk_url }}" -o "DelhiMetro-${{ github.ref_name }}.apk"
+          set -euo pipefail
+          for abi in arm64-v8a armeabi-v7a; do
+            profile=github-release
+            if [[ "$abi" == armeabi-v7a ]]; then
+              profile=github-release-armeabi-v7a
+            fi
+            eas build --platform android --profile "$profile" --non-interactive --wait --json > "$RUNNER_TEMP/build-$abi.json"
+            apk_url=$(node -e '
+              const [build] = require(process.argv[1]);
+              const url = build?.artifacts?.applicationArchiveUrl || build?.artifacts?.buildUrl;
+              if (!url) throw new Error("EAS did not return an APK artifact URL");
+              process.stdout.write(url);
+            ' "$RUNNER_TEMP/build-$abi.json")
+            curl --fail --location --retry 3 "$apk_url" -o "$RUNNER_TEMP/DelhiMetro-$RELEASE_TAG-$abi.apk"
+          done
+          mv "$RUNNER_TEMP/DelhiMetro-$RELEASE_TAG-"*.apk ..
 
       - name: Build release notes from CHANGELOG
         id: notes
@@ -85,7 +89,7 @@ jobs:
           {
             echo "## Delhi NCR Metro ${TAG}"
             echo ""
-            echo "Production Android APK built with EAS (\`github-release\` profile)."
+            echo "Production Android APKs built with EAS for arm64-v8a and armeabi-v7a."
             echo ""
             echo "| | |"
             echo "|---|---|"
@@ -113,7 +117,7 @@ jobs:
             echo "### Install"
             echo ""
             echo "- **F-Droid (recommended):** add \`https://tashif.codes/fdroid/repo\` in F-Droid → Settings → Repositories, then install **Delhi NCR Metro**."
-            echo "- **Direct APK:** download the \`.apk\` attached below (enable “Install unknown apps” if prompted)."
+            echo "- **Direct APK:** download the arm64-v8a APK for most devices, or the armeabi-v7a APK for 32-bit ARM devices (enable “Install unknown apps” if prompted)."
             echo "- **Website:** https://tashif.codes/fdroid"
             echo "- **Full changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md"
           } > "$NOTES_FILE"
@@ -122,7 +126,10 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: DelhiMetro-${{ github.ref_name }}.apk
+          files: |
+            DelhiMetro-${{ github.ref_name }}-arm64-v8a.apk
+            DelhiMetro-${{ github.ref_name }}-armeabi-v7a.apk
+          fail_on_unmatched_files: true
           generate_release_notes: true
           body_path: ${{ steps.notes.outputs.path }}
           name: Delhi NCR Metro ${{ github.ref_name }}
@@ -139,7 +146,7 @@ jobs:
             --repo "$TASHIF_CODES_REPO" \
             --field source_repository="${{ github.repository }}" \
             --field release_tag="$RELEASE_TAG" \
-            --field apk_pattern='DelhiMetro-v*.apk'
+            --field apk_pattern="DelhiMetro-${RELEASE_TAG}-*.apk"
 
           sleep 3
           RUN_URL="$(gh run list \
@@ -161,7 +168,8 @@ jobs:
           {
             echo "## Delhi Metro ${RELEASE_TAG}"
             echo ""
-            echo "- APK: \`DelhiMetro-${RELEASE_TAG}.apk\`"
+            echo "- arm64-v8a APK: \`DelhiMetro-${RELEASE_TAG}-arm64-v8a.apk\`"
+            echo "- armeabi-v7a APK: \`DelhiMetro-${RELEASE_TAG}-armeabi-v7a.apk\`"
             echo "- Release: https://github.com/${{ github.repository }}/releases/tag/${RELEASE_TAG}"
             echo "- F-Droid page: https://tashif.codes/fdroid"
             echo "- F-Droid repo: https://tashif.codes/fdroid/repo"

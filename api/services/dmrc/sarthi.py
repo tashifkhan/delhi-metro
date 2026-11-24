@@ -18,6 +18,7 @@ from core.validation import validate_model
 from schemas.journey import RouteStrategy
 from schemas.planner import (
     JourneySource,
+    MetroNetwork,
     PlannedFare,
     PlannedInterchange,
     PlannedJourney,
@@ -27,6 +28,7 @@ from schemas.planner import (
     ServiceTimes,
 )
 from schemas.sarthi import SarthiJourney, SarthiRouteLeg
+from services.smart_card import is_airport_leg, is_special_day, local_departure, smart_card_fare
 
 DELHI_TIMEZONE = ZoneInfo("Asia/Kolkata")
 
@@ -184,8 +186,24 @@ async def plan_journey(
     )
     journey = validate_model(SarthiJourney, payload)
 
-    return normalize(
+    plan = normalize(
         journey,
         strategy=strategy,
         exclude_airport_line=exclude_airport_line,
     )
+    departure = local_departure(journey_time)
+    airport_line = any(is_airport_leg(leg) for leg in plan.legs)
+    airport_fare = None
+    if airport_line and journey.fare_breakup:
+        special = is_special_day(departure)
+        portions = [fare for fare in journey.fare_breakup if fare.airport_line]
+        if portions:
+            airport_fare = sum(
+                fare.special if special and fare.special is not None else fare.normal
+                for fare in portions
+            )
+    plan.fare.smart_card = smart_card_fare(
+        plan.fare, MetroNetwork.DMRC, departure,
+        airport_fare=airport_fare, airport_line=airport_line,
+    )
+    return plan
