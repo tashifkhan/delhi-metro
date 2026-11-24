@@ -20,6 +20,7 @@ import Svg, { Circle, G, Path, Polyline, Rect, Text as SvgText } from 'react-nat
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useTheme } from 'react-native-paper';
 import { useAppTheme } from '../../theme/ThemeContext';
+import { useOfflinePack } from '../../offline/OfflinePackContext';
 import type { MapStation } from './networkData';
 import { placeLabels, type Box } from './labels';
 import type { RouteOverlay } from './routeOverlay';
@@ -27,7 +28,7 @@ import { useNetworkGeometry } from './NetworkGeometryContext';
 import {
   DETAIL_SPAN,
   TERRAIN_OVERVIEW,
-  chunksIn,
+  detailChunksForView,
   loadTerrainDetail,
   type TerrainDetail,
 } from './terrain';
@@ -505,26 +506,35 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
 
   // Zoomed in, the detailed relief replaces the overview. It loads on first
   // use; the overview stays up until it arrives.
-  const [detail, setDetail] = useState<TerrainDetail | null>(null);
+  const { meta } = useOfflinePack();
+  const packVersion = meta?.version;
+  const [terrainPack, setTerrainPack] = useState<{ version: string; detail: TerrainDetail | null } | null>(null);
+  const detail = terrainPack?.version === packVersion ? terrainPack?.detail : null;
   const wantDetail = showTerrain && ready && span < DETAIL_SPAN;
   useEffect(() => {
-    if (!wantDetail || detail) return;
+    if (!wantDetail || !packVersion) return;
     let live = true;
     loadTerrainDetail()
-      .then((data) => {
-        if (live) setDetail(data);
+      .then((detail) => {
+        if (live) setTerrainPack({ version: packVersion, detail });
       })
       .catch(() => {});
     return () => {
       live = false;
     };
-  }, [wantDetail, detail]);
+  }, [wantDetail, packVersion]);
   const chunks = useMemo(() => {
     if (!wantDetail || !detail) return null;
-    const halfW = drawW / 2 / k;
-    const halfH = drawH / 2 / k;
-    return chunksIn(detail, cx - halfW, cy - halfH, cx + halfW, cy + halfH);
-  }, [wantDetail, detail, cx, cy, k, drawW, drawH]);
+    const halfW = width / 2 / k;
+    const halfH = height / 2 / k;
+    const drawHalfW = drawW / 2 / k;
+    const drawHalfH = drawH / 2 / k;
+    return detailChunksForView(
+      detail,
+      [cx - halfW, cy - halfH, cx + halfW, cy + halfH],
+      [cx - drawHalfW, cy - drawHalfH, cx + drawHalfW, cy + drawHalfH],
+    );
+  }, [wantDetail, detail, cx, cy, k, width, height, drawW, drawH]);
 
   const linePoints = useMemo(
     () => MAP_LINES.map((line) => line.points.map((p) => `${p.x},${p.y}`).join(' ')),
@@ -672,6 +682,9 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
           {orderedLines.map(({ line, index }) => {
             const active = activeLines.has(line.code);
             const faded = route ? true : activeLines.size > 0 && !active;
+            // Meerut Metro shares the Namo Bharat track. A narrower blue
+            // stroke keeps the orange edges visible along the shared section.
+            const baseWidth = line.code === 'RRTS' ? 9 : line.code === 'MRTS' ? 4 : 5;
             return (
               <G key={line.code}>
                 {active ? (
@@ -690,7 +703,7 @@ export const NetworkMapCanvas = forwardRef<NetworkMapHandle, Props>(function Net
                   fill="none"
                   stroke={line.color}
                   strokeOpacity={faded ? (route ? 0.2 : 0.28) : 1}
-                  strokeWidth={px((active ? 7 : 5) * lineScale)}
+                  strokeWidth={px((baseWidth + (active ? 2 : 0)) * lineScale)}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />

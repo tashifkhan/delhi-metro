@@ -131,6 +131,7 @@ export function selectors(bundle: PackBundle) {
           station_name: s.detail.station_name ?? s.name,
           station_code: s.code,
           station_facility: [],
+          interchange: s.detail.interchange ?? undefined,
           metro_lines: (s.detail.metro_lines ?? []).map((line) => ({
             line_id: line.id,
             line_code: line.line_code,
@@ -158,7 +159,8 @@ export function selectors(bundle: PackBundle) {
             station_name: detail.station_name ?? station.name,
             station_code: station.code,
             station_facility: [],
-            interchange: Boolean(detail.interchange) || (detail.metro_lines?.length ?? 0) > 1,
+            interchange: Boolean(detail.interchange) ||
+              (network !== 'ncrtc' && (detail.metro_lines?.length ?? 0) > 1),
             status: '',
           },
         ];

@@ -29,7 +29,7 @@ interface Props {
  */
 export function RouteMap({ legs, colorFor, height = 280, onOpenMap, style }: Props) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const { geometry } = useLiveGeometry();
   const mapRef = useRef<NetworkMapHandle>(null);
   const [cardWidth, setCardWidth] = useState(0);
@@ -54,7 +54,7 @@ export function RouteMap({ legs, colorFor, height = 280, onOpenMap, style }: Pro
   return (
     <NetworkGeometryProvider value={geometry}>
       <View
-        style={[styles.card, { height, backgroundColor: fills.containerLow }, style]}
+        style={[styles.card, { height, borderRadius: look.radius.hero, backgroundColor: fills.containerLow }, style]}
         onLayout={(e: LayoutChangeEvent) => setCardWidth(e.nativeEvent.layout.width)}
       >
         <NetworkMapCanvas
@@ -94,7 +94,6 @@ const CHIP_HEIGHT = 36;
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 28,
     overflow: 'hidden',
   },
   actions: {

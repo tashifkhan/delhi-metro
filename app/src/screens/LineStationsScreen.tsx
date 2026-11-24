@@ -35,6 +35,7 @@ const MARKER_CENTRE = ROW_PAD_TOP + MARKER / 2;
 
 /** "Yellow Line" to "Yellow", for the small chips on interchange rows. */
 function shortName(line: StationLineBadge): string {
+  if (line.line_code === 'RRTS' || line.line_code === 'MRTS') return line.line_name;
   const name = (line.line_color || line.line_name).replace(/\s+line$/i, '').trim();
   return /^[A-Z]{2,5}$/.test(name) ? line.line_name : name;
 }
@@ -182,16 +183,22 @@ export function LineStationsScreen() {
   // Other lines at each station, for the interchange chips.
   const othersByCode = useMemo(() => {
     const map = new Map<string, StationLineBadge[]>();
+    const transferCodes = new Set(
+      data?.filter((station) => station.interchange).map((station) => station.station_code.trim().toUpperCase()),
+    );
     for (const station of allStations ?? []) {
+      const code = station.station_code.trim().toUpperCase();
+      // Local and express trains share this track, but only some stops allow a change.
+      if (station.network === 'ncrtc' && !transferCodes.has(code)) continue;
       const others = (station.metro_lines ?? []).filter(
         (item, index, all) =>
           item.line_code !== lineCode &&
           all.findIndex((other) => other.line_code === item.line_code) === index,
       );
-      if (others.length > 0) map.set(station.station_code.trim().toUpperCase(), others);
+      if (others.length > 0) map.set(code, others);
     }
     return map;
-  }, [allStations, lineCode]);
+  }, [allStations, data, lineCode]);
 
   if (isLoading) return <LoadingState message="Loading stations..." />;
   if (isError && !data) return <ErrorState message="Could not load stations" onRetry={refetch} />;

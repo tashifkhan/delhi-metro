@@ -400,7 +400,10 @@ def main():
 
     OUT_PATH.write_text(json.dumps({"interval": COARSE_INTERVAL, **coarse}, separators=(",", ":")))
     DETAIL_PATH.write_text(
-        json.dumps({"interval": FINE_INTERVAL, "chunkSize": CHUNK, "chunks": chunks}, separators=(",", ":"))
+        json.dumps(
+            {"interval": FINE_INTERVAL, "chunkSize": CHUNK, "bounds": bounds, "chunks": chunks},
+            separators=(",", ":"),
+        )
     )
     for path in (OUT_PATH, DETAIL_PATH):
         print(f"Wrote {path.relative_to(ROOT)}: {path.stat().st_size / 1024:.0f} KB", file=sys.stderr)

@@ -45,8 +45,11 @@ export interface TerrainChunk {
 export interface TerrainDetail {
   interval: number;
   chunkSize: number;
+  bounds?: TerrainBounds;
   chunks: TerrainChunk[];
 }
+
+type TerrainBounds = [minX: number, minY: number, maxX: number, maxY: number];
 
 export const TERRAIN_OVERVIEW = overview as TerrainOverview;
 
@@ -56,7 +59,7 @@ export const TERRAIN_OVERVIEW = overview as TerrainOverview;
  */
 export const DETAIL_SPAN = 11_000;
 
-let detail: Promise<TerrainDetail | null> | null = null;
+let cachedDetail: { pack: ReturnType<typeof readPack>; detail: Promise<TerrainDetail | null> } | undefined;
 
 function isDetail(value: unknown): value is TerrainDetail {
   const d = value as TerrainDetail;
@@ -64,27 +67,18 @@ function isDetail(value: unknown): value is TerrainDetail {
 }
 
 /**
- * The detailed layer from the offline pack, loaded once and shared. Null when
- * no pack is downloaded; that answer isn't kept, so the layer appears on the
- * next zoom after a download.
+ * Share the layer until the offline pack reader is invalidated by a sync or removal.
  */
 export function loadTerrainDetail(): Promise<TerrainDetail | null> {
-  if (!detail) {
-    const loading = readPack().then((pack) => {
-      const value = pack?.bundle.sections.terrain_detail;
+  const pack = readPack();
+  if (cachedDetail?.pack !== pack) {
+    const detail = pack.then((snapshot) => {
+      const value = snapshot?.bundle.sections.terrain_detail;
       return isDetail(value) ? value : null;
     });
-    loading.then(
-      (value) => {
-        if (value === null && detail === loading) detail = null;
-      },
-      () => {
-        if (detail === loading) detail = null;
-      },
-    );
-    detail = loading;
+    cachedDetail = { pack, detail };
   }
-  return detail;
+  return cachedDetail.detail;
 }
 
 /** Chunks overlapping a map-space rectangle. */
@@ -97,4 +91,24 @@ export function chunksIn(
 ): TerrainChunk[] {
   const size = data.chunkSize;
   return data.chunks.filter((c) => c.x + size >= minX && c.x <= maxX && c.y + size >= minY && c.y <= maxY);
+}
+
+/** Use the overview if the visible area extends beyond the pack's detail. */
+export function detailChunksForView(
+  data: TerrainDetail,
+  visible: TerrainBounds,
+  draw: TerrainBounds,
+): TerrainChunk[] | null {
+  const [left, top, right, bottom] = visible;
+  // Older packs lack bounds. Infer their extent from the chunks they contain.
+  const [minX, minY, maxX, maxY] = data.bounds ?? data.chunks.reduce<TerrainBounds>(
+    ([minX, minY, maxX, maxY], { x, y }) => [
+      Math.min(minX, x), Math.min(minY, y),
+      Math.max(maxX, x + data.chunkSize), Math.max(maxY, y + data.chunkSize),
+    ],
+    [Infinity, Infinity, -Infinity, -Infinity],
+  );
+  if (left < minX || top < minY || right > maxX || bottom > maxY) return null;
+  if (!chunksIn(data, ...visible).length) return null;
+  return chunksIn(data, ...draw);
 }

@@ -41,6 +41,7 @@ const OUTER = shape.xl;
  * (RMGL for Rapid Metro), so those use the operator's name instead.
  */
 function lineLabel(line: StationLineBadge): string {
+  if (line.line_code === 'RRTS' || line.line_code === 'MRTS') return line.line_name;
   const color = line.line_color?.trim() ?? '';
   if (!color || /^[A-Z]{2,5}$/.test(color)) return shortLineName(line.line_name || color);
   return shortLineName(color);
@@ -66,18 +67,18 @@ export const StationCard = memo(function StationCard({
 }: Props) {
   const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
 
   const lines = station.metro_lines ?? [];
   const colors = Array.from(new Set(lines.map((l) => l.primary_color_code).filter(Boolean))).slice(0, 4);
-  const isInterchange = Boolean(station.interchange) || colors.length > 1;
+  const isInterchange = Boolean(station.interchange) || (network !== 'ncrtc' && colors.length > 1);
   const name = stationName(station.station_name);
 
   const corners = {
-    borderTopLeftRadius: first ? OUTER : INNER,
-    borderTopRightRadius: first ? OUTER : INNER,
-    borderBottomLeftRadius: last ? OUTER : INNER,
-    borderBottomRightRadius: last ? OUTER : INNER,
+    borderTopLeftRadius: first ? look.radius.hero : look.radius.badge,
+    borderTopRightRadius: first ? look.radius.hero : look.radius.badge,
+    borderBottomLeftRadius: last ? look.radius.hero : look.radius.badge,
+    borderBottomRightRadius: last ? look.radius.hero : look.radius.badge,
   };
 
   return (

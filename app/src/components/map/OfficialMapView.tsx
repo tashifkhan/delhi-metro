@@ -143,7 +143,7 @@ export function OfficialMapView() {
   useEffect(() => () => { feedbackAllowed.current = false; }, []);
   const haptics = useHaptics();
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const { width } = useWindowDimensions();
   const { network, networkName } = useMetroNetwork();
   const insets = useSafeAreaInsets();
@@ -361,7 +361,7 @@ export function OfficialMapView() {
 
       {/* Zoom controls — sibling of canvas, outside PanResponder */}
       <Surface
-        style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'] }]}
+        style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'], borderRadius: look.radius.icon }]}
         elevation={3}
       >
         <Touchable
@@ -397,7 +397,7 @@ export function OfficialMapView() {
         disabled={downloading}
         onPress={handleDownloadMap}
         accessibilityLabel={`Save the ${networkName} network map to the device`}
-        style={[styles.fab, { bottom: insets.bottom + spacing['2xl'] }]}
+        style={[styles.fab, { bottom: insets.bottom + spacing['2xl'], borderRadius: look.radius.icon }]}
       />
     </View>
   );
@@ -431,7 +431,6 @@ const styles = StyleSheet.create({
   zoomControls: {
     position: 'absolute',
     right: spacing.base,
-    borderRadius: radius.icon,
     overflow: 'hidden',
   },
   zoomBtn: {
@@ -447,6 +446,5 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     left: spacing.base,
-    borderRadius: radius.icon,
   },
 });

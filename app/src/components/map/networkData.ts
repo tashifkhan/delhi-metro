@@ -41,6 +41,7 @@ interface RawStation {
   lng: number;
   lines: string[];
   approx?: boolean;
+  interchange?: boolean;
 }
 
 interface RawLine {
@@ -75,7 +76,7 @@ export const MAP_STATIONS: MapStation[] = data.stations.map((s) => {
     y,
     // Blue Line's two branches share a colour; a station on both is still a
     // change of train, so membership count is the right test.
-    interchange: s.lines.length > 1,
+    interchange: s.interchange ?? s.lines.length > 1,
   };
 });
 

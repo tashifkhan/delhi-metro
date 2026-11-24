@@ -7,6 +7,8 @@ const ts = require('typescript');
 const overview = JSON.parse(fs.readFileSync('src/data/terrain.json', 'utf8'));
 // The detail layer now ships in the offline pack; its source lives with the API.
 const detail = JSON.parse(fs.readFileSync('../api/data/terrainDetail.json', 'utf8'));
+const packWithTerrain = (terrain_detail) => ({ bundle: { sections: { terrain_detail } } });
+let pack = Promise.resolve(packWithTerrain(detail));
 
 function evaluate(path) {
   const exports = {};
@@ -16,7 +18,7 @@ function evaluate(path) {
   }).outputText;
   const requireFn = (name) => {
     if (name.endsWith('terrain.json')) return overview;
-    if (name.endsWith('offline/reader')) return { readPack: async () => ({ bundle: { sections: { terrain_detail: detail } } }) };
+    if (name.endsWith('offline/reader')) return { readPack: () => pack };
     throw new Error(`unexpected require ${name}`);
   };
   vm.runInNewContext(code, { exports, require: requireFn, Promise });
@@ -52,9 +54,34 @@ test('chunksIn returns only the chunks overlapping a view', () => {
   assert.equal(nowhere.length, 0);
 });
 
-test('the detail layer loads once and is shared', async () => {
+test('a close-up of Begumpul has contour data in the current pack', () => {
+  const view = [45_000, -43_000, 49_000, -38_000];
+  const chunks = terrain.detailChunksForView(detail, view, view);
+  assert.ok(chunks?.some((chunk) => chunk.minor || chunk.major));
+});
+
+test('the overview fills gaps even if old detail overlaps the drawing area', () => {
+  const [first] = detail.chunks;
+  const legacy = { chunkSize: detail.chunkSize, chunks: [first] };
+  const { x, y } = first;
+  const draw = [x - 20, y - 20, x + 50, y + 50];
+  const covered = [x + 10, y + 10, x + 20, y + 20];
+  assert.equal(terrain.detailChunksForView(legacy, covered, draw).length, 1);
+  assert.equal(terrain.detailChunksForView(legacy, [x - 10, y, x + 10, y + 10], draw), null);
+  assert.equal(terrain.detailChunksForView(legacy, [x - 10, y, x - 5, y + 10], draw), null);
+  assert.equal(terrain.detailChunksForView({ ...legacy, chunks: [], bounds: draw }, covered, draw), null);
+});
+
+test('the detail layer is shared until the offline pack changes', async () => {
   const a = terrain.loadTerrainDetail();
   const b = terrain.loadTerrainDetail();
   assert.equal(a, b);
-  assert.equal((await a).chunks.length, detail.chunks.length);
+  assert.equal(await a, detail);
+
+  const updated = { ...detail, interval: 2 };
+  pack = Promise.resolve(packWithTerrain(updated));
+  assert.equal(await terrain.loadTerrainDetail(), updated);
+
+  pack = Promise.resolve(null);
+  assert.equal(await terrain.loadTerrainDetail(), null);
 });

@@ -500,7 +500,7 @@ export function useFirstLastTrainQuery(
   });
 }
 
-/** The operator's WhatsApp ticket link. It does not depend on a station pair. */
+/** The operator's ticket booking option, independent of the station pair. */
 export function useBookingQuery(network: MetroNetwork, enabled = true) {
   const { dmrcService } = useDI();
   return useQuery({

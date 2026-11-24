@@ -175,6 +175,7 @@ def ncrtc_lines_and_stations() -> tuple[list[dict], dict[str, dict]]:
                     "lat": round(float(detail["latitude"]), 5),
                     "lng": round(float(detail["longitude"]), 5),
                     "lines": [],
+                    "interchange": item["interchange"],
                 }
             if code not in stations[station_code]["lines"]:
                 stations[station_code]["lines"].append(code)
