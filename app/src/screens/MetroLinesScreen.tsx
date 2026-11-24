@@ -16,13 +16,13 @@ import { OperatorMark } from '../components/OperatorMark';
 import { LineGlyph, lineGlyph, lineSubtitle, lineTitle, terminalName } from '../components/LineGlyph';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NETWORK_NAMES, OPERATORS } from '../network';
+import { isLineNormal } from '../utils/lineStatus';
 import type { MetroLine, MetroNetwork } from '../types';
 import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis } from '../theme';
 
 type Nav = NativeStackNavigationProp<NetworkStackParamList, 'Network'>;
 
-const NORMAL_STATUS = 'normal service';
 const NETWORK_ORDER: MetroNetwork[] = OPERATORS;
 
 function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last: boolean }) {
@@ -33,7 +33,7 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
   const outer = look.radius.hero;
   const inner = look.style === 'material' ? shape.sm : 0;
 
-  const disrupted = line.status.trim().toLowerCase() !== NORMAL_STATUS;
+  const disrupted = !isLineNormal(line.status);
   const title = lineTitle(line);
   const subtitle = lineSubtitle(line);
   const from = terminalName(line.start_station);
@@ -136,7 +136,7 @@ export function MetroLinesScreen() {
 
   const total = groups.reduce((sum, group) => sum + group.lines.length, 0);
   const disrupted = (data ?? []).filter(
-    (line) => line.status.trim().toLowerCase() !== NORMAL_STATUS,
+    (line) => !isLineNormal(line.status),
   ).length;
 
   return (

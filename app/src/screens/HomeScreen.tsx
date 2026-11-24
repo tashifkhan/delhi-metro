@@ -24,6 +24,7 @@ import { useAppTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import { spacing, radius, emphasis } from '../theme';
 import { stationName } from '../utils/format';
+import { isLineNormal } from '../utils/lineStatus';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'Home'>;
 
@@ -36,10 +37,6 @@ const TIME_OPTIONS = [
 
 /** Trips shown on Plan before "All saved" takes over. */
 const SAVED_TRIPS_ON_HOME = 3;
-
-function isNormal(status: string): boolean {
-  return status.trim().toLowerCase() === 'normal service';
-}
 
 /**
  * Plan: pick two stations and go.
@@ -66,7 +63,7 @@ export function HomeScreen() {
 
   const disrupted = useMemo(
     () =>
-      (linesQuery.data ?? []).filter((l) => l.show_in_frontend !== false && !isNormal(l.status)),
+      (linesQuery.data ?? []).filter((l) => l.show_in_frontend !== false && !isLineNormal(l.status)),
     [linesQuery.data],
   );
 

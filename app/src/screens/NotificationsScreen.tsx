@@ -12,6 +12,7 @@ import { Touchable } from '../components/Touchable';
 import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
 import { NETWORK_NAMES, OPERATORS } from '../network';
+import { isLineNormal } from '../utils/lineStatus';
 import type { MetroLine, MetroNetwork, PassengerNotification } from '../types';
 import type { RootTabParamList } from '../navigation/types';
 import { spacing, radius, emphasis } from '../theme';
@@ -30,10 +31,6 @@ function positionOf(index: number, count: number): NoticePosition {
   if (index === 0) return 'first';
   if (index === count - 1) return 'last';
   return 'middle';
-}
-
-function isNormal(line: MetroLine): boolean {
-  return line.status.trim().toLowerCase() === 'normal service';
 }
 
 function ago(ms: number): string {
@@ -84,7 +81,7 @@ export function NotificationsScreen() {
 
   const disrupted = (lines.data ?? []).filter(
     (line) =>
-      line.show_in_frontend !== false && !isNormal(line) && shown.includes(line.network ?? 'dmrc'),
+      line.show_in_frontend !== false && !isLineNormal(line.status) && shown.includes(line.network ?? 'dmrc'),
   );
 
   const loading = shown.some((n) => queries[n]?.isLoading);
