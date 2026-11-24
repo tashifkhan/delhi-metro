@@ -11,7 +11,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import RenderHtml from 'react-native-render-html';
+import { blocksFromHtml, readableBlocks } from './noticeBlocks';
 import { Touchable } from './Touchable';
 import { LoadingIndicator } from './loading/LoadingIndicator';
 import { StateButton } from './loading/StateButton';
@@ -199,48 +199,14 @@ function decodeEntities(text: string): string {
     .replace(/&gt;/gi, '>');
 }
 
-function normalise(text: string): string {
-  return decodeEntities(text.replace(/<[^>]+>/g, ' '))
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ' ')
-    .trim();
-}
-
-/**
- * Make an upstream notice readable in the card.
- *
- * Strips scripts, styles, links and buttons as before, then drops the blocks
- * that only repeat what the card already shows (the "PRESS RELEASE" label and
- * the headline, which is the card title), and turns any remaining capitals
- * into sentence case. Alignment set inline by the source is ignored at render
- * time, so nothing is centred.
- */
-function prepareNotificationHtml(content: string, title: string): string {
-  const titleKey = normalise(title);
-  return content
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<a\b[^>]*>/gi, '')
-    .replace(/<\/a>/gi, '')
-    .replace(/<button\b[^>]*>[\s\S]*?<\/button>/gi, '')
-    .replace(/<(p|h[1-6]|div)\b[^>]*>([\s\S]*?)<\/\1>/gi, (block, _tag: string, inner: string) => {
-      const key = normalise(inner);
-      if (!key) return block;
-      if (key === 'press release' || (titleKey.length > 12 && key === titleKey)) return '';
-      return block;
-    })
-    // Entities stay encoded so a decoded `<` can't open a tag.
-    .replace(/>([^<]+)</g, (_, text: string) => `>${sentenceCase(text.replace(/&nbsp;/gi, ' '))}<`);
-}
 export const NotificationCard = memo(function NotificationCard({
   notification,
   position = 'single',
 }: Props) {
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, look } = useAppTheme();
   const haptics = useHaptics();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [bodyWidth, setBodyWidth] = useState(0);
   const pageSlug = useMemo(() => getDetailSlug(notification), [notification]);
   const externalUrl = useMemo(() => getExternalUrl(notification), [notification]);
   const detailQuery = useNotificationDetailQuery(pageSlug, isExpanded);
@@ -267,18 +233,19 @@ export const NotificationCard = memo(function NotificationCard({
     }
   }, [externalUrl, haptics]);
 
-  const htmlSource = useMemo(
-    () =>
-      detailQuery.data
-        ? { html: prepareNotificationHtml(detailQuery.data.content, notification.title) }
-        : undefined,
-    [detailQuery.data, notification.title],
-  );
+  // The API sends the notice as text blocks; older deploys and saved copies
+  // only have HTML, which is converted here the same way.
+  const blocks = useMemo(() => {
+    const detail = detailQuery.data;
+    if (!detail) return null;
+    const raw = detail.body_blocks?.length ? detail.body_blocks : blocksFromHtml(detail.content);
+    return readableBlocks(raw, notification.title);
+  }, [detailQuery.data, notification.title]);
 
   // Expand when we have a corporate slug (in-app HTML) or any external URL fallback.
   const canExpand = pageSlug !== null || externalUrl !== null;
-  const outer = shape.xl;
-  const inner = shape.sm;
+  const outer = look.style === 'material' ? shape.xl : look.radius.hero;
+  const inner = look.style === 'material' ? shape.sm : look.radius.badge;
   const top = position === 'single' || position === 'first' ? outer : inner;
   const bottom = position === 'single' || position === 'last' ? outer : inner;
   const corners = {
@@ -348,7 +315,6 @@ export const NotificationCard = memo(function NotificationCard({
           entering={FadeIn.duration(duration.short4)}
           exiting={FadeOut.duration(duration.short3)}
           style={styles.detail}
-          onLayout={(event) => setBodyWidth(event.nativeEvent.layout.width)}
         >
           {pageSlug && detailQuery.isPending ? (
             <View style={styles.detailState}>
@@ -402,51 +368,33 @@ export const NotificationCard = memo(function NotificationCard({
               />
             </View>
           ) : null}
-          {htmlSource && bodyWidth > 0 ? (
+          {blocks && blocks.length > 0 ? (
             <View style={styles.body}>
-              <RenderHtml
-                contentWidth={Math.min(bodyWidth, BODY_MAX_WIDTH)}
-                source={htmlSource}
-                // The source centres its headings and signature inline; a card
-                // reads better left-aligned.
-                ignoredStyles={['textAlign']}
-                baseStyle={{
-                  color: theme.colors.onSurfaceVariant,
-                  fontSize: 15,
-                  lineHeight: 24,
-                  textAlign: 'left',
-                }}
-                classesStyles={{
-                  'd-none': { display: 'none' },
-                }}
-                tagsStyles={{
-                  body: { margin: 0 },
-                  h2: {
-                    color: theme.colors.onSurface,
-                    fontSize: 18,
-                    lineHeight: 26,
-                    fontWeight: '600',
-                    marginTop: 0,
-                    marginBottom: spacing.sm,
-                  },
-                  h3: {
-                    color: theme.colors.onSurface,
-                    fontSize: 16,
-                    lineHeight: 24,
-                    fontWeight: '600',
-                    marginTop: 0,
-                    marginBottom: spacing.sm,
-                  },
-                  p: {
-                    marginTop: 0,
-                    marginBottom: spacing.md,
-                  },
-                  strong: {
-                    color: theme.colors.onSurface,
-                    fontWeight: '600',
-                  },
-                }}
-              />
+              {blocks.map((block, index) =>
+                block.type === 'link' ? (
+                  <Text
+                    key={index}
+                    variant="bodyMedium"
+                    accessibilityRole="link"
+                    onPress={() => block.href && void Linking.openURL(block.href).catch(() => haptics.error())}
+                    style={[styles.blockLink, { color: theme.colors.primary }]}
+                  >
+                    {sentenceCase(block.text || block.href || '')}
+                  </Text>
+                ) : (
+                  <Text
+                    key={index}
+                    selectable
+                    variant={block.type === 'heading' ? 'titleSmall' : 'bodyMedium'}
+                    style={[
+                      block.type === 'heading' ? [styles.blockHeading, emphasis.strong] : styles.blockText,
+                      { color: block.type === 'heading' ? theme.colors.onSurface : theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                    {block.type === 'list_item' ? `\u2022  ${sentenceCase(block.text)}` : sentenceCase(block.text)}
+                  </Text>
+                ),
+              )}
               {externalUrl ? (
                 <View style={styles.sourceRow}>
                   <StateButton
@@ -468,6 +416,17 @@ export const NotificationCard = memo(function NotificationCard({
 const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
+  },
+  blockText: {
+    lineHeight: 23,
+    marginBottom: spacing.md,
+  },
+  blockHeading: {
+    marginBottom: spacing.sm,
+  },
+  blockLink: {
+    marginBottom: spacing.md,
+    textDecorationLine: 'underline',
   },
   header: {
     flexDirection: 'row',

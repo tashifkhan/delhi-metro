@@ -58,10 +58,19 @@ export interface PassengerNotification {
   date: string;
 }
 
+/** One block of a notice, converted from the operator's HTML by the API. */
+export interface NoticeBlock {
+  type: 'paragraph' | 'heading' | 'list_item' | 'link';
+  text: string;
+  href?: string | null;
+}
+
 export interface PassengerNotificationDetail {
   page_id: number | null;
   title: string;
   content: string;
+  /** Absent from API deploys that predate it; the app then reads `content`. */
+  body_blocks?: NoticeBlock[];
   page_slug: string;
   cover_photo: NotificationImage | null;
   seo_title: string | null;
