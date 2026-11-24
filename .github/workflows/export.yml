@@ -17,12 +17,14 @@ jobs:
     if: vars.OFFLINE_EXPORT_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 55
-    env:
-      EXPORT_CHECKOUT: ${{ runner.temp }}/metro-export-data
-      NEXT_EXPORT: ${{ runner.temp }}/next-offline-export.zip
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
+
+      - name: Set temporary export paths
+        run: |
+          printf 'EXPORT_CHECKOUT=%s/metro-export-data\nNEXT_EXPORT=%s/next-offline-export.zip\n' \
+            "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
 
       - name: Check out the data branch
         run: |
