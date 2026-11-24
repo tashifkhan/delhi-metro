@@ -5,13 +5,15 @@
  * `api/scripts/build_network_map.py`: lines in travel order and stations with
  * coordinates. Stations marked `approx` were placed by interpolation because
  * no real coordinates exist for them (newer DMRC stations and the whole Aqua
- * Line), so the map is a schematic, not a survey.
+ * Line), so the map is a schematic, not a survey. Namo Bharat and Meerut
+ * Metro use NCRTC's own coordinates.
  *
  * Coordinates are projected onto a flat plane: x east, y south, one unit per
  * metre at Delhi's latitude. That is close enough at city scale.
  */
 
 import raw from '../../data/networkMap.json';
+import type { MetroNetwork } from '../../types';
 
 export interface MapStation {
   code: string;
@@ -27,7 +29,7 @@ export interface MapLine {
   code: string;
   name: string;
   color: string;
-  network: 'dmrc' | 'nmrc';
+  network: MetroNetwork;
   stations: string[];
   points: { x: number; y: number }[];
 }
@@ -83,7 +85,7 @@ export const MAP_LINES: MapLine[] = data.lines.map((line) => ({
   code: line.code,
   name: line.name,
   color: line.color,
-  network: line.network === 'nmrc' ? 'nmrc' : 'dmrc',
+  network: line.network === 'nmrc' || line.network === 'ncrtc' ? line.network : 'dmrc',
   stations: line.stations,
   points: line.stations
     .map((code) => STATION_BY_CODE.get(code))

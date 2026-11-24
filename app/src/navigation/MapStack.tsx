@@ -9,7 +9,7 @@ import type { MapStackParamList } from './types';
 const Stack = createNativeStackNavigator<MapStackParamList>();
 
 export function MapStack() {
-  const screenOptions = useStackScreenOptions({ networkSwitcher: true });
+  const screenOptions = useStackScreenOptions();
   const { network } = useMetroNetwork();
 
   return (

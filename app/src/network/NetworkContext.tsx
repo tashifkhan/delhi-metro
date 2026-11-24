@@ -56,7 +56,8 @@ export function MetroNetworkProvider({ children }: { children: ReactNode }) {
 
   const toggleNetwork = useCallback(() => {
     setNetworkState((current) => {
-      const next = current === 'dmrc' ? 'nmrc' : 'dmrc';
+      // Cycles through every operator.
+      const next = OPERATORS[(OPERATORS.indexOf(current) + 1) % OPERATORS.length];
       void metroNetworkRepository.save(next);
       return next;
     });

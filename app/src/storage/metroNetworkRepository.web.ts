@@ -5,7 +5,8 @@ const STORAGE_KEY = 'dmrc:metroNetwork';
 
 export const metroNetworkRepository = {
   async load(): Promise<MetroNetwork> {
-    return readJson<string>(STORAGE_KEY) === 'nmrc' ? 'nmrc' : 'dmrc';
+    const stored = readJson<string>(STORAGE_KEY);
+    return stored === 'nmrc' || stored === 'ncrtc' ? stored : 'dmrc';
   },
 
   async save(network: MetroNetwork): Promise<void> {

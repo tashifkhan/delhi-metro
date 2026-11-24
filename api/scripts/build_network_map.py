@@ -22,6 +22,7 @@ from __future__ import annotations
 import csv
 import json
 import sys
+import os
 import urllib.request
 from pathlib import Path
 
@@ -29,7 +30,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CSV_PATH = ROOT / "api" / "data" / "stations.normalized.csv"
 NMRC_DATA = ROOT / "api" / "services" / "nmrc" / "data.py"
 OUT_PATH = ROOT / "app" / "src" / "data" / "networkMap.json"
-API = "https://ncr-metro.tashif.codes/api/v1"
+# NETWORK_MAP_API points the builder at another deploy, e.g. a local API with NCRTC.
+API = os.environ.get("NETWORK_MAP_API", "https://ncr-metro.tashif.codes/api/v1").rstrip("/")
 
 # Not passenger lines.
 SKIP_LINES = {"LN12"}
@@ -148,7 +150,63 @@ def fill_gaps(order: list[str], known: dict[str, tuple[float, float]], ring: boo
     return filled
 
 
+# Namo Bharat's catalog lists the Duhai Depot spur (AS2) between Duhai and Murad
+# Nagar. Drawn in that order the line would detour to the depot and back, so the
+# spur is drawn as its own short line off Duhai.
+NCRTC_SPURS = {"RRTS": ("A06", "AS2")}
+
+
+def ncrtc_lines_and_stations() -> tuple[list[dict], dict[str, dict]]:
+    """Namo Bharat and Meerut Metro with real coordinates from NCRTC."""
+
+    lines: list[dict] = []
+    stations: dict[str, dict] = {}
+    for line in fetch("/ncrtc/lines"):
+        code = line["line_code"]
+        items = fetch(f"/ncrtc/lines/{code}/stations")
+        order = [item["station_code"].strip().upper() for item in items]
+        for item in items:
+            station_code = item["station_code"].strip().upper()
+            if station_code not in stations:
+                detail = fetch(f"/ncrtc/stations/{station_code}")
+                stations[station_code] = {
+                    "code": station_code,
+                    "name": item["station_name"].strip(),
+                    "lat": round(float(detail["latitude"]), 5),
+                    "lng": round(float(detail["longitude"]), 5),
+                    "lines": [],
+                }
+            if code not in stations[station_code]["lines"]:
+                stations[station_code]["lines"].append(code)
+        spur = NCRTC_SPURS.get(code)
+        main_order = [c for c in order if not spur or c != spur[1]]
+        entry = {"code": code, "name": line["name"], "color": line["primary_color_code"], "network": "ncrtc"}
+        lines.append({**entry, "stations": main_order})
+        if spur and spur[1] in order:
+            lines.append({**entry, "code": f"{code}-{spur[1]}", "stations": list(spur)})
+    return lines, stations
+
+
+def add_ncrtc_only() -> int:
+    """Refresh only the NCRTC part of the snapshot, keeping Delhi and Noida as they are."""
+
+    payload = json.loads(OUT_PATH.read_text())
+    keep_lines = [line for line in payload["lines"] if line.get("network") != "ncrtc"]
+    ncrtc_lines, ncrtc_stations = ncrtc_lines_and_stations()
+    ncrtc_codes = {code for line in ncrtc_lines for code in line["stations"]}
+    keep_stations = [s for s in payload["stations"] if s["code"] not in ncrtc_codes]
+    payload = {
+        "lines": keep_lines + ncrtc_lines,
+        "stations": sorted(keep_stations + list(ncrtc_stations.values()), key=lambda s: s["code"]),
+    }
+    OUT_PATH.write_text(json.dumps(payload, separators=(",", ":")) + "\n")
+    print(f"NCRTC: {len(ncrtc_lines)} lines, {len(ncrtc_stations)} stations -> {OUT_PATH.relative_to(ROOT)}")
+    return 0
+
+
 def main() -> int:
+    if "--ncrtc-only" in sys.argv:
+        return add_ncrtc_only()
     coords, names = load_coords()
     # Newer stations carry this placeholder instead of a real position.
     coords = {k: v for k, v in coords.items() if (round(v[0], 4), round(v[1], 4)) != PLACEHOLDER}
@@ -224,6 +282,10 @@ def main() -> int:
             "stations": [code for code, _ in aqua],
         }
     )
+
+    ncrtc_lines, ncrtc_stations = ncrtc_lines_and_stations()
+    lines.extend(ncrtc_lines)
+    stations.update(ncrtc_stations)
 
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     payload = {"lines": lines, "stations": sorted(stations.values(), key=lambda s: s["code"])}
