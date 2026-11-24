@@ -243,6 +243,8 @@ function renderTouchable(props) {
     'react-native-paper': { TouchableRipple: 'Ripple', useTheme: () => ({ colors: { onSurface: '#000' } }) },
     '../theme': { radius: { card: 12 }, tint: value => value },
     '../theme/motion': {},
+    '../theme/ThemeContext': { useAppTheme: () => ({ look: { style: 'material' } }) },
+    '../theme/look': { adaptRadius: (_look, value) => value },
     '../hooks/useHaptics': {
       useHaptics: () => Object.fromEntries(
         ['navigate', 'select', 'press', 'longPress'].map(key => [key, () => pulses.push(key)]),
