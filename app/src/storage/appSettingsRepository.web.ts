@@ -23,6 +23,14 @@ export interface AppSettings {
   uiStyle: UiStyle;
   /** Accent combo for Studio. */
   studioColor: StudioColorId;
+  /** Show smart card fares first. */
+  smartCard: boolean;
+  /** Refresh the offline pack on open and when the connection returns. */
+  offlineAutoSync: boolean;
+  /** Only auto-sync on Wi-Fi. */
+  offlineWifiOnly: boolean;
+  /** First-launch questions answered or skipped. */
+  onboarded: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,6 +42,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   animationStyle: 'slide',
   uiStyle: DEFAULT_UI_STYLE,
   studioColor: DEFAULT_STUDIO_COLOR,
+  smartCard: false,
+  offlineAutoSync: true,
+  offlineWifiOnly: false,
+  onboarded: false,
 };
 
 const STORAGE_KEY = 'dmrc:appSettings';
@@ -60,6 +72,10 @@ function decode(stored: Partial<AppSettings> | null): AppSettings {
     studioColor: STUDIO_COMBOS.some((combo) => combo.id === stored.studioColor)
       ? (stored.studioColor as StudioColorId)
       : DEFAULT_SETTINGS.studioColor,
+    smartCard: stored.smartCard === true,
+    offlineAutoSync: stored.offlineAutoSync !== false,
+    offlineWifiOnly: stored.offlineWifiOnly === true,
+    onboarded: stored.onboarded === true,
   };
 }
 

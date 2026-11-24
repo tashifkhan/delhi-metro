@@ -23,6 +23,14 @@ export interface AppSettings {
   uiStyle: UiStyle;
   /** Accent combo for Studio. */
   studioColor: StudioColorId;
+  /** Show smart card fares first. */
+  smartCard: boolean;
+  /** Refresh the offline pack on open and when the connection returns. */
+  offlineAutoSync: boolean;
+  /** Only auto-sync on Wi-Fi. */
+  offlineWifiOnly: boolean;
+  /** First-launch questions answered or skipped. */
+  onboarded: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -34,6 +42,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   animationStyle: 'slide',
   uiStyle: DEFAULT_UI_STYLE,
   studioColor: DEFAULT_STUDIO_COLOR,
+  smartCard: false,
+  offlineAutoSync: true,
+  offlineWifiOnly: false,
+  onboarded: false,
 };
 
 const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
@@ -71,6 +83,10 @@ function decode(rows: SettingRow[]): AppSettings {
     studioColor: STUDIO_COMBOS.some((combo) => combo.id === map.get('studioColor'))
       ? (map.get('studioColor') as StudioColorId)
       : DEFAULT_SETTINGS.studioColor,
+    smartCard: map.get('smartCard') === 'true',
+    offlineAutoSync: map.get('offlineAutoSync') !== 'false',
+    offlineWifiOnly: map.get('offlineWifiOnly') === 'true',
+    onboarded: map.get('onboarded') === 'true',
   };
 }
 
@@ -97,6 +113,10 @@ export const appSettingsRepository = {
       ['animationStyle', settings.animationStyle],
       ['uiStyle', settings.uiStyle],
       ['studioColor', settings.studioColor],
+      ['smartCard', String(settings.smartCard)],
+      ['offlineAutoSync', String(settings.offlineAutoSync)],
+      ['offlineWifiOnly', String(settings.offlineWifiOnly)],
+      ['onboarded', String(settings.onboarded)],
     ];
 
     await db.withTransactionAsync(async () => {

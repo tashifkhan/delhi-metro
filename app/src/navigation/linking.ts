@@ -27,6 +27,7 @@ export const navigationLinking: LinkingOptions<RootTabParamList> = {
           JourneyResults: 'journey/:fromCode/:toCode',
           StationDetail: 'station/:stationCode',
           Settings: 'settings',
+          OfflineData: 'settings/offline',
           Appearance: 'settings/appearance',
           About: 'about',
         },

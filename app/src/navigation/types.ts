@@ -25,6 +25,7 @@ export type HomeStackParamList = {
   JourneyResults: JourneyResultsParams;
   StationDetail: StationDetailParams;
   Settings: undefined;
+  OfflineData: undefined;
   Appearance: undefined;
   About: undefined;
 };
