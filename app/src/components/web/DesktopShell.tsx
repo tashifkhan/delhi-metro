@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BrandMark } from '../BrandMark';
+import { TabIcon, type TabIconName } from '../icons/TabIcons';
 import { Text, useTheme } from 'react-native-paper';
 
 import type { RootTabParamList } from '../../navigation/types';
@@ -11,17 +12,12 @@ import { emphasis, radius, spacing } from '../../theme';
 
 export type DesktopTab = keyof RootTabParamList;
 
-const NAV_ITEMS: {
-  key: DesktopTab;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  activeIcon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { key: 'HomeTab', label: 'Plan', icon: 'navigate-outline', activeIcon: 'navigate' },
-  { key: 'SearchTab', label: 'Search', icon: 'search-outline', activeIcon: 'search' },
-  { key: 'LinesTab', label: 'Lines', icon: 'git-branch-outline', activeIcon: 'git-branch' },
-  { key: 'MapTab', label: 'Map', icon: 'map-outline', activeIcon: 'map' },
-  { key: 'AlertsTab', label: 'Alerts', icon: 'notifications-outline', activeIcon: 'notifications' },
+const NAV_ITEMS: { key: DesktopTab; label: string; icon: TabIconName }[] = [
+  { key: 'HomeTab', label: 'Plan', icon: 'plan' },
+  { key: 'MapTab', label: 'Map', icon: 'map' },
+  { key: 'NetworkTab', label: 'Network', icon: 'network' },
+  { key: 'SavedTab', label: 'Saved', icon: 'saved' },
+  { key: 'AlertsTab', label: 'Alerts', icon: 'alerts' },
 ];
 
 interface Props {
@@ -77,8 +73,9 @@ export function DesktopShell({ active, onSelect }: Props) {
               }}
             >
               <View style={styles.navRow}>
-                <Ionicons
-                  name={selected ? item.activeIcon : item.icon}
+                <TabIcon
+                  name={item.icon}
+                  focused={selected}
                   size={20}
                   color={
                     selected

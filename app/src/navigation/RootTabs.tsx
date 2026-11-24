@@ -1,32 +1,29 @@
 import { useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from 'react-native-paper';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeStack } from './HomeStack';
-import { ExploreStack } from './ExploreStack';
-import { LinesStack } from './LinesStack';
+import { NetworkStack } from './NetworkStack';
 import { MapStack } from './MapStack';
+import { SavedStack } from './SavedStack';
 import { AlertsStack } from './AlertsStack';
 import { useHaptics } from '../hooks/useHaptics';
 import { spring } from '../theme/motion';
 import type { RootTabParamList } from './types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { animationPreference } from '../theme/animationPreferences';
+import { TabIcon, type TabIconName } from '../components/icons/TabIcons';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const TAB_ICONS: Record<
-  keyof RootTabParamList,
-  { focused: keyof typeof Ionicons.glyphMap; default: keyof typeof Ionicons.glyphMap }
-> = {
-  HomeTab: { focused: 'navigate', default: 'navigate-outline' },
-  SearchTab: { focused: 'search', default: 'search-outline' },
-  LinesTab: { focused: 'git-branch', default: 'git-branch-outline' },
-  MapTab: { focused: 'map', default: 'map-outline' },
-  AlertsTab: { focused: 'notifications', default: 'notifications-outline' },
+const TAB_ICONS: Record<keyof RootTabParamList, TabIconName> = {
+  HomeTab: 'plan',
+  MapTab: 'map',
+  NetworkTab: 'network',
+  SavedTab: 'saved',
+  AlertsTab: 'alerts',
 };
 
 /**
@@ -58,9 +55,10 @@ function TabBarIcon({
   indicatorColor,
 }: {
   focused: boolean;
-  name: keyof typeof Ionicons.glyphMap;
+  name: TabIconName;
   color: string;
-  indicatorColor: string;
+  /** Null draws no pill: Plain marks the tab by weight and colour alone. */
+  indicatorColor: string | null;
 }) {
   const progress = useRef(new Animated.Value(focused ? 1 : 0)).current;
   const { animationStyle } = useAppTheme();
@@ -81,6 +79,7 @@ function TabBarIcon({
 
   return (
     <View style={styles.iconSlot}>
+      {indicatorColor ? (
       <Animated.View
         style={[
           styles.indicator,
@@ -98,6 +97,7 @@ function TabBarIcon({
           },
         ]}
       />
+      ) : null}
       <Animated.View
         style={{
           transform: [
@@ -110,7 +110,7 @@ function TabBarIcon({
           ],
         }}
       >
-        <Ionicons name={name} size={22} color={color} />
+        <TabIcon name={name} focused={focused} color={color} size={22} />
       </Animated.View>
     </View>
   );
@@ -118,7 +118,8 @@ function TabBarIcon({
 
 export function RootTabs() {
   const theme = useTheme();
-  const { animationStyle } = useAppTheme();
+  const { animationStyle, look, fills } = useAppTheme();
+  const material = look.style === 'material';
   const insets = useSafeAreaInsets();
   const haptics = useHaptics();
 
@@ -138,11 +139,13 @@ export function RootTabs() {
         // Tabs are siblings, so they cross-fade and shift rather than sliding
         // in a direction — Material's shared axis for lateral navigation.
         animation: animationPreference(animationStyle, false).tabs,
-        tabBarActiveTintColor: theme.colors.onSecondaryContainer,
+        tabBarActiveTintColor: material ? theme.colors.onSecondaryContainer : theme.colors.onSurface,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {
-          backgroundColor: theme.colors.elevation.level2,
-          borderTopWidth: 0,
+          // Studio and Plain sit the bar on the page with a hairline; Material lifts it a tone.
+          backgroundColor: material ? theme.colors.elevation.level2 : theme.colors.background,
+          borderTopWidth: material ? 0 : StyleSheet.hairlineWidth,
+          borderTopColor: fills.hairline,
           elevation: 0,
           // The inset extends the bar; it is not shared with the content box.
           height: BAR_HEIGHT + insets.bottom,
@@ -161,22 +164,27 @@ export function RootTabs() {
           flexShrink: 0,
         },
         tabBarIcon: ({ focused, color }) => {
-          const icons = TAB_ICONS[route.name];
           return (
             <TabBarIcon
               focused={focused}
-              name={focused ? icons.focused : icons.default}
-              color={focused ? theme.colors.onSecondaryContainer : color}
-              indicatorColor={theme.colors.secondaryContainer}
+              name={TAB_ICONS[route.name]}
+              color={focused ? (material ? theme.colors.onSecondaryContainer : theme.colors.onSurface) : color}
+              indicatorColor={
+                look.style === 'plain'
+                  ? null
+                  : material
+                    ? theme.colors.secondaryContainer
+                    : theme.colors.primaryContainer
+              }
             />
           );
         },
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeStack} options={{ tabBarLabel: 'Plan' }} />
-      <Tab.Screen name="SearchTab" component={ExploreStack} options={{ tabBarLabel: 'Search' }} />
-      <Tab.Screen name="LinesTab" component={LinesStack} options={{ tabBarLabel: 'Lines' }} />
       <Tab.Screen name="MapTab" component={MapStack} options={{ tabBarLabel: 'Map' }} />
+      <Tab.Screen name="NetworkTab" component={NetworkStack} options={{ tabBarLabel: 'Network' }} />
+      <Tab.Screen name="SavedTab" component={SavedStack} options={{ tabBarLabel: 'Saved' }} />
       <Tab.Screen name="AlertsTab" component={AlertsStack} options={{ tabBarLabel: 'Alerts' }} />
     </Tab.Navigator>
   );

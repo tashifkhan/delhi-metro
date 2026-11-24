@@ -19,11 +19,11 @@ import {
 } from '../components/LineGlyph';
 import { useAppTheme } from '../theme/ThemeContext';
 import type { StationByLineItem, StationLineBadge } from '../types';
-import type { LinesStackParamList } from '../navigation/types';
+import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis, onColor } from '../theme';
 
-type Nav = NativeStackNavigationProp<LinesStackParamList, 'LineStations'>;
-type Route = RouteProp<LinesStackParamList, 'LineStations'>;
+type Nav = NativeStackNavigationProp<NetworkStackParamList, 'LineStations'>;
+type Route = RouteProp<NetworkStackParamList, 'LineStations'>;
 
 const RAIL_COLUMN = 24;
 const RAIL_THICKNESS = 8;

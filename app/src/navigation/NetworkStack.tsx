@@ -2,14 +2,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useStackScreenOptions } from './useStackScreenOptions';
 import { useMetroNetwork } from '../network';
 
-import { MetroLinesScreen } from '../screens/MetroLinesScreen';
+import { NetworkScreen } from '../screens/NetworkScreen';
 import { LineStationsScreen } from '../screens/LineStationsScreen';
 import { StationDetailScreen } from '../screens/StationDetailScreen';
-import type { LinesStackParamList } from './types';
+import type { NetworkStackParamList } from './types';
 
-const Stack = createNativeStackNavigator<LinesStackParamList>();
+const Stack = createNativeStackNavigator<NetworkStackParamList>();
 
-export function LinesStack() {
+export function NetworkStack() {
   const screenOptions = useStackScreenOptions();
   const { network } = useMetroNetwork();
 
@@ -20,7 +20,7 @@ export function LinesStack() {
       key={network}
       screenOptions={screenOptions}
     >
-      <Stack.Screen name="MetroLines" component={MetroLinesScreen} options={{ title: 'Lines' }} />
+      <Stack.Screen name="Network" component={NetworkScreen} options={{ title: 'Network' }} />
       <Stack.Screen
         name="LineStations"
         component={LineStationsScreen}

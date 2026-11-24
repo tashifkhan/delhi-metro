@@ -10,6 +10,7 @@ import { queryClient } from './src/api/queryClient';
 import { DIProvider } from './src/di/DIContext';
 import { createServiceContainer } from './src/di/container';
 import { ThemeProvider, useAppTheme, useFocusRing, useBrowserChrome } from './src/theme';
+import { SavedProvider } from './src/saved/SavedContext';
 import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
 import { DesktopRoot } from './src/navigation/DesktopRoot';
@@ -69,7 +70,9 @@ export default function App() {
         <MetroNetworkProvider>
           <DIProvider container={container}>
             <QueryClientProvider client={queryClient}>
-              <AppInner />
+              <SavedProvider>
+                <AppInner />
+              </SavedProvider>
             </QueryClientProvider>
           </DIProvider>
         </MetroNetworkProvider>

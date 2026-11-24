@@ -8,9 +8,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 
 import { AlertsStack } from './AlertsStack';
-import { ExploreStack } from './ExploreStack';
 import { HomeStack } from './HomeStack';
-import { LinesStack } from './LinesStack';
+import { NetworkStack } from './NetworkStack';
+import { SavedStack } from './SavedStack';
 import { MapStack } from './MapStack';
 import type { RootTabParamList } from './types';
 import { useHaptics } from '../hooks/useHaptics';
@@ -70,26 +70,26 @@ function HomeDesktopScene() {
   );
 }
 
-function SearchDesktopScene() {
-  return (
-    <DesktopFrame active="SearchTab">
-      <ExploreStack />
-    </DesktopFrame>
-  );
-}
-
-function LinesDesktopScene() {
-  return (
-    <DesktopFrame active="LinesTab">
-      <LinesStack />
-    </DesktopFrame>
-  );
-}
-
 function MapDesktopScene() {
   return (
     <DesktopFrame active="MapTab" fullBleed>
       <MapStack />
+    </DesktopFrame>
+  );
+}
+
+function NetworkDesktopScene() {
+  return (
+    <DesktopFrame active="NetworkTab">
+      <NetworkStack />
+    </DesktopFrame>
+  );
+}
+
+function SavedDesktopScene() {
+  return (
+    <DesktopFrame active="SavedTab">
+      <SavedStack />
     </DesktopFrame>
   );
 }
@@ -120,9 +120,9 @@ export function DesktopRoot() {
       screenOptions={{ headerShown: false, animation: animationPreference(animationStyle, false).tabs }}
     >
       <Tab.Screen name="HomeTab" component={HomeDesktopScene} />
-      <Tab.Screen name="SearchTab" component={SearchDesktopScene} />
-      <Tab.Screen name="LinesTab" component={LinesDesktopScene} />
       <Tab.Screen name="MapTab" component={MapDesktopScene} />
+      <Tab.Screen name="NetworkTab" component={NetworkDesktopScene} />
+      <Tab.Screen name="SavedTab" component={SavedDesktopScene} />
       <Tab.Screen name="AlertsTab" component={AlertsDesktopScene} />
     </Tab.Navigator>
   );

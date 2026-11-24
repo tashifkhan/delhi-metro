@@ -84,7 +84,7 @@ export function LineStatusCarousel() {
   const clear = disrupted.length === 0;
 
   const openLine = (line: MetroLine) =>
-    navigation.getParent<NavigationProp<RootTabParamList>>()?.navigate('LinesTab', {
+    navigation.getParent<NavigationProp<RootTabParamList>>()?.navigate('NetworkTab', {
       screen: 'LineStations',
       params: {
         lineCode: line.line_code,

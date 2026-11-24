@@ -1,6 +1,7 @@
 import { useHaptics } from '../hooks/useHaptics';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   PanResponder,
   Platform,
@@ -33,6 +34,7 @@ import { Touchable } from '../components/Touchable';
 import { Reveal } from '../components/Reveal';
 import { RouteMap } from '../components/map/RouteMap';
 import { useAppTheme } from '../theme/ThemeContext';
+import { useSaved } from '../saved/SavedContext';
 import { NETWORK_NAMES } from '../network';
 import type { MetroNetwork, PlannedFare, RouteStrategy, WhatsAppBooking } from '../types';
 import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
@@ -72,6 +74,7 @@ export function JourneyResultsScreen() {
   const { fromCode, toCode, journeyTime } = route.params;
   const theme = useTheme();
   const { fills } = useAppTheme();
+  const saved = useSaved();
   const [strategy, setStrategy] = useState<RouteStrategy>(
     route.params.strategy ?? 'least-distance',
   );
@@ -107,10 +110,31 @@ export function JourneyResultsScreen() {
     Share.share(content).catch(() => undefined);
   }, [fromCode, toCode, fromName, toName]);
 
+  const isSaved = saved.isTripSaved(fromCode, toCode);
+  const toggleSaved = useCallback(() => {
+    const nowSaved = saved.toggleTrip(
+      { code: fromCode, name: route.params.fromName ?? plan?.origin.name ?? fromCode },
+      { code: toCode, name: route.params.toName ?? plan?.destination.name ?? toCode },
+    );
+    haptics.toggle(nowSaved);
+    AccessibilityInfo.announceForAccessibility(
+      nowSaved ? 'Trip saved. It is in the Saved tab.' : 'Trip removed from Saved.',
+    );
+  }, [saved, fromCode, toCode, route.params.fromName, route.params.toName, plan, haptics]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: ({ tintColor }) => (
         <>
+          <Appbar.Action
+            icon={({ size, color }) => (
+              <Ionicons name={isSaved ? 'bookmark' : 'bookmark-outline'} size={size} color={color} />
+            )}
+            color={tintColor}
+            accessibilityLabel={isSaved ? 'Remove this trip from Saved' : 'Save this trip'}
+            accessibilityState={{ selected: isSaved }}
+            onPress={toggleSaved}
+          />
           <Appbar.Action
             icon={({ size, color }) => <Ionicons name="swap-vertical" size={size} color={color} />}
             color={tintColor}
@@ -129,7 +153,7 @@ export function JourneyResultsScreen() {
         </>
       ),
     });
-  }, [navigation, handleSwapStations, handleShare, haptics]);
+  }, [navigation, handleSwapStations, handleShare, haptics, isSaved, toggleSaved]);
 
   const handleStationSelect = useCallback(
     (station: { code: string; name: string }) => {

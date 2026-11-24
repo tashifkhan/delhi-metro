@@ -17,10 +17,10 @@ import { LineGlyph, lineGlyph, lineSubtitle, lineTitle, terminalName } from '../
 import { useAppTheme } from '../theme/ThemeContext';
 import { NETWORK_NAMES } from '../network';
 import type { MetroLine, MetroNetwork } from '../types';
-import type { LinesStackParamList } from '../navigation/types';
+import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis } from '../theme';
 
-type Nav = NativeStackNavigationProp<LinesStackParamList, 'MetroLines'>;
+type Nav = NativeStackNavigationProp<NetworkStackParamList, 'Network'>;
 
 const NORMAL_STATUS = 'normal service';
 const NETWORK_ORDER: MetroNetwork[] = ['dmrc', 'nmrc'];
@@ -28,7 +28,10 @@ const NETWORK_ORDER: MetroNetwork[] = ['dmrc', 'nmrc'];
 function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last: boolean }) {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
-  const { semantic, fills } = useAppTheme();
+  const { semantic, fills, look } = useAppTheme();
+  // Rows in a group touch the group's outer corners only, so the group reads as one block.
+  const outer = look.radius.hero;
+  const inner = look.style === 'material' ? shape.sm : 0;
 
   const disrupted = line.status.trim().toLowerCase() !== NORMAL_STATUS;
   const title = lineTitle(line);
@@ -38,7 +41,7 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
 
   return (
     <Touchable
-      radius={shape.sm}
+      radius={inner}
       onPress={() =>
         navigation.navigate('LineStations', {
           lineCode: line.line_code,
@@ -48,10 +51,14 @@ function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last:
       }
       accessibilityLabel={`${title}, ${from} to ${to}, ${disrupted ? line.status : 'running normally'}`}
       style={[
-        styles.row,
-        { backgroundColor: fills.containerLow },
-        first && styles.rowFirst,
-        last && styles.rowLast,
+        {
+          backgroundColor: fills.containerLow,
+          borderRadius: inner,
+          borderColor: fills.hairline,
+          borderWidth: look.edge === 'hairline' ? StyleSheet.hairlineWidth : 0,
+        },
+        first && { borderTopLeftRadius: outer, borderTopRightRadius: outer },
+        last && { borderBottomLeftRadius: outer, borderBottomRightRadius: outer },
       ]}
     >
       <View style={styles.rowInner}>
@@ -220,17 +227,6 @@ const styles = StyleSheet.create({
   },
   gridCell: {
     width: '49%',
-  },
-  row: {
-    borderRadius: shape.sm,
-  },
-  rowFirst: {
-    borderTopLeftRadius: shape.xl,
-    borderTopRightRadius: shape.xl,
-  },
-  rowLast: {
-    borderBottomLeftRadius: shape.xl,
-    borderBottomRightRadius: shape.xl,
   },
   rowInner: {
     flexDirection: 'row',
