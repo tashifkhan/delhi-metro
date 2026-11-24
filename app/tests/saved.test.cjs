@@ -51,3 +51,15 @@ test('stored data that is malformed is dropped, not thrown', () => {
   assert.equal(decoded.trips.length, 1);
   assert.deepEqual(plain(decoded.places.map((p) => p.label)), ['Gym']);
 });
+
+test('launcher shortcuts read "From <place>", at most four, with the station to start from', () => {
+  const source = fs.readFileSync('src/saved/shortcuts.ts', 'utf8');
+  const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+  const shortcuts = {};
+  vm.runInNewContext(code, { exports: shortcuts });
+  const places = ['Home', 'Work', 'Gym', 'College', 'Clinic'].map((label, i) => ({ label, station: { code: `S${i}`, name: `Station ${i}` } }));
+  const items = plain(shortcuts.shortcutsFor(places));
+  assert.equal(items.length, 4);
+  assert.deepEqual(items[0], { id: 'place:home', title: 'From Home', subtitle: 'Station 0', icon: 'symbol:house', params: { code: 'S0', name: 'Station 0' } });
+  assert.equal(plain(shortcuts.shortcutsFor(places, 2)).length, 2, "the launcher's own limit wins");
+});

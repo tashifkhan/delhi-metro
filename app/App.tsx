@@ -1,5 +1,5 @@
 import { Platform, View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider } from 'react-native-paper';
@@ -12,6 +12,8 @@ import { createServiceContainer } from './src/di/container';
 import { ThemeProvider, useAppTheme, useFocusRing, useBrowserChrome } from './src/theme';
 import { SavedProvider } from './src/saved/SavedContext';
 import { OfflinePackProvider } from './src/offline/OfflinePackContext';
+import { QuickActionsBridge } from './src/saved/QuickActionsBridge';
+import type { RootTabParamList } from './src/navigation/types';
 import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
@@ -20,6 +22,7 @@ import { navigationLinking } from './src/navigation/linking';
 import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
 const container = createServiceContainer(apiClient);
+const navigationRef = createNavigationContainerRef<RootTabParamList>();
 
 function AppNavigation() {
   const { isLoaded } = useMetroNetwork();
@@ -55,10 +58,11 @@ function AppInner() {
         theme mode — the bar has to follow the resolved app theme instead.
       */}
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <QuickActionsBridge navigationRef={navigationRef} />
       {onboarding ? (
         <OnboardingScreen />
       ) : settingsLoaded ? (
-        <NavigationContainer theme={navTheme} linking={navigationLinking}>
+        <NavigationContainer ref={navigationRef} theme={navTheme} linking={navigationLinking}>
           <AppNavigation />
         </NavigationContainer>
       ) : (
