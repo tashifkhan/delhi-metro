@@ -84,6 +84,30 @@ test('Reduce Motion overrides every animation preference without changing the sa
   assert.equal(preferences.animationPreference('slide', false).tabs, 'shift');
 });
 
+test('Fade and Off clear the Slide offset on mounted tab scenes', () => {
+  const { tabSceneOptions } = evaluate('src/navigation/tabSceneOptions.ts', (name) => {
+    if (name === '../theme/animationPreferences') return preferences;
+    if (name === '@react-navigation/bottom-tabs') {
+      return { SceneStyleInterpolators: { forFade: () => ({ sceneStyle: { opacity: 0.5 } }) } };
+    }
+    throw new Error(`Unexpected module ${name}`);
+  });
+
+  assert.equal(tabSceneOptions('slide').animation, 'shift');
+  const fade = tabSceneOptions('fade');
+  const { sceneStyle: [opacity, transform] } = fade.sceneStyleInterpolator({
+    current: { progress: { interpolate: ({ outputRange }) => Array.from(outputRange) } },
+  });
+  assert.equal(fade.animation, 'fade');
+  assert.equal(opacity.opacity, 0.5);
+  assert.deepEqual(transform.transform[0].translateX, [0, 0, 0]);
+
+  const off = tabSceneOptions('none');
+  assert.equal(off.animation, 'none');
+  assert.equal(off.sceneStyle.opacity, 1);
+  assert.equal(off.sceneStyle.transform[0].translateX, 0);
+});
+
 for (const platform of ['native', 'web']) {
   test(`${platform} defaults to the Studio style in teal and keeps a saved style`, async () => {
     assert.deepEqual(

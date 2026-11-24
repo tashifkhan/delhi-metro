@@ -1,6 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useStackScreenOptions } from './useStackScreenOptions';
-import { useMetroNetwork } from '../network';
 
 import { HomeScreen } from '../screens/HomeScreen';
 import { JourneyResultsScreen } from '../screens/JourneyResultsScreen';
@@ -15,16 +14,9 @@ const Stack = createNativeStackNavigator<HomeStackParamList>();
 
 export function HomeStack() {
   const screenOptions = useStackScreenOptions();
-  const { network } = useMetroNetwork();
 
   return (
-    <Stack.Navigator
-      // A network switch pops this stack to its root so a Delhi detail route
-      // never lingers under Noida (and vice versa). Scoped here rather than
-      // at the app root, so the shell and the selected tab stay put.
-      key={network}
-      screenOptions={screenOptions}
-    >
+    <Stack.Navigator screenOptions={screenOptions}>
       <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Stack.Screen name="JourneyResults" component={JourneyResultsScreen} options={{ title: '' }} />
       <Stack.Screen

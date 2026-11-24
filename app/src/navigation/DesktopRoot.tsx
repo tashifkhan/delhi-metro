@@ -15,7 +15,7 @@ import { MapStack } from './MapStack';
 import type { RootTabParamList } from './types';
 import { useHaptics } from '../hooks/useHaptics';
 import { useAppTheme } from '../theme/ThemeContext';
-import { animationPreference } from '../theme/animationPreferences';
+import { tabSceneOptions } from './tabSceneOptions';
 import { DesktopShell, type DesktopTab } from '../components/web/DesktopShell';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -117,7 +117,7 @@ export function DesktopRoot() {
           if (!alreadyFocused) haptics.select();
         },
       })}
-      screenOptions={{ headerShown: false, animation: animationPreference(animationStyle, false).tabs }}
+      screenOptions={{ headerShown: false, ...tabSceneOptions(animationStyle) }}
     >
       <Tab.Screen name="HomeTab" component={HomeDesktopScene} />
       <Tab.Screen name="MapTab" component={MapDesktopScene} />

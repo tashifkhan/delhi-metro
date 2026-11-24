@@ -32,10 +32,7 @@ function AppNavigation() {
     return null;
   }
 
-  // Each stack keys itself by network, so a switch pops that page to its
-  // root without remounting the shell or losing the selected tab. The layout
-  // key only separates the two shells so resize swaps reset navigators
-  // rather than re-parenting routes across layouts.
+  // A resize that switches layouts mounts that layout's tab navigator.
   if (isDesktop) {
     return <DesktopRoot key="desktop" />;
   }

@@ -13,7 +13,7 @@ import { useHaptics } from '../hooks/useHaptics';
 import { spring } from '../theme/motion';
 import type { RootTabParamList } from './types';
 import { useAppTheme } from '../theme/ThemeContext';
-import { animationPreference } from '../theme/animationPreferences';
+import { tabSceneOptions } from './tabSceneOptions';
 import { TabIcon, type TabIconName } from '../components/icons/TabIcons';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -136,9 +136,7 @@ export function RootTabs() {
       })}
       screenOptions={({ route }) => ({
         headerShown: false,
-        // Tabs are siblings, so they cross-fade and shift rather than sliding
-        // in a direction — Material's shared axis for lateral navigation.
-        animation: animationPreference(animationStyle, false).tabs,
+        ...tabSceneOptions(animationStyle),
         tabBarActiveTintColor: material ? theme.colors.onSecondaryContainer : theme.colors.onSurface,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {
