@@ -7,7 +7,8 @@ import type { MetroNetwork, WhatsAppBooking } from '../types';
  * API deploy that predates the booking field, don't, so the app keeps its own
  * copy instead of hiding the booking cards. Keep both lists in step.
  */
-const CHANNELS: Record<MetroNetwork, { phone: string; label: string; note: string }> = {
+// NCRTC sells tickets in its own app and at stations, not over WhatsApp.
+const CHANNELS: Partial<Record<MetroNetwork, { phone: string; label: string; note: string }>> = {
   dmrc: {
     phone: '919650855800',
     label: 'Delhi Metro',
@@ -21,7 +22,9 @@ const CHANNELS: Record<MetroNetwork, { phone: string; label: string; note: strin
 };
 
 export function whatsappBooking(network: MetroNetwork): WhatsAppBooking {
-  const { phone, label, note } = CHANNELS[network];
+  const channel = CHANNELS[network];
+  if (!channel) throw new Error(`No WhatsApp booking for ${network}`);
+  const { phone, label, note } = channel;
   return {
     network,
     label,

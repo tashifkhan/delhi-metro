@@ -11,15 +11,13 @@ import { SectionHeader } from '../components/SectionHeader';
 import { Touchable } from '../components/Touchable';
 import { Card } from '../components/Card';
 import { useAppTheme } from '../theme/ThemeContext';
-import { NETWORK_NAMES } from '../network';
+import { NETWORK_NAMES, OPERATORS } from '../network';
 import type { MetroLine, MetroNetwork, PassengerNotification } from '../types';
 import type { RootTabParamList } from '../navigation/types';
 import { spacing, radius, emphasis } from '../theme';
 
 type Filter = 'all' | MetroNetwork;
 
-/** Operators whose notices this screen reads, in display order. */
-const OPERATORS: MetroNetwork[] = ['dmrc', 'nmrc'];
 
 /** Notices shown before "Show more". */
 const PAGE = 20;
@@ -68,8 +66,9 @@ export function NotificationsScreen() {
 
   const dmrc = useNotificationsQuery('dmrc');
   const nmrc = useNotificationsQuery('nmrc');
+  const ncrtc = useNotificationsQuery('ncrtc');
   const lines = useMetroLinesQuery();
-  const queries: Record<MetroNetwork, typeof dmrc> = { dmrc, nmrc } as Record<MetroNetwork, typeof dmrc>;
+  const queries: Record<MetroNetwork, typeof dmrc> = { dmrc, nmrc, ncrtc };
 
   const shown = filter === 'all' ? OPERATORS : [filter];
 
@@ -81,7 +80,7 @@ export function NotificationsScreen() {
     return all.sort((a, b) => (Date.parse(b.notice.date) || 0) - (Date.parse(a.notice.date) || 0));
     // The query objects change identity every render; their data is what matters.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, dmrc.data, nmrc.data]);
+  }, [filter, dmrc.data, nmrc.data, ncrtc.data]);
 
   const disrupted = (lines.data ?? []).filter(
     (line) =>

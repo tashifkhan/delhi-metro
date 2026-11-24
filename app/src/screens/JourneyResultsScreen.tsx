@@ -55,8 +55,13 @@ function inr(value: number): string {
   return `₹${Number.isInteger(value) ? value : value.toFixed(2)}`;
 }
 
-/** "₹50 + ₹40" for a two-operator trip, else the fare that applies now. */
-function fareChip(fare: PlannedFare): string {
+/**
+ * The fare to lead with: the card fare for someone who uses a smart card,
+ * "₹50 + ₹40" for a trip on two operators' tickets, otherwise the fare that
+ * applies now.
+ */
+function fareChip(fare: PlannedFare, smartCard: boolean): string {
+  if (smartCard && fare.smart_card) return `${inr(fare.smart_card.amount)} card`;
   if (fare.breakdown.length > 1) {
     return fare.breakdown.map((part) => inr(part.applicable ?? part.normal)).join(' + ');
   }
@@ -73,7 +78,7 @@ export function JourneyResultsScreen() {
   const navigation = useNavigation<Nav>();
   const { fromCode, toCode, journeyTime } = route.params;
   const theme = useTheme();
-  const { fills } = useAppTheme();
+  const { fills, settings } = useAppTheme();
   const saved = useSaved();
   const [strategy, setStrategy] = useState<RouteStrategy>(
     route.params.strategy ?? 'least-distance',
@@ -333,15 +338,30 @@ export function JourneyResultsScreen() {
   ) {
     fareRows.push({ label: 'At your departure time', value: inr(plan.fare.applicable) });
   }
+  // Namo Bharat prices by class; Standard is the fare above.
+  const premium = plan.fare.classes?.find((c) => c.class === 'premium');
+  if (premium) fareRows.push({ label: 'Namo Bharat Premium', value: inr(premium.amount) });
+  // The card fare is worked out from the operator's rule, so it is labelled as such.
+  const card = plan.fare.smart_card;
+  if (card) {
+    const row = {
+      label: card.off_peak ? 'Smart card, off-peak' : 'Smart card',
+      value: inr(card.amount),
+    };
+    if (settings.smartCard) fareRows.unshift(row);
+    else fareRows.push(row);
+  }
 
   const sourceLabel =
     plan.source === 'combined'
-      ? 'Delhi Metro and Noida Metro'
+      ? plan.networks.map((n) => NETWORK_NAMES[n]).join(' and ')
       : plan.source === 'sarthi'
         ? 'Sarthi'
         : plan.source === 'nmrc'
           ? 'the NMRC website'
-          : 'DMRC';
+          : plan.source === 'ncrtc'
+            ? 'NCRTC'
+            : 'DMRC';
 
   const savedLabel = savedAt
     ? `Saved plan from ${new Date(savedAt).toLocaleString(undefined, {
@@ -355,7 +375,7 @@ export function JourneyResultsScreen() {
   const chips: { key: string; icon: keyof typeof Ionicons.glyphMap; text: string; tone: ChipTone }[] =
     [
       { key: 'time', icon: 'time-outline', text: totalTime, tone: 'accent' },
-      { key: 'fare', icon: 'cash-outline', text: fareChip(plan.fare), tone: 'tonal' },
+      { key: 'fare', icon: 'cash-outline', text: fareChip(plan.fare, settings.smartCard), tone: 'tonal' },
       {
         key: 'changes',
         icon: 'swap-horizontal',
@@ -494,7 +514,7 @@ export function JourneyResultsScreen() {
                   You need two tickets
                 </Text>
                 <Text variant="bodySmall" style={{ color: theme.colors.onTertiaryContainer }}>
-                  Delhi Metro and Noida Metro don't share tickets.
+                  {plan.networks.map((n) => NETWORK_NAMES[n]).join(' and ')} don't share tickets.
                   {transfer ? ` Buy the second one at ${stationName(transfer.to_station)}.` : ''}
                 </Text>
               </View>

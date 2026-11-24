@@ -15,7 +15,7 @@ import { SectionHeader } from '../components/SectionHeader';
 import { OperatorMark } from '../components/OperatorMark';
 import { LineGlyph, lineGlyph, lineSubtitle, lineTitle, terminalName } from '../components/LineGlyph';
 import { useAppTheme } from '../theme/ThemeContext';
-import { NETWORK_NAMES } from '../network';
+import { NETWORK_NAMES, OPERATORS } from '../network';
 import type { MetroLine, MetroNetwork } from '../types';
 import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis } from '../theme';
@@ -23,7 +23,7 @@ import { spacing, shape, emphasis } from '../theme';
 type Nav = NativeStackNavigationProp<NetworkStackParamList, 'Network'>;
 
 const NORMAL_STATUS = 'normal service';
-const NETWORK_ORDER: MetroNetwork[] = ['dmrc', 'nmrc'];
+const NETWORK_ORDER: MetroNetwork[] = OPERATORS;
 
 function LineRow({ line, first, last }: { line: MetroLine; first: boolean; last: boolean }) {
   const navigation = useNavigation<Nav>();

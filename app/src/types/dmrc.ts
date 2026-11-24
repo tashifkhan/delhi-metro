@@ -4,7 +4,7 @@ export type RouteStrategy = 'least-distance' | 'minimum-interchange';
  * Passenger network, mirroring the API's `network` parameter. Declared here
  * rather than in the network context so the type layer stays dependency-free.
  */
-export type MetroNetwork = 'dmrc' | 'nmrc';
+export type MetroNetwork = 'dmrc' | 'nmrc' | 'ncrtc';
 
 /** Cache/query scope for a journey, which may span both networks. */
 export type JourneyScope = MetroNetwork | 'combined';
@@ -160,7 +160,7 @@ export interface JourneyPlan {
 }
 
 /** Upstream that produced a v2 journey plan. */
-export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'combined';
+export type JourneySource = 'sarthi' | 'dmrc' | 'nmrc' | 'ncrtc' | 'combined';
 
 /** What a traveller does during one leg. */
 export type LegKind = 'metro' | 'transfer';
@@ -181,10 +181,27 @@ export interface PlannedStation {
   status: string | null;
 }
 
+/** A smart card fare the API worked out from the operator's published rule. */
+export interface SmartCardFare {
+  amount: number;
+  off_peak: boolean;
+  rule: string;
+  derived: true;
+}
+
+export interface FareClass {
+  class: 'standard' | 'premium';
+  amount: number;
+}
+
 export interface PlannedFare {
   normal: number;
   special: number | null;
   applicable: number | null;
+  /** Absent on plans saved before card fares existed. */
+  smart_card?: SmartCardFare | null;
+  /** Namo Bharat's Standard and Premium; empty or absent elsewhere. */
+  classes?: FareClass[];
   /** Per-network split, set only when the journey crosses networks. */
   breakdown: NetworkFare[];
 }

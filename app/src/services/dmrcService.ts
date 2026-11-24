@@ -17,7 +17,7 @@ import type {
   StationDetail,
   StationSearchResult,
 } from '../types';
-import type { MetroNetwork } from '../network';
+import { OPERATORS, type MetroNetwork } from '../network';
 
 const API_V1 = '/api/v1';
 const API_V2 = '/api/v2';
@@ -67,7 +67,7 @@ export class DmrcService {
 
   /** Both networks' stored line lists, merged the same way a live fetch merges them. */
   async getCachedLines(): Promise<Cached<MetroLine[]> | null> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
     const stored = await Promise.all(
       order.map((network) => catalogCache.readLines(network)),
     );
@@ -104,7 +104,7 @@ export class DmrcService {
   async getAllLinesAcrossNetworks(
     shown?: Cached<MetroLine[]>,
   ): Promise<Cached<MetroLine[]>> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
     const results = await Promise.allSettled(
       order.map((network) => {
         const half = shown?.data.filter((line) => line.network === network);
@@ -222,7 +222,7 @@ export class DmrcService {
    * operator being down still leaves the other searchable.
    */
   async getAllStationsAcrossNetworks(): Promise<StationSearchResult[]> {
-    const order: MetroNetwork[] = ['dmrc', 'nmrc'];
+    const order: MetroNetwork[] = OPERATORS;
 
     const results = await Promise.allSettled(
       order.map((network) => this.getAllStationsAndRefreshCache(network)),
