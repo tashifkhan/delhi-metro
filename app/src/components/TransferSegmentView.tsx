@@ -6,6 +6,7 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { spacing, shape, emphasis } from '../theme';
 import { TIMELINE } from './RouteSegmentView';
 import { durationLabel, stationName } from '../utils/format';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 interface Props {
   leg: PlannedLeg;
@@ -21,6 +22,7 @@ const DASHES = 6;
  * other, and that break is the part most worth noticing in the route list.
  */
 export function TransferSegmentView({ leg }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
 
@@ -63,7 +65,7 @@ export function TransferSegmentView({ leg }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: TIMELINE.gap,

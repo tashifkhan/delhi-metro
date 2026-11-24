@@ -31,6 +31,7 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { emphasis, onColor, radius, spacing } from '../theme';
 import { stationName } from '../utils/format';
 import type { MapStackParamList, RootTabParamList } from '../navigation/types';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 type Nav = NativeStackNavigationProp<MapStackParamList, 'MetroMap'>;
 
@@ -58,6 +59,7 @@ const NOTE_MS = 4_000;
  * its lines, first and last train, facilities, and "Route from here".
  */
 export function MetroMapScreen() {
+  const styles = useAdaptedStyles(baseStyles);
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const theme = useTheme();
@@ -505,7 +507,7 @@ export function MetroMapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   fill: {
     flex: 1,
   },

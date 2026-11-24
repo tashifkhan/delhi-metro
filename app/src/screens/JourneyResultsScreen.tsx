@@ -41,6 +41,7 @@ import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import { spacing, shape, emphasis, tabular } from '../theme';
 import { clockTime, durationLabel, stationName } from '../utils/format';
 import { bookingsFor } from '../services/whatsappBooking';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'JourneyResults'>;
 type Route = RouteProp<HomeStackParamList, 'JourneyResults'>;
@@ -71,6 +72,7 @@ function fareChip(fare: PlannedFare, smartCard: boolean): string {
 type ChipTone = 'accent' | 'tonal' | 'outline';
 
 export function JourneyResultsScreen() {
+  const styles = useAdaptedStyles(baseStyles);
   const haptics = useHaptics();
   const route = useRoute<Route>();
   const isFocused = useIsFocused();
@@ -674,7 +676,7 @@ export function JourneyResultsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.xs,

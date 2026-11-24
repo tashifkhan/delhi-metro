@@ -10,6 +10,7 @@ import { NETWORK_NAMES } from '../network';
 import { spacing, shape, emphasis, tabular } from '../theme';
 import { stationName } from '../utils/format';
 import type { MetroNetwork, StationLineBadge } from '../types';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 interface StationLike {
   station_name: string;
@@ -63,6 +64,7 @@ export const StationCard = memo(function StationCard({
   first = true,
   last = true,
 }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
 
@@ -150,7 +152,7 @@ export const StationCard = memo(function StationCard({
   );
 });
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: spacing.base,
   },

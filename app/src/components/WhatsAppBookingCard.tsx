@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 import { OperatorMark } from './OperatorMark';
 import { Touchable } from './Touchable';
@@ -26,6 +27,7 @@ interface Props {
  * pre-fills Hi, so the note under the cards says to pick the stations again.
  */
 export function WhatsAppBookingCard({ bookings, routes }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
   const haptics = useHaptics();
@@ -136,7 +138,7 @@ export function WhatsAppBookingCard({ bookings, routes }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   column: {
     gap: spacing.sm,
   },

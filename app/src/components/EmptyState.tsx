@@ -3,6 +3,7 @@ import { useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAppTheme } from '../theme/ThemeContext';
 import { StateLayout } from './loading/StateLayout';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 interface Props {
   title: string;
@@ -15,6 +16,7 @@ interface Props {
  * parent rather than painting a full-screen background.
  */
 export function EmptyState({ title, subtitle, icon = 'folder-open-outline' }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
 
@@ -33,7 +35,7 @@ export function EmptyState({ title, subtitle, icon = 'folder-open-outline' }: Pr
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   fill: {
     flex: 1,
   },

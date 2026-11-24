@@ -3,6 +3,7 @@ import { Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { rgba } from '../theme/colorMath';
 import { emphasis, spacing, tabular } from '../theme';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 export interface PassColumn {
   label: string;
@@ -30,6 +31,7 @@ const NOTCH = 24;
  * notches are cut with that colour.
  */
 export function TicketPass({ fromCode, toCode, fromName, toName, date, duration, columns }: Props) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const fg = theme.colors.onPrimary;
   const soft = rgba(fg, 0.16);
@@ -115,7 +117,7 @@ export function TicketPass({ fromCode, toCode, fromName, toName, date, duration,
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   pass: {
     borderRadius: 28,
     overflow: 'hidden',

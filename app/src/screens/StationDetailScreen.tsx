@@ -20,6 +20,7 @@ import type { HomeStackParamList, RootTabParamList } from '../navigation/types';
 import type { StationDetail } from '../types';
 import { spacing, shape, radius, emphasis, tabular, duration, easing } from '../theme';
 import { clockTime, stationName } from '../utils/format';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 type Route = RouteProp<HomeStackParamList, 'StationDetail'>;
 type Nav = NativeStackNavigationProp<HomeStackParamList, 'StationDetail'>;
@@ -316,6 +317,7 @@ interface RowProps {
  * "Show all" tile.
  */
 function Group({ rows, limit = PREVIEW }: { rows: RowProps[]; limit?: number }) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
   const [open, setOpen] = useState(false);
@@ -394,6 +396,7 @@ function Pill({
   label: string;
   tone: 'good' | 'bad' | 'neutral';
 }) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { semantic, fills } = useAppTheme();
   const bg =
@@ -414,6 +417,7 @@ function Pill({
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
+  const styles = useAdaptedStyles(baseStyles);
   return (
     <View style={styles.section}>
       <SectionHeader title={title} />
@@ -427,6 +431,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 // ---------------------------------------------------------------------------
 
 export function StationDetailScreen() {
+  const styles = useAdaptedStyles(baseStyles);
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const { stationCode } = route.params;
@@ -953,7 +958,7 @@ export function StationDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   content: {
     padding: spacing.base,
     paddingTop: spacing.xs,

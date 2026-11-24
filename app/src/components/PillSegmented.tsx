@@ -6,6 +6,7 @@ import { Touchable } from './Touchable';
 import { useAppTheme } from '../theme/ThemeContext';
 import { emphasis, spacing } from '../theme';
 import { spring } from '../theme/motion';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 export interface PillOption<T extends string> {
   value: T;
@@ -39,6 +40,7 @@ export function PillSegmented<T extends string>({
   compact = false,
   accessibilityLabel,
 }: Props<T>) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
   const [width, setWidth] = useState(0);
@@ -112,7 +114,7 @@ export function PillSegmented<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   track: {
     flexDirection: 'row',
     borderRadius: 999,

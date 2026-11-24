@@ -21,6 +21,7 @@ import { useAppTheme } from '../theme/ThemeContext';
 import type { StationByLineItem, StationLineBadge } from '../types';
 import type { NetworkStackParamList } from '../navigation/types';
 import { spacing, shape, emphasis, onColor } from '../theme';
+import { useAdaptedStyles } from '../theme/useAdaptedStyles';
 
 type Nav = NativeStackNavigationProp<NetworkStackParamList, 'LineStations'>;
 type Route = RouteProp<NetworkStackParamList, 'LineStations'>;
@@ -53,6 +54,7 @@ function StationRow({
   isLast: boolean;
   onPress: () => void;
 }) {
+  const styles = useAdaptedStyles(baseStyles);
   const theme = useTheme();
   const { fills } = useAppTheme();
   const isTerminus = isFirst || isLast;
@@ -154,6 +156,7 @@ function StationRow({
 }
 
 export function LineStationsScreen() {
+  const styles = useAdaptedStyles(baseStyles);
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const theme = useTheme();
@@ -282,7 +285,7 @@ export function LineStationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const baseStyles = StyleSheet.create({
   list: {
     paddingHorizontal: spacing.base,
     paddingBottom: spacing['3xl'],
