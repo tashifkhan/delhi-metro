@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-26
+
+- Wide windows, tablets and foldables use one navigation rail instead of swapping to a separate desktop layout. The rail stays put while pages change, and a window that shrinks back to phone width returns to the bottom tabs without losing the open page.
+- Settings sits in that rail, so it opens from Plan, Map, Network, Saved and Alerts.
+- The app rotates with the device. Portrait is no longer locked.
+
 ## [1.9.0] - 2026-11-25
 
 - Plan journeys across Delhi Metro, Noida Metro, Namo Bharat and Meerut Metro. See the fare and booking option for each operator you ride.
@@ -263,7 +269,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...v1.8.1
 [1.8.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.7.0...v1.8.0

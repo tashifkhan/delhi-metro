@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { useTheme } from 'react-native-paper';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,11 +11,13 @@ import { MapStack } from './MapStack';
 import { SavedStack } from './SavedStack';
 import { AlertsStack } from './AlertsStack';
 import { useHaptics } from '../hooks/useHaptics';
+import { useSidebarWidth } from '../hooks/useSidebarWidth';
 import { spring } from '../theme/motion';
 import type { RootTabParamList } from './types';
 import { useAppTheme } from '../theme/ThemeContext';
 import { tabSceneOptions } from './tabSceneOptions';
 import { TabIcon, type TabIconName } from '../components/icons/TabIcons';
+import { NavigationSidebar, type SidebarDestination } from '../components/NavigationSidebar';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
@@ -25,6 +28,34 @@ const TAB_ICONS: Record<keyof RootTabParamList, TabIconName> = {
   SavedTab: 'saved',
   AlertsTab: 'alerts',
 };
+
+const SETTINGS_SCREENS = ['Settings', 'Appearance', 'OfflineData', 'About'];
+
+function SidebarTabBar({ state, navigation, insets, width }: BottomTabBarProps & { width: number }) {
+  const activeTab = state.routes[state.index].name;
+  const home = state.routes.find((route) => route.name === 'HomeTab');
+  const homeScreen = home && getFocusedRouteNameFromRoute(home);
+  const settingsOpen = homeScreen !== undefined && SETTINGS_SCREENS.includes(homeScreen);
+
+  function select(destination: SidebarDestination) {
+    if (destination === 'Settings') {
+      navigation.navigate('HomeTab', { screen: 'Settings', initial: false, pop: true });
+    } else if (destination === 'HomeTab' && settingsOpen) {
+      navigation.navigate('HomeTab', { screen: 'Home', pop: true });
+    } else {
+      navigation.navigate(destination);
+    }
+  }
+
+  return (
+    <NavigationSidebar
+      active={activeTab === 'HomeTab' && settingsOpen ? 'Settings' : activeTab}
+      onSelect={select}
+      width={width}
+      insets={insets}
+    />
+  );
+}
 
 /**
  * M3 navigation bar geometry. The bar is 76dp tall above the safe-area inset:
@@ -122,9 +153,23 @@ export function RootTabs() {
   const material = look.style === 'material';
   const insets = useSafeAreaInsets();
   const haptics = useHaptics();
+  const sidebarWidth = useSidebarWidth();
+  const hasSidebar = sidebarWidth > 0;
 
   return (
     <Tab.Navigator
+      tabBar={hasSidebar ? (props) => <SidebarTabBar {...props} width={sidebarWidth} /> : undefined}
+      screenLayout={({ route, children }) => (
+        <View
+          style={[
+            styles.page,
+            hasSidebar && { paddingRight: insets.right },
+            hasSidebar && route.name !== 'MapTab' && styles.centeredPage,
+          ]}
+        >
+          {children}
+        </View>
+      )}
       screenListeners={({ navigation, route }) => ({
         tabPress: () => {
           const state = navigation.getState();
@@ -137,6 +182,7 @@ export function RootTabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         ...tabSceneOptions(animationStyle),
+        tabBarPosition: hasSidebar ? 'left' : 'bottom',
         tabBarActiveTintColor: material ? theme.colors.onSecondaryContainer : theme.colors.onSurface,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
         tabBarStyle: {
@@ -189,6 +235,14 @@ export function RootTabs() {
 }
 
 const styles = StyleSheet.create({
+  page: {
+    flex: 1,
+    width: '100%',
+  },
+  centeredPage: {
+    alignSelf: 'center',
+    maxWidth: 920,
+  },
   iconSlot: {
     width: INDICATOR_WIDTH,
     height: INDICATOR_HEIGHT,
