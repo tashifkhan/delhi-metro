@@ -1,14 +1,9 @@
 import { Platform, useWindowDimensions } from 'react-native';
 
-/** Viewport width at or above which the web build uses the desktop shell. */
+/** Width for desktop-specific content layouts on the web. */
 export const DESKTOP_BREAKPOINT = 960;
 
-/**
- * True only on the web build at desktop widths. Native always uses the mobile
- * UI, and narrow web viewports keep the tab bar so phones get the same layout
- * as the app. `useWindowDimensions` re-renders on resize, so rotating or
- * resizing across the breakpoint swaps shells live.
- */
+/** Opts screens into their desktop web presentation. */
 export function useIsDesktop(): boolean {
   const { width } = useWindowDimensions();
   if (Platform.OS !== 'web') return false;

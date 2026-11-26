@@ -14,10 +14,8 @@ import { SavedProvider } from './src/saved/SavedContext';
 import { OfflinePackProvider } from './src/offline/OfflinePackContext';
 import { QuickActionsBridge } from './src/saved/QuickActionsBridge';
 import type { RootTabParamList } from './src/navigation/types';
-import { useIsDesktop } from './src/hooks/useIsDesktop';
 import { RootTabs } from './src/navigation/RootTabs';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
-import { DesktopRoot } from './src/navigation/DesktopRoot';
 import { navigationLinking } from './src/navigation/linking';
 import { MetroNetworkProvider, useMetroNetwork } from './src/network';
 
@@ -26,17 +24,11 @@ const navigationRef = createNavigationContainerRef<RootTabParamList>();
 
 function AppNavigation() {
   const { isLoaded } = useMetroNetwork();
-  const isDesktop = useIsDesktop();
-
   if (!isLoaded) {
     return null;
   }
 
-  // A resize that switches layouts mounts that layout's tab navigator.
-  if (isDesktop) {
-    return <DesktopRoot key="desktop" />;
-  }
-  return <RootTabs key="mobile" />;
+  return <RootTabs />;
 }
 
 function AppInner() {

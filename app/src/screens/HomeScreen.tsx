@@ -12,6 +12,7 @@ import {
   useStationSearchQuery,
 } from '../hooks';
 import { useIsDesktop } from '../hooks/useIsDesktop';
+import { useSidebarWidth } from '../hooks/useSidebarWidth';
 import { StationPicker } from '../components/StationPicker';
 import { SectionHeader } from '../components/SectionHeader';
 import { Touchable } from '../components/Touchable';
@@ -52,6 +53,7 @@ export function HomeScreen() {
   const theme = useTheme();
   const { semantic, fills, look } = useAppTheme();
   const isDesktop = useIsDesktop();
+  const hasSidebar = useSidebarWidth() > 0;
   const fromPicker = useStationPicker();
   const toPicker = useStationPicker();
   const popularRoutes = usePopularRoutesQuery(5);
@@ -383,15 +385,17 @@ export function HomeScreen() {
         >
           Plan
         </Text>
-        <Touchable
-          radius={radius.pill}
-          onPress={() => navigation.navigate('Settings')}
-          accessibilityLabel="Settings"
-        >
-          <View style={styles.iconButton}>
-            <Ionicons name="settings-outline" size={22} color={theme.colors.onSurfaceVariant} />
-          </View>
-        </Touchable>
+        {!hasSidebar ? (
+          <Touchable
+            radius={radius.pill}
+            onPress={() => navigation.navigate('Settings')}
+            accessibilityLabel="Settings"
+          >
+            <View style={styles.iconButton}>
+              <Ionicons name="settings-outline" size={22} color={theme.colors.onSurfaceVariant} />
+            </View>
+          </Touchable>
+        ) : null}
       </View>
 
       {disruptionBanner}
@@ -402,7 +406,7 @@ export function HomeScreen() {
 
       {/* Narrow web viewports get no sidebar, so the install and download
           links sit at the foot of the screen most visitors land on. */}
-      {Platform.OS === 'web' && !isDesktop ? <GetTheApp /> : null}
+      {Platform.OS === 'web' && !hasSidebar ? <GetTheApp /> : null}
 
       <StationPicker
         visible={fromPicker.visible}
