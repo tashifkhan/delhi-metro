@@ -10,9 +10,7 @@ name: Build and Release APK
 #                                   skip F-Droid and still pass.
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
