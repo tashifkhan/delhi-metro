@@ -2,8 +2,8 @@
   "expo": {
     "name": "Delhi NCR Metro",
     "slug": "delhi-metro",
-    "version": "1.9.0",
-    "orientation": "portrait",
+    "version": "1.10.0",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -25,7 +25,7 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "codes.tashif.delhimetro",
-      "versionCode": 31
+      "versionCode": 32
     },
     "web": {
       "bundler": "metro",
