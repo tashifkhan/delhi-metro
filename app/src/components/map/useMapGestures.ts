@@ -2,7 +2,7 @@ import { useEffect, useMemo, type RefObject } from 'react';
 import { Platform, type View } from 'react-native';
 import { Gesture } from 'react-native-gesture-handler';
 import { useSharedValue } from 'react-native-reanimated';
-import type { MapMotion } from './mapViewport';
+import { pinchStep, type MapMotion, type PinchState } from './mapViewport';
 
 interface GestureCallbacks {
   move: (motion: MapMotion) => void;
@@ -16,14 +16,34 @@ interface GestureCallbacks {
   doubleTap: (x: number, y: number) => void;
 }
 
-export function useMapGestures({ move, touch, start, settle, release, tap, doubleTap }: GestureCallbacks) {
+/**
+ * Pan, pinch and tap for a map.
+ *
+ * `view` is the element the gesture detector wraps. On the web,
+ * react-native-gesture-handler reports a pinch's focal point in window
+ * coordinates, while native platforms report it in the view's own, so the
+ * web needs the view's position to zoom around the right point.
+ */
+export function useMapGestures(
+  { move, touch, start, settle, release, tap, doubleTap }: GestureCallbacks,
+  view?: RefObject<View | null>,
+) {
   const panning = useSharedValue(false);
-  const pinch = useSharedValue<{ x: number; y: number; scale: number } | null>(null);
+  const pinch = useSharedValue<PinchState | null>(null);
   const multiTouch = useSharedValue(false);
   /** A second finger joined this drag, so lifting off shouldn't fling. */
   const pinched = useSharedValue(false);
   const lastTap = useSharedValue<{ at: number; x: number; y: number } | null>(null);
   const slop = 8;
+
+  // Only the web needs it, and a native worklet mustn't capture the view.
+  const origin = useMemo(() => {
+    if (Platform.OS !== 'web' || !view) return null;
+    return () => {
+      const rect = (view.current as unknown as HTMLElement | null)?.getBoundingClientRect();
+      return { x: rect?.left ?? 0, y: rect?.top ?? 0 };
+    };
+  }, [view]);
 
   return useMemo(() => {
     const pan = Gesture.Pan()
@@ -40,7 +60,9 @@ export function useMapGestures({ move, touch, start, settle, release, tap, doubl
         start?.();
       })
       .onChange((event) => {
-        if (pinch.value) return;
+        // Two fingers are the pinch's. One left after a pinch drags the map.
+        const zooming = pinch.value;
+        if (zooming && zooming.pointers >= 2) return;
         move({ x: event.x, y: event.y, dx: event.changeX, dy: event.changeY, scale: 1 });
       })
       .onFinalize(({ velocityX, velocityY }) => {
@@ -51,18 +73,43 @@ export function useMapGestures({ move, touch, start, settle, release, tap, doubl
         else release(velocityX, velocityY);
       });
 
+    // A finger lifting or landing moves the focal point in the same event
+    // that still counts the old number of fingers, so the next update has to
+    // start from the new focal point rather than move the map.
+    const regroup = () => {
+      'worklet';
+      const current = pinch.value;
+      if (current) pinch.value = { ...current, pointers: -1 };
+    };
     const zoom = Gesture.Pinch()
-      .onStart(({ focalX, focalY, scale }) => {
-        pinch.value = { x: focalX, y: focalY, scale };
+      .onTouchesDown(regroup)
+      .onTouchesUp(regroup)
+      .onTouchesCancelled(regroup)
+      .onStart(({ focalX, focalY, scale, numberOfPointers }) => {
+        const offset = origin ? origin() : null;
+        pinch.value = {
+          x: focalX - (offset ? offset.x : 0),
+          y: focalY - (offset ? offset.y : 0),
+          scale,
+          pointers: numberOfPointers,
+        };
         pinched.value = true;
         lastTap.value = null;
         start?.();
       })
-      .onUpdate(({ focalX: x, focalY: y, scale }) => {
+      .onUpdate(({ focalX, focalY, scale, numberOfPointers }) => {
         const previous = pinch.value;
-        if (!previous || scale <= 0 || previous.scale <= 0) return;
-        pinch.value = { x, y, scale };
-        move({ x, y, dx: x - previous.x, dy: y - previous.y, scale: scale / previous.scale });
+        if (!previous) return;
+        const offset = origin ? origin() : null;
+        const next = {
+          x: focalX - (offset ? offset.x : 0),
+          y: focalY - (offset ? offset.y : 0),
+          scale,
+          pointers: numberOfPointers,
+        };
+        if (scale > 0) pinch.value = next;
+        const motion = pinchStep(previous, next);
+        if (motion) move(motion);
       })
       .onFinalize(() => {
         if (!pinch.value) return;
@@ -90,7 +137,7 @@ export function useMapGestures({ move, touch, start, settle, release, tap, doubl
         tap?.(x, y);
       });
     return Gesture.Race(Gesture.Simultaneous(pan, zoom), select);
-  }, [move, touch, start, settle, release, tap, doubleTap, panning, pinch, pinched, lastTap, multiTouch]);
+  }, [move, touch, start, settle, release, tap, doubleTap, origin, panning, pinch, pinched, lastTap, multiTouch]);
 }
 
 type WebPinchEvent = Event & { scale: number; clientX?: number; clientY?: number };

@@ -122,7 +122,7 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
     'worklet';
     scheduleOnRN(selectAt, x, y, live.value);
   }, [selectAt, live]);
-  const gestures = useMapGestures({ move, touch, start, settle, release, tap, doubleTap });
+  const gestures = useMapGestures({ move, touch, start, settle, release, tap, doubleTap }, containerRef);
   useWebMapZoom(containerRef, wheelZoom, { move, start, settle });
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {

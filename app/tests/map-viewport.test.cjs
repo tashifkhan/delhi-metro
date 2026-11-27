@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const ts = require('typescript');
 
-const { moveViewport, viewportTransform, imageTransform } = (() => {
+const { moveViewport, viewportTransform, imageTransform, pinchStep } = (() => {
   const source = readFileSync('src/components/map/mapViewport.ts', 'utf8');
   const { outputText } = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
@@ -66,4 +66,21 @@ test('official map zoom anchors to the pointer and clamps to the fitted image', 
   const pan = imageTransform(zoom, size, wideImage, { x: 200, y: 300, dx: 500, dy: 100, scale: 1 });
   assert.deepEqual(pan, [200, 0, 2]);
   assert.deepEqual(imageTransform(pan, size, wideImage, { x: 160, y: 300, dx: 0, dy: 0, scale: 0.1 }), [0, 0, 1]);
+});
+
+test('lifting one finger after a pinch does not move the map', () => {
+  // Fingers at y 200 and 600 spread to 100 and 700, midpoint fixed at 400.
+  const start = { x: 200, y: 400, scale: 1, pointers: 2 };
+  const spread = { x: 200, y: 400, scale: 1.5, pointers: 2 };
+  assert.deepEqual(pinchStep(start, spread), { x: 200, y: 400, dx: 0, dy: 0, scale: 1.5 });
+  // The bottom finger lifts: Android reports the top finger as the focal
+  // point, 300 px up, while the pinch is still active.
+  const lifted = { x: 200, y: 100, scale: 1.5, pointers: 1 };
+  assert.equal(pinchStep(spread, lifted), null);
+  // Moving that last finger is the pan's job, not the pinch's.
+  assert.equal(pinchStep(lifted, { ...lifted, y: 90 }), null);
+  // A finger landing again starts a fresh step from the new midpoint.
+  const again = { x: 200, y: 300, scale: 1.5, pointers: 2 };
+  assert.equal(pinchStep(lifted, again), null);
+  assert.deepEqual(pinchStep(again, { ...again, y: 310, scale: 1.8 }).dy, 10);
 });
