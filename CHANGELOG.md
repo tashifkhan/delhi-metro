@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.2] - 2026-11-27
+
+- Panning and pinching the map stays smooth on 120 Hz phones. Station names used to make every redraw copy a screen-sized image once per name; now the phone's graphics chip draws the map and nothing redraws while your finger is down.
+- A quick swipe keeps the map gliding and slowing down. Touch it to stop.
+- Dragging or pinching past the edge of the detailed map shows the whole network's lines, rivers and stations instead of blank space. The detail fills in when the map stops.
+
 ## [1.10.1] - 2026-11-27
 
 - Panning and pinching the network map no longer lags. The map handles touch on the UI thread and skips drawing anything off screen.
@@ -276,7 +282,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.2...HEAD
+[1.10.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.1...v1.10.2
+[1.10.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.1...v1.9.0
 [1.8.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.8.0...v1.8.1
