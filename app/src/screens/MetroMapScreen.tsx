@@ -124,12 +124,14 @@ export function MetroMapScreen() {
   const focusCode = route.params?.focusCode;
   useEffect(() => {
     if (!focusCode) return;
-    setMode('schematic');
+    if (mode !== 'schematic') {
+      setMode('schematic');
+      return;
+    }
     setSelectedCode(focusCode);
-    const timer = setTimeout(() => mapRef.current?.focusStation(focusCode), 60);
+    mapRef.current?.focusStation(focusCode);
     navigation.setParams({ focusCode: undefined });
-    return () => clearTimeout(timer);
-  }, [focusCode, navigation]);
+  }, [focusCode, mode, navigation]);
 
   // One key entry per line name: the Pink and Magenta extensions share their
   // parent line's colour and name, and Blue's two branches are one line to a rider.
@@ -153,6 +155,14 @@ export function MetroMapScreen() {
     },
     [haptics],
   );
+
+  const selectFromMap = useCallback((code: string | null) => {
+    if (searching) {
+      Keyboard.dismiss();
+      setSearching(false);
+    }
+    select(code);
+  }, [searching, select]);
 
   const pickResult = (station: MapStation) => {
     Keyboard.dismiss();
@@ -312,20 +322,15 @@ export function MetroMapScreen() {
     <NetworkGeometryProvider value={geometry}>
     <View
       style={[styles.fill, { backgroundColor: fills.containerLow }]}
-      onLayout={(e: LayoutChangeEvent) =>
-        setCanvas({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
-      }
+      onLayout={(e: LayoutChangeEvent) => {
+        const { width, height } = e.nativeEvent.layout;
+        setCanvas((canvas) => canvas.width === width && canvas.height === height ? canvas : { width, height });
+      }}
     >
       <NetworkMapCanvas
         ref={mapRef}
         selectedCode={selectedCode}
-        onSelect={(code) => {
-          if (searching) {
-            Keyboard.dismiss();
-            setSearching(false);
-          }
-          select(code);
-        }}
+        onSelect={selectFromMap}
         userPoint={userPoint}
         labelObstacles={labelObstacles}
         insetTop={top + SEARCH_HEIGHT}

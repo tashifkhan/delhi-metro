@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.1] - 2026-11-27
+
+- Panning and pinching the network map no longer lags. The map handles touch on the UI thread and skips drawing anything off screen.
+- The official map zooms a smaller preview, so pinching stays smooth. Save map still saves the full-size file.
+- On the website, pinching or Ctrl+scrolling over a map zooms the map, not the page. Scrolling past a station's map moves the page as before.
+- About shows the API address, ncr-metro.tashif.codes/api, and tapping it opens the docs.
+
 ## [1.10.0] - 2026-11-26
 
 - Wide windows, tablets and foldables use one navigation rail instead of swapping to a separate desktop layout. The rail stays put while pages change, and a window that shrinks back to phone width returns to the bottom tabs without losing the open page.

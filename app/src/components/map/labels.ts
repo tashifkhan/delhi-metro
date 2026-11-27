@@ -84,6 +84,7 @@ const textWidth = (text: string, size: number, weight: string) =>
   text.length * size * (weight === '500' ? 0.54 : 0.57);
 
 const MAX_LABELS = 140;
+const stationLabels = new WeakMap<MapStation, string>();
 
 /** Liang-Barsky clip: does segment a-b pass through the box? */
 function segmentHitsBox(ax: number, ay: number, bx: number, by: number, box: Box): boolean {
@@ -199,7 +200,7 @@ const STOP_SPACING_PX = 52;
 export function placeLabels(input: LabelInput): PlacedLabel[] {
   const { stations, lines, toScreen, width, height, span, forced = [], preferred, muted, obstacles = [] } = input;
   const ends = terminalCodes(lines);
-  const forcedSet = new Set(forced);
+  const forcedOrder = new Map([...new Set(forced)].map((code, index) => [code, index]));
   const closeUp = span < STOPS_SPAN;
 
   const screen = new Map<string, { x: number; y: number }>();
@@ -232,9 +233,13 @@ export function placeLabels(input: LabelInput): PlacedLabel[] {
   }
 
   const ranked = stations
+    .filter(({ code }) => {
+      const p = screen.get(code)!;
+      return p.x >= -20 && p.y >= -20 && p.x <= width + 20 && p.y <= height + 20;
+    })
     .map((station) => {
       let priority: number;
-      if (forcedSet.has(station.code)) priority = 0;
+      if (forcedOrder.has(station.code)) priority = 0;
       else if (preferred?.has(station.code)) priority = 1;
       else if (ends.has(station.code)) priority = 2;
       else if (station.interchange) priority = 3;
@@ -247,7 +252,7 @@ export function placeLabels(input: LabelInput): PlacedLabel[] {
       if (priority <= 3) return true;
       return closeUp || (spacing.get(station.code) ?? 0) >= STOP_SPACING_PX;
     })
-    .sort((a, b) => a.priority - b.priority || forced.indexOf(a.station.code) - forced.indexOf(b.station.code));
+    .sort((a, b) => a.priority - b.priority || (forcedOrder.get(a.station.code) ?? 0) - (forcedOrder.get(b.station.code) ?? 0));
 
   // Every marker on screen is an obstacle, so names don't sit on top of stops.
   const markers: Box[] = [];
@@ -266,9 +271,12 @@ export function placeLabels(input: LabelInput): PlacedLabel[] {
   for (const { station, priority } of ranked) {
     if (placed.length >= MAX_LABELS) break;
     const p = screen.get(station.code)!;
-    if (p.x < -20 || p.y < -20 || p.x > width + 20 || p.y > height + 20) continue;
 
-    const text = mapLabel(station.name);
+    let text = stationLabels.get(station);
+    if (text === undefined) {
+      text = mapLabel(station.name);
+      stationLabels.set(station, text);
+    }
     if (!text) continue;
     const size = priority <= 1 ? 13 : priority <= 3 ? 12 : 11;
     const weight: PlacedLabel['weight'] = priority === 0 ? '700' : priority <= 3 ? '600' : '500';

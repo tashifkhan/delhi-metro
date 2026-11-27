@@ -1,15 +1,15 @@
 import { useHaptics } from '../../hooks/useHaptics';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  LayoutChangeEvent,
-  PanResponder,
+  Platform,
   StyleSheet,
-  useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import { Image } from 'expo-image';
+import { GestureDetector } from 'react-native-gesture-handler';
+import Animated, { cancelAnimation, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ActivityIndicator, FAB, Surface, Text, useTheme } from 'react-native-paper';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -29,51 +29,28 @@ import {
   notifyMapUnavailable,
   saveNetworkMap,
 } from '../../services/mapDownload';
+import { clamp, imageTransform, type ImageTransform, type MapMotion, type MapSize } from './mapViewport';
+import { OfficialMapRaster } from './OfficialMapRaster';
+import { useMapGestures, useWebMapZoom } from './useMapGestures';
 
-const MIN_SCALE = 1;
-const MAX_SCALE = 5;
 const ZOOM_STEP = 0.5;
 
-function getDistance(touches: { pageX: number; pageY: number }[]) {
-  const dx = touches[0].pageX - touches[1].pageX;
-  const dy = touches[0].pageY - touches[1].pageY;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function clampScale(val: number) {
-  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, val));
-}
-
-function clampTranslation(tx: number, ty: number, s: number, w: number, h: number) {
-  const maxX = Math.max(0, (w * (s - 1)) / 2);
-  const maxY = Math.max(0, (h * (s - 1)) / 2);
-  return {
-    x: Math.min(maxX, Math.max(-maxX, tx)),
-    y: Math.min(maxY, Math.max(-maxY, ty)),
-  };
-}
-
 type HighResolutionMapImageProps = {
-  canvasSize: { width: number; height: number };
-  scale: Animated.Value;
-  source: number | { uri: string };
-  sourceKey: string;
-  translateX: Animated.Value;
-  translateY: Animated.Value;
+  uri: string;
+  imageStyle: ReturnType<typeof useAnimatedStyle>;
+  onSize: (size: MapSize) => void;
 };
 
-function HighResolutionMapImage({
-  canvasSize,
-  scale,
-  source,
-  sourceKey,
-  translateX,
-  translateY,
-}: HighResolutionMapImageProps) {
+function HighResolutionMapImage({ uri, imageStyle, onSize }: HighResolutionMapImageProps) {
   const theme = useTheme();
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const handleReady = useCallback((size: MapSize) => {
+    onSize(size);
+    setLoading(false);
+  }, [onSize]);
+  const handleError = useCallback(() => setFailed(true), []);
 
   if (failed) {
     return (
@@ -87,9 +64,6 @@ function HighResolutionMapImage({
       />
     );
   }
-
-  const imageWidth = Animated.multiply(scale, canvasSize.width);
-  const imageHeight = Animated.multiply(scale, canvasSize.height);
 
   return (
     <>
@@ -107,26 +81,8 @@ function HighResolutionMapImage({
           </Text>
         </View>
       )}
-      <Animated.View
-        style={{
-          width: imageWidth,
-          height: imageHeight,
-          transform: [{ translateX }, { translateY }],
-        }}
-      >
-        <Image
-          key={`${sourceKey}:${retryKey}`}
-          source={source}
-          style={StyleSheet.absoluteFill}
-          contentFit="contain"
-          allowDownscaling={false}
-          cachePolicy="disk"
-          onLoadEnd={() => setLoading(false)}
-          onError={() => {
-            setLoading(false);
-            setFailed(true);
-          }}
-        />
+      <Animated.View style={[styles.image, imageStyle]} pointerEvents="none">
+        <OfficialMapRaster key={retryKey} uri={uri} onReady={handleReady} onError={handleError} />
       </Animated.View>
     </>
   );
@@ -144,7 +100,6 @@ export function OfficialMapView() {
   const haptics = useHaptics();
   const theme = useTheme();
   const { fills, look } = useAppTheme();
-  const { width } = useWindowDimensions();
   const { network, networkName } = useMetroNetwork();
   const insets = useSafeAreaInsets();
   const { data, isLoading, isError, isOfflineCopy, refetch } =
@@ -159,116 +114,82 @@ export function OfficialMapView() {
   }, [network]);
   const [downloading, setDownloading] = useState(false);
   const downloadInFlight = useRef(false);
-  const [canvasSize, setCanvasSize] = useState({ width, height: width });
+  const canvasRef = useRef<View>(null);
+  const canvas = useSharedValue<MapSize>({ width: 0, height: 0 });
+  const image = useSharedValue<MapSize>({ width: 0, height: 0 });
+  const transform = useSharedValue<ImageTransform>([0, 0, 1]);
+  const zoomTarget = useSharedValue<number | null>(null);
+  const hapticSelect = haptics.select;
+  const imageStyle = useAnimatedStyle(() => {
+    const [x, y, scale] = transform.value;
+    return { transform: [{ translateX: x }, { translateY: y }, { scale }] };
+  });
 
-  const scale = useRef(new Animated.Value(1)).current;
-  const translateX = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
-  const sv = useRef(1);
-  const txv = useRef(0);
-  const tyv = useRef(0);
-  const lastDist = useRef<number | null>(null);
-  const lastPan = useRef<{ x: number; y: number } | null>(null);
-  const lastTapTime = useRef(0);
+  const reframe = useCallback((size: MapSize, isImage: boolean) => {
+    'worklet';
+    if (size.width <= 0 || size.height <= 0) return;
+    if (isImage) image.value = size;
+    else canvas.value = size;
+    zoomTarget.value = null;
+    transform.value = imageTransform(transform.value, canvas.value, image.value, {
+      x: 0, y: 0, dx: 0, dy: 0, scale: 1,
+    });
+  }, [canvas, image, transform, zoomTarget]);
 
-  const handleCanvasLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout;
-    if (width > 0 && height > 0) {
-      setCanvasSize({ width, height });
-    }
-  };
+  const handleCanvasLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    scheduleOnUI(reframe, { width, height }, false);
+  }, [reframe]);
 
-  const applyTransform = (newScale: number, newTx: number, newTy: number, animated = false) => {
-    const s = clampScale(newScale);
-    const { x, y } = clampTranslation(newTx, newTy, s, canvasSize.width, canvasSize.height);
-    sv.current = s;
-    txv.current = x;
-    tyv.current = y;
-    if (animated) {
-      Animated.parallel([
-        Animated.spring(scale, { toValue: s, useNativeDriver: false, speed: 20, bounciness: 2 }),
-        Animated.spring(translateX, { toValue: x, useNativeDriver: true, speed: 20, bounciness: 2 }),
-        Animated.spring(translateY, { toValue: y, useNativeDriver: true, speed: 20, bounciness: 2 }),
-      ]).start();
-    } else {
-      scale.setValue(s);
-      translateX.setValue(x);
-      translateY.setValue(y);
-    }
-  };
+  const handleImageSize = useCallback((size: MapSize) => scheduleOnUI(reframe, size, true), [reframe]);
 
-  const transformRef = useRef(applyTransform);
-  transformRef.current = applyTransform;
-  const gestureMoved = useRef(false);
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        gestureMoved.current = evt.nativeEvent.touches.length !== 1;
-        lastDist.current = null;
-        lastPan.current = null;
-        if (evt.nativeEvent.touches.length === 1) {
-          lastPan.current = { x: evt.nativeEvent.touches[0].pageX, y: evt.nativeEvent.touches[0].pageY };
-        }
-      },
-      onPanResponderMove: (evt, gesture) => {
-        if (Math.abs(gesture.dx) > 8 || Math.abs(gesture.dy) > 8 || evt.nativeEvent.touches.length !== 1) {
-          gestureMoved.current = true;
-        }
-        const touches = evt.nativeEvent.touches;
-        if (touches.length === 2) {
-          lastPan.current = null;
-          const dist = getDistance(touches as { pageX: number; pageY: number }[]);
-          if (lastDist.current !== null && lastDist.current > 0) {
-            transformRef.current(sv.current * (dist / lastDist.current), txv.current, tyv.current);
-          }
-          lastDist.current = dist;
-        } else if (touches.length === 1 && sv.current > 1) {
-          lastDist.current = null;
-          const touch = touches[0];
-          if (lastPan.current) {
-            transformRef.current(sv.current, txv.current + (touch.pageX - lastPan.current.x), tyv.current + (touch.pageY - lastPan.current.y));
-          }
-          lastPan.current = { x: touch.pageX, y: touch.pageY };
-        }
-      },
-      onPanResponderTerminate: () => {
-        lastTapTime.current = 0;
-        lastDist.current = null;
-        lastPan.current = null;
-      },
-      onPanResponderRelease: (_, gesture) => {
-        if (!gestureMoved.current && Math.abs(gesture.dx) <= 8 && Math.abs(gesture.dy) <= 8) {
-          handleDoubleTap();
-        } else {
-          lastTapTime.current = 0;
-        }
-        lastDist.current = null;
-        lastPan.current = null;
-      },
-    }),
-  ).current;
+  const start = useCallback(() => {
+    'worklet';
+    cancelAnimation(transform);
+    zoomTarget.value = null;
+  }, [transform, zoomTarget]);
 
-  function handleDoubleTap() {
-    const now = Date.now();
-    if (now - lastTapTime.current < 300) {
-      haptics.select();
-      lastTapTime.current = 0;
-      transformRef.current(sv.current > 1.2 ? MIN_SCALE : 2.5, 0, 0, true);
-      return;
-    }
-    lastTapTime.current = now;
-  }
+  const move = useCallback((motion: MapMotion) => {
+    'worklet';
+    transform.value = imageTransform(transform.value, canvas.value, image.value, motion);
+  }, [canvas, image, transform]);
+
+  const animateZoom = useCallback((next: ImageTransform) => {
+    'worklet';
+    scheduleOnRN(hapticSelect);
+    zoomTarget.value = next[2];
+    transform.value = withTiming(next, { duration: 180 }, (finished) => {
+      if (finished) zoomTarget.value = null;
+    });
+  }, [hapticSelect, transform, zoomTarget]);
+
+  const doubleTap = useCallback((x: number, y: number) => {
+    'worklet';
+    const current = transform.value;
+    const next = current[2] > 1.2
+      ? ([0, 0, 1] satisfies ImageTransform)
+      : imageTransform(current, canvas.value, image.value, { x, y, dx: 0, dy: 0, scale: 2.5 / current[2] });
+    animateZoom(next);
+  }, [animateZoom, canvas, image, transform]);
+
+  const gestures = useMapGestures({ start, move, doubleTap });
+  const loading = isLoading && !packImage;
+  const failed = isError && !data && !packImage;
+  useWebMapZoom(canvasRef, 'always', { start, move }, !loading && !failed);
 
   const zoomBy = (step: number) => {
-    const next = clampScale(sv.current + step);
-    if (next === sv.current) return;
-    haptics.select();
-    applyTransform(next, txv.current, tyv.current, true);
+    scheduleOnUI(() => {
+      'worklet';
+      const current = transform.value;
+      const target = zoomTarget.value ?? current[2];
+      const scale = clamp(target + step, 1, 5);
+      if (scale === target) return;
+      const size = canvas.value;
+      animateZoom(imageTransform(current, size, image.value, {
+        x: size.width / 2, y: size.height / 2, dx: 0, dy: 0, scale: scale / current[2],
+      }));
+    });
   };
-  const handleZoomIn = () => zoomBy(ZOOM_STEP);
-  const handleZoomOut = () => zoomBy(-ZOOM_STEP);
 
   const handleDownloadMap = async () => {
     if (downloadInFlight.current) return;
@@ -310,8 +231,8 @@ export function OfficialMapView() {
 
   // With the offline pack downloaded, its copy of the map is shown and a failed
   // metadata request doesn't matter. Without it, the map comes from the API.
-  if (isLoading && !packImage) return <LoadingState message="Loading map..." />;
-  if (isError && !data && !packImage) {
+  if (loading) return <LoadingState message="Loading map..." />;
+  if (failed) {
     return (
       <ErrorState
         message="Could not load the map. Download the offline pack in Settings to keep it on this phone."
@@ -324,30 +245,22 @@ export function OfficialMapView() {
     network === 'nmrc' && data?.image
       ? mapService.getProxyFileUrl('network', 'image', network)
       : data?.image?.url;
-  const imageSource = packImage ? { uri: packImage.uri } : remoteImageUrl ? { uri: remoteImageUrl } : null;
-  const imageSourceKey = packImage ? packImage.key : remoteImageUrl;
+  const imageUri = packImage?.uri ?? remoteImageUrl;
+  const imageSourceKey = packImage?.key ?? remoteImageUrl;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {isOfflineCopy && !packImage ? (
         <OfflineNote inset message="Saved map. It opens from the copy stored on this device." />
       ) : null}
-      {/* Canvas — fills all space between header and tab bar */}
-      <View
-        style={styles.canvas}
-        onLayout={handleCanvasLayout}
-        {...panResponder.panHandlers}
-      >
-        <View style={styles.canvasFill}>
-          {imageSource && imageSourceKey ? (
+      <GestureDetector gesture={gestures} touchAction="none">
+        <View ref={canvasRef} style={styles.canvas} onLayout={handleCanvasLayout}>
+          {imageUri ? (
             <HighResolutionMapImage
               key={imageSourceKey}
-              source={imageSource}
-              sourceKey={imageSourceKey}
-              canvasSize={canvasSize}
-              scale={scale}
-              translateX={translateX}
-              translateY={translateY}
+              uri={imageUri}
+              imageStyle={imageStyle}
+              onSize={handleImageSize}
             />
           ) : (
             <EmptyState
@@ -357,9 +270,8 @@ export function OfficialMapView() {
             />
           )}
         </View>
-      </View>
+      </GestureDetector>
 
-      {/* Zoom controls — sibling of canvas, outside PanResponder */}
       <Surface
         style={[styles.zoomControls, { bottom: insets.bottom + spacing['2xl'], borderRadius: look.radius.icon }]}
         elevation={3}
@@ -367,7 +279,7 @@ export function OfficialMapView() {
         <Touchable
           radius={radius.iconSmall}
           haptic={false}
-          onPress={handleZoomIn}
+          onPress={() => zoomBy(ZOOM_STEP)}
           accessibilityLabel="Zoom in"
           style={{ backgroundColor: fills.floating }}
         >
@@ -379,7 +291,7 @@ export function OfficialMapView() {
         <Touchable
           radius={radius.iconSmall}
           haptic={false}
-          onPress={handleZoomOut}
+          onPress={() => zoomBy(-ZOOM_STEP)}
           accessibilityLabel="Zoom out"
           style={{ backgroundColor: fills.floating }}
         >
@@ -389,7 +301,6 @@ export function OfficialMapView() {
         </Touchable>
       </Surface>
 
-      {/* Download FAB — sibling of canvas, outside PanResponder */}
       <FAB
         icon={downloading ? 'progress-download' : 'download'}
         label="Save map"
@@ -411,22 +322,15 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
-  canvasFill: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  image: {
+    ...StyleSheet.absoluteFillObject,
+    ...(Platform.OS === 'web' ? { willChange: 'transform' } : {}),
   },
   loader: {
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.md,
     zIndex: 1,
-  },
-  noImage: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
   },
   zoomControls: {
     position: 'absolute',

@@ -14,7 +14,7 @@ function evaluate(path) {
   const exports = {};
   const source = fs.readFileSync(path, 'utf8');
   const code = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, esModuleInterop: true },
   }).outputText;
   const requireFn = (name) => {
     if (name.endsWith('terrain.json')) return overview;
@@ -32,6 +32,19 @@ test('the overview has contours, water and two high-ground bands', () => {
   assert.ok(overview.major.startsWith('M'));
   assert.ok(overview.water.length > 0);
   assert.equal(overview.high.length, 2);
+});
+
+test('overview culling keeps whole paths in source order, including at the network scale', () => {
+  const whole = terrain.overviewForView({ x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6 }, 0);
+  for (const key of ['minor', 'major', 'water', 'rivers']) assert.equal(whole[key], overview[key]);
+  assert.deepEqual(whole.high, overview.high);
+
+  const central = terrain.overviewForView({ x0: -12_000, y0: -18_000, x1: 12_000, y1: 18_000 }, 12);
+  for (const key of ['minor', 'major', 'water', 'rivers']) {
+    assert.ok(central[key].length < overview[key].length);
+    const kept = new Set(central[key].match(/M[^M]+/g));
+    assert.equal(overview[key].match(/M[^M]+/g).filter((part) => kept.has(part)).join(''), central[key]);
+  }
 });
 
 test('detail chunks sit on the chunk grid', () => {
