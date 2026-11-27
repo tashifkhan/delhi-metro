@@ -172,7 +172,7 @@ export function OfficialMapView() {
     animateZoom(next);
   }, [animateZoom, canvas, image, transform]);
 
-  const gestures = useMapGestures({ start, move, doubleTap });
+  const gestures = useMapGestures({ start, move, doubleTap }, canvasRef);
   const loading = isLoading && !packImage;
   const failed = isError && !data && !packImage;
   useWebMapZoom(canvasRef, 'always', { start, move }, !loading && !failed);

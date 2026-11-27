@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.3] - 2026-11-27
+
+- Pinching to zoom keeps the spot between your fingers in place. Lifting one finger before the other used to shift the map, often upwards.
+
 ## [1.10.2] - 2026-11-27
 
 - Panning and pinching the map stays smooth on 120 Hz phones. Station names used to make every redraw copy a screen-sized image once per name; now the phone's graphics chip draws the map and nothing redraws while your finger is down.
@@ -282,7 +286,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public release: journey planner, station search, line status, network map, and service alerts for Delhi Metro.
 
-[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.2...HEAD
+[Unreleased]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.3...HEAD
+[1.10.3]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.2...v1.10.3
 [1.10.2]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.1...v1.10.2
 [1.10.1]: https://github.com/tashifkhan/delhi-metro/compare/v1.10.0...v1.10.1
 [1.10.0]: https://github.com/tashifkhan/delhi-metro/compare/v1.9.0...v1.10.0

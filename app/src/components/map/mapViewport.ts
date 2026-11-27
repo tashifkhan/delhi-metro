@@ -66,6 +66,36 @@ export function moveViewport(view: Viewport, limits: CameraLimits, motion: MapMo
   };
 }
 
+export interface PinchState {
+  x: number;
+  y: number;
+  scale: number;
+  pointers: number;
+}
+
+/**
+ * One pinch update: the new state, and how to move the map, or null when it
+ * shouldn't move. When a finger lifts or lands the focal point jumps to the
+ * new midpoint, or to the one finger left (Android keeps the pinch running
+ * until the last finger lifts), so the step starts again from there instead
+ * of reading the jump as a drag.
+ */
+export function pinchStep(
+  previous: PinchState,
+  next: PinchState,
+): MapMotion | null {
+  'worklet';
+  if (next.scale <= 0 || previous.scale <= 0) return null;
+  if (next.pointers !== previous.pointers || next.pointers < 2) return null;
+  return {
+    x: next.x,
+    y: next.y,
+    dx: next.x - previous.x,
+    dy: next.y - previous.y,
+    scale: next.scale / previous.scale,
+  };
+}
+
 export function viewportTransform(view: Viewport, drawn: Viewport) {
   'worklet';
   return {
