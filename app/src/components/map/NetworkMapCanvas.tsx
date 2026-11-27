@@ -25,14 +25,16 @@ import type { MapStation } from './networkData';
 import { placeLabels, type Box } from './labels';
 import type { RouteOverlay } from './routeOverlay';
 import { useNetworkGeometry } from './NetworkGeometryContext';
-import { drawingBounds, OVERSCAN, type Viewport } from './mapViewport';
+import { drawingBounds, OVERSCAN, viewportTransform, type Viewport } from './mapViewport';
 import { useMapGestures, useWebMapZoom } from './useMapGestures';
+import { MapBackdrop } from './MapBackdrop';
 import { START_SPAN, useNetworkMapCamera } from './useNetworkMapCamera';
 import {
   DETAIL_SPAN,
   detailChunksForView,
   loadTerrainDetail,
   overviewForView,
+  TERRAIN_OVERVIEW,
   type TerrainDetail,
 } from './terrain';
 
@@ -96,8 +98,9 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
   const [size, setSize] = useState({ width: 0, height: 0 });
   const containerRef = useRef<View>(null);
   const { width, height } = size;
-  const { view, live, layerStyle, move, settle, doubleTap, focus, reset } =
+  const { frame, live, layerStyle, touch, start, move, release, settle, doubleTap, focus, reset } =
     useNetworkMapCamera(size, geometry.bounds, fit);
+  const view = frame.view;
 
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
@@ -119,8 +122,8 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
     'worklet';
     scheduleOnRN(selectAt, x, y, live.value);
   }, [selectAt, live]);
-  const gestures = useMapGestures({ move, settle, tap, doubleTap });
-  useWebMapZoom(containerRef, wheelZoom, { move, settle });
+  const gestures = useMapGestures({ move, touch, start, settle, release, tap, doubleTap });
+  useWebMapZoom(containerRef, wheelZoom, { move, start, settle });
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -156,6 +159,12 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
   const drawH = height * (1 + 2 * OVERSCAN);
   const bounds = useMemo(() => drawingBounds(view, size), [view, size]);
   const viewBox = ready ? `${bounds.x0} ${bounds.y0} ${drawW / k} ${drawH / k}` : '0 0 1 1';
+  // Places this drawing within the animated layer. It changes in the same
+  // commit as the drawing, so the two never disagree for a frame.
+  const placement = useMemo(() => {
+    const { x, y, scale } = viewportTransform(frame.anchor, frame.view);
+    return { transform: [{ translateX: x }, { translateY: y }, { scale }] };
+  }, [frame]);
 
   // Markers shrink as the view widens but never disappear, so the network
   // always reads as stations on lines. Spans are metres across the screen.
@@ -223,6 +232,10 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
   const halo = background;
   const relief = theme.colors.outline;
   const water = isDark ? '#5b9bd5' : '#4a90c8';
+  const backdropWater = useMemo(
+    () => showTerrain ? { rivers: TERRAIN_OVERVIEW.rivers, water: TERRAIN_OVERVIEW.water, color: water } : null,
+    [showTerrain, water],
+  );
   const labelFont = Platform.OS === 'web' ? '"Roboto Flex", Roboto, system-ui, sans-serif' : undefined;
 
   const routeCodes = route?.stationCodes;
@@ -273,12 +286,33 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
         accessibilityLabel="Metro network map. Drag to move, pinch to zoom, tap a station to see its details."
       >
         {ready ? (
+          <MapBackdrop
+            live={live}
+            size={size}
+            bounds={geometry.bounds}
+            lines={MAP_LINES}
+            stations={MAP_STATIONS}
+            stationFill={fills.containerLowest}
+            water={backdropWater}
+          />
+        ) : null}
+        {ready ? (
           <Animated.View style={[styles.layer, layerStyle]} pointerEvents="none">
+            {/* A GPU layer exactly the drawing's size: the GPU paints it once
+                per redraw and gestures only move the texture. */}
+            <View
+              renderToHardwareTextureAndroid
+              style={[
+                { position: 'absolute', left: -width * OVERSCAN, top: -height * OVERSCAN, width: drawW, height: drawH },
+                placement,
+              ]}
+            >
             <Svg
               width={drawW}
               height={drawH}
               viewBox={viewBox}
-              style={{ position: 'absolute', left: -width * OVERSCAN, top: -height * OVERSCAN }}
+              // Opaque, so the low-detail backdrop shows only past its edges.
+              style={{ backgroundColor: background }}
             >
               {ground ? (
                 <G>
@@ -504,15 +538,19 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
                 } as const;
                 // react-native-svg has no paint-order, so the halo that keeps
                 // labels readable over lines is a stroked copy drawn first.
+                // Fade it with paint alpha, never `opacity`: on Android a text
+                // element with `opacity` paints into its own bitmap the size
+                // of the whole drawing, about 30 MB per label per redraw.
                 return (
                   <G key={`t${label.code}`}>
                     <SvgText
                       {...common}
                       fill={halo}
+                      fillOpacity={faded ? 0.6 : 0.95}
                       stroke={halo}
+                      strokeOpacity={faded ? 0.6 : 0.95}
                       strokeWidth={px(4)}
                       strokeLinejoin="round"
-                      opacity={faded ? 0.6 : 0.95}
                     >
                       {label.text}
                     </SvgText>
@@ -564,6 +602,7 @@ export const NetworkMapCanvas = memo(forwardRef<NetworkMapHandle, Props>(functio
                 </G>
               ) : null}
             </Svg>
+            </View>
           </Animated.View>
         ) : null}
       </View>

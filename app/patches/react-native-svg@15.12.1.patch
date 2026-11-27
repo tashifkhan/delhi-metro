@@ -1,0 +1,57 @@
+diff --git a/android/src/main/java/com/horcrux/svg/SvgView.java b/android/src/main/java/com/horcrux/svg/SvgView.java
+index f00d54c1898bc16e08b51cb940e303103d05f3e8..db5fe08160320b7dd7befc39dffbc7ca2c1c6520 100644
+--- a/android/src/main/java/com/horcrux/svg/SvgView.java
++++ b/android/src/main/java/com/horcrux/svg/SvgView.java
+@@ -19,6 +19,7 @@ import android.graphics.RectF;
+ import android.graphics.Typeface;
+ import android.util.Base64;
+ import android.view.View;
++import android.view.ViewGroup;
+ import android.view.ViewParent;
+ import android.view.accessibility.AccessibilityNodeInfo;
+ import com.facebook.react.bridge.Dynamic;
+@@ -131,6 +132,24 @@ public class SvgView extends ReactViewGroup implements ReactCompoundView, ReactC
+       return;
+     }
+     super.onDraw(canvas);
++    // Draw straight into a hardware canvas when nothing needs the CPU bitmap.
++    // HWUI then records the paths and the GPU rasterises them on the render
++    // thread, instead of the UI thread painting a screen-sized bitmap and
++    // uploading it as a texture on every change. Filters read the bitmap, so
++    // a drawing with one keeps the old path, as does toDataURL.
++    if (canvas.isHardwareAccelerated() && toDataUrlTask == null && !hasFilter(this)) {
++      if (mBitmap != null) {
++        mBitmap.recycle();
++        mBitmap = null;
++      }
++      mCurrentBitmap = null;
++      // The bitmap clipped the drawing to the view; keep that.
++      int saveCount = canvas.save();
++      canvas.clipRect(0, 0, getWidth(), getHeight());
++      drawChildren(canvas);
++      canvas.restoreToCount(saveCount);
++      return;
++    }
+     if (mBitmap == null) {
+       mBitmap = drawOutput();
+     }
+@@ -152,6 +171,19 @@ public class SvgView extends ReactViewGroup implements ReactCompoundView, ReactC
+ 
+   private Runnable toDataUrlTask = null;
+ 
++  private static boolean hasFilter(ViewGroup group) {
++    for (int i = 0; i < group.getChildCount(); i++) {
++      View child = group.getChildAt(i);
++      if (child instanceof FilterView) {
++        return true;
++      }
++      if (child instanceof ViewGroup && hasFilter((ViewGroup) child)) {
++        return true;
++      }
++    }
++    return false;
++  }
++
+   void setToDataUrlTask(Runnable task) {
+     toDataUrlTask = task;
+   }

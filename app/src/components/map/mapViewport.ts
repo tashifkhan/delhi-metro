@@ -34,8 +34,11 @@ export type CameraLimits = MapSize & NetworkGeometry['bounds'] & {
   maxK: number;
 };
 
-// Base drawing is 1.7x the viewport along each axis, including both edges.
-export const OVERSCAN = 0.35;
+// The sharp drawing reaches 12% of the viewport past each edge. The GPU
+// paints all of it on every redraw, and at this size it fits in a 4096 px
+// texture even on a 1440 x 3200 screen. The backdrop covers whatever a
+// gesture uncovers past it.
+export const OVERSCAN = 0.12;
 
 export function clamp(value: number, min: number, max: number) {
   'worklet';
@@ -70,13 +73,6 @@ export function viewportTransform(view: Viewport, drawn: Viewport) {
     y: (drawn.cy - view.cy) * view.k,
     scale: drawn.k > 0 ? view.k / drawn.k : 1,
   };
-}
-
-export function needsRedraw(view: Viewport, drawn: Viewport, { width, height }: MapSize) {
-  'worklet';
-  const { x, y, scale } = viewportTransform(view, drawn);
-  const slack = (0.5 + OVERSCAN) * scale - 0.5;
-  return width * slack - Math.abs(x) < 20 || height * slack - Math.abs(y) < 20;
 }
 
 export function drawingBounds(view: Viewport, size: MapSize, overscan = OVERSCAN): Box {
