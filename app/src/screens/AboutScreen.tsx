@@ -57,7 +57,7 @@ const LINKS: LinkEntry[] = [
   {
     icon: 'code-slash-outline',
     title: 'API docs',
-    subtitle: 'Every endpoint, with a playground to call them',
+    subtitle: API_DOCS_URL.replace('https://', ''),
     url: API_DOCS_URL,
   },
   {
