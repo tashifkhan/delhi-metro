@@ -6,16 +6,22 @@ import type { MapMotion } from './mapViewport';
 
 interface GestureCallbacks {
   move: (motion: MapMotion) => void;
+  /** A finger went down, before any gesture is recognised. */
+  touch?: () => void;
   start?: () => void;
   settle?: () => void;
+  /** The last finger lifted after a drag, with its speed in px/s. */
+  release?: (vx: number, vy: number) => void;
   tap?: (x: number, y: number) => void;
   doubleTap: (x: number, y: number) => void;
 }
 
-export function useMapGestures({ move, start, settle, tap, doubleTap }: GestureCallbacks) {
+export function useMapGestures({ move, touch, start, settle, release, tap, doubleTap }: GestureCallbacks) {
   const panning = useSharedValue(false);
   const pinch = useSharedValue<{ x: number; y: number; scale: number } | null>(null);
   const multiTouch = useSharedValue(false);
+  /** A second finger joined this drag, so lifting off shouldn't fling. */
+  const pinched = useSharedValue(false);
   const lastTap = useSharedValue<{ at: number; x: number; y: number } | null>(null);
   const slop = 8;
 
@@ -23,6 +29,11 @@ export function useMapGestures({ move, start, settle, tap, doubleTap }: GestureC
     const pan = Gesture.Pan()
       .minDistance(slop)
       .averageTouches(true)
+      .onTouchesDown(({ numberOfTouches }) => {
+        if (numberOfTouches > 1) pinched.value = true;
+        else if (!panning.value && !pinch.value) pinched.value = false;
+        touch?.();
+      })
       .onStart(() => {
         panning.value = true;
         lastTap.value = null;
@@ -32,15 +43,18 @@ export function useMapGestures({ move, start, settle, tap, doubleTap }: GestureC
         if (pinch.value) return;
         move({ x: event.x, y: event.y, dx: event.changeX, dy: event.changeY, scale: 1 });
       })
-      .onFinalize(() => {
+      .onFinalize(({ velocityX, velocityY }) => {
         if (!panning.value) return;
         panning.value = false;
-        if (!pinch.value) settle?.();
+        if (pinch.value) return;
+        if (pinched.value || !release) settle?.();
+        else release(velocityX, velocityY);
       });
 
     const zoom = Gesture.Pinch()
       .onStart(({ focalX, focalY, scale }) => {
         pinch.value = { x: focalX, y: focalY, scale };
+        pinched.value = true;
         lastTap.value = null;
         start?.();
       })
@@ -76,7 +90,7 @@ export function useMapGestures({ move, start, settle, tap, doubleTap }: GestureC
         tap?.(x, y);
       });
     return Gesture.Race(Gesture.Simultaneous(pan, zoom), select);
-  }, [move, start, settle, tap, doubleTap, panning, pinch, lastTap, multiTouch]);
+  }, [move, touch, start, settle, release, tap, doubleTap, panning, pinch, pinched, lastTap, multiTouch]);
 }
 
 type WebPinchEvent = Event & { scale: number; clientX?: number; clientY?: number };

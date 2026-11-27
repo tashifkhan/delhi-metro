@@ -1,11 +1,17 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
-import { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+import {
+  cancelAnimation,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withDecay,
+} from 'react-native-reanimated';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import type { NetworkGeometry, Point } from './geometry';
 import {
   constrainViewport,
   moveViewport,
-  needsRedraw,
   viewportTransform,
   type CameraLimits,
   type MapMotion,
@@ -14,12 +20,35 @@ import {
 } from './mapViewport';
 
 export const START_SPAN = 14_000;
-const REDRAW_INTERVAL = 120;
 const EMPTY_VIEW = { cx: 0, cy: 0, k: 0 };
+const IS_WEB = Platform.OS === 'web';
+
+/**
+ * Redrawing the SVG costs a lot: React re-renders hundreds of elements, the
+ * UI thread records them, and the GPU repaints the drawing's layer. At
+ * 120 Hz a frame has 8 ms. So nothing redraws while a finger is down or a
+ * fling runs: the camera moves the last drawing with a GPU transform, the
+ * backdrop fills whatever it uncovers, and the redraw waits until the map
+ * has been still for this long.
+ */
+const SETTLE_DELAY = 120;
+/** Slower releases than this, in px/s, stop dead instead of gliding. */
+const MIN_FLING = 250;
+const DECELERATION = 0.996;
 
 type Bounds = NetworkGeometry['bounds'];
 type Insets = { top: number; bottom: number };
 type Focus = { point: Point; span: number };
+
+/**
+ * What React last drew. `anchor` is the view the animated layer is placed
+ * against; the drawing sits inside it with a transform from `view` to
+ * `anchor`, committed with the drawing itself.
+ */
+export interface MapFrame {
+  view: Viewport;
+  anchor: Viewport;
+}
 
 function startingView(limits: CameraLimits, fit: Bounds | null): Viewport {
   'worklet';
@@ -34,25 +63,132 @@ function startingView(limits: CameraLimits, fit: Bounds | null): Viewport {
   };
 }
 
+const sameView = (a: Viewport, b: Viewport) => {
+  'worklet';
+  return a.cx === b.cx && a.cy === b.cy && a.k === b.k;
+};
+
+/**
+ * Camera for the network map.
+ *
+ * `live` is where the map is right now and changes every frame on the UI
+ * thread. The SVG is drawn for one view at a time and an animated transform
+ * makes up the difference, so pans and pinches never wait on React.
+ *
+ * On native, the animated layer is placed against a fixed `anchor` and the
+ * drawing carries its own transform from its view to that anchor. Both parts
+ * of that transform change in the same React commit, so a redraw never
+ * shows a frame with new content under an old offset. The web applies React
+ * and Reanimated updates in the same frame, so there the anchor simply
+ * follows each drawing and the inner transform stays at identity.
+ */
 export function useNetworkMapCamera(size: MapSize, bounds: Bounds, fit: Bounds | null) {
-  const [view, setView] = useState<Viewport>(EMPTY_VIEW);
+  const [frame, setFrame] = useState<MapFrame>({ view: EMPTY_VIEW, anchor: EMPTY_VIEW });
   const live = useSharedValue<Viewport>(EMPTY_VIEW);
-  const drawn = useSharedValue<Viewport>(EMPTY_VIEW);
+  const anchor = useSharedValue<Viewport>(EMPTY_VIEW);
   const requested = useSharedValue<Viewport>(EMPTY_VIEW);
   const cameraLimits = useSharedValue<CameraLimits | null>(null);
-  const lastRedraw = useSharedValue(0);
+  /** A finger is down or a fling is running. */
+  const busy = useSharedValue(false);
   const pendingFocus = useSharedValue<{ focus: Focus; insets: Insets } | null>(null);
+  const fling = useSharedValue(0);
+  const flingState = useSharedValue({ token: 0, active: false, last: 0, dx: 0, dy: 0 });
   const previousFit = useRef<string | undefined>(undefined);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const redraw = useCallback(() => {
     'worklet';
     const next = live.value;
-    const previous = requested.value;
-    if (next.k <= 0 || (previous.cx === next.cx && previous.cy === next.cy && previous.k === next.k)) return;
+    if (next.k <= 0 || sameView(next, requested.value)) return;
     requested.value = next;
-    lastRedraw.value = Date.now();
-    scheduleOnRN(setView, next);
-  }, [live, requested, lastRedraw]);
+    scheduleOnRN(setFrame, { view: next, anchor: IS_WEB ? next : anchor.value });
+  }, [live, requested, anchor]);
+
+  const redrawIfIdle = useCallback(() => {
+    'worklet';
+    if (!busy.value) redraw();
+  }, [busy, redraw]);
+
+  const redrawSoon = useCallback(() => {
+    if (settleTimer.current !== null) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      settleTimer.current = null;
+      scheduleOnUI(redrawIfIdle);
+    }, SETTLE_DELAY);
+  }, [redrawIfIdle]);
+  useEffect(() => () => {
+    if (settleTimer.current !== null) clearTimeout(settleTimer.current);
+  }, []);
+
+  /** The map came to rest: redraw once it stays still. */
+  const settle = useCallback(() => {
+    'worklet';
+    busy.value = false;
+    scheduleOnRN(redrawSoon);
+  }, [busy, redrawSoon]);
+
+  /** Stops a running fling. Returns whether there was one. */
+  const stopFling = useCallback(() => {
+    'worklet';
+    const state = flingState.value;
+    if (!state.active) return false;
+    flingState.value = { ...state, token: state.token + 1, active: false };
+    cancelAnimation(fling);
+    return true;
+  }, [flingState, fling]);
+
+  /** A finger went down. Catching a fling holds the map where it is. */
+  const touch = useCallback(() => {
+    'worklet';
+    if (stopFling()) settle();
+  }, [stopFling, settle]);
+
+  const start = useCallback(() => {
+    'worklet';
+    stopFling();
+    busy.value = true;
+  }, [stopFling, busy]);
+
+  const move = useCallback((motion: MapMotion) => {
+    'worklet';
+    const limits = cameraLimits.value;
+    if (!limits) return;
+    live.value = moveViewport(live.value, limits, motion);
+  }, [cameraLimits, live]);
+
+  /** The last finger lifted. A quick drag keeps gliding and slows down. */
+  const release = useCallback((vx: number, vy: number) => {
+    'worklet';
+    const speed = Math.hypot(vx, vy);
+    if (!cameraLimits.value || !Number.isFinite(speed) || speed < MIN_FLING) {
+      settle();
+      return;
+    }
+    const token = flingState.value.token + 1;
+    flingState.value = { token, active: true, last: 0, dx: vx / speed, dy: vy / speed };
+    fling.value = 0;
+    fling.value = withDecay({ velocity: speed, deceleration: DECELERATION }, (finished) => {
+      if (!finished || flingState.value.token !== token) return;
+      flingState.value = { ...flingState.value, active: false };
+      settle();
+    });
+  }, [cameraLimits, flingState, fling, settle]);
+
+  useAnimatedReaction(
+    () => fling.value,
+    (travelled) => {
+      const state = flingState.value;
+      const limits = cameraLimits.value;
+      if (!state.active || !limits) return;
+      const step = travelled - state.last;
+      flingState.value = { ...state, last: travelled };
+      if (step === 0) return;
+      const before = live.value;
+      move({ x: limits.width / 2, y: limits.height / 2, dx: state.dx * step, dy: state.dy * step, scale: 1 });
+      // Pinned against the edge of the network: nothing left to glide.
+      if (sameView(before, live.value) && stopFling()) settle();
+    },
+  );
 
   const focusOnUI = useCallback((focus: Focus, insets: Insets, onlyIfCovered = false) => {
     'worklet';
@@ -72,10 +208,11 @@ export function useNetworkMapCamera(size: MapSize, bounds: Bounds, fit: Bounds |
         return;
       }
     }
+    stopFling();
     const k = span > 0 ? Math.min(limits.maxK, Math.max(current.k, width / span)) : current.k;
     live.value = constrainViewport({ cx: point.x, cy: point.y + (insets.bottom - insets.top) / 2 / k, k }, limits);
     redraw();
-  }, [cameraLimits, live, pendingFocus, redraw]);
+  }, [cameraLimits, live, pendingFocus, stopFling, redraw]);
 
   const fitKey = fit ? `${fit.minX}|${fit.maxX}|${fit.minY}|${fit.maxY}` : '';
   useLayoutEffect(() => {
@@ -96,6 +233,10 @@ export function useNetworkMapCamera(size: MapSize, bounds: Bounds, fit: Bounds |
         ? startingView(limits, fit)
         : { ...live.value, k: live.value.k * limits.width / previous.width };
       live.value = constrainViewport(next, limits);
+      // A new size moves the layer's centre, so start a new anchor too. The
+      // drawing has to follow even if the view itself didn't change.
+      anchor.value = live.value;
+      requested.value = EMPTY_VIEW;
       const pending = pendingFocus.value;
       if (pending) {
         pendingFocus.value = null;
@@ -103,29 +244,21 @@ export function useNetworkMapCamera(size: MapSize, bounds: Bounds, fit: Bounds |
       }
       redraw();
     });
-  }, [size, bounds, fit, fitKey, cameraLimits, pendingFocus, live, redraw, focusOnUI]);
+  }, [size, bounds, fit, fitKey, cameraLimits, pendingFocus, live, anchor, requested, redraw, focusOnUI]);
 
   useLayoutEffect(() => {
-    drawn.value = view;
-  }, [view, drawn]);
-
-  const move = useCallback((motion: MapMotion) => {
-    'worklet';
-    const limits = cameraLimits.value;
-    if (!limits) return;
-    const next = moveViewport(live.value, limits, motion);
-    live.value = next;
-    if (Date.now() - lastRedraw.value >= REDRAW_INTERVAL && needsRedraw(next, drawn.value, limits)) redraw();
-  }, [cameraLimits, live, drawn, lastRedraw, redraw]);
+    if (IS_WEB) anchor.value = frame.view;
+  }, [frame, anchor]);
 
   const doubleTap = useCallback((x: number, y: number) => {
     'worklet';
+    stopFling();
     move({ x, y, dx: 0, dy: 0, scale: 2 });
-    redraw();
-  }, [move, redraw]);
+    if (!busy.value) redraw();
+  }, [stopFling, move, busy, redraw]);
 
   const layerStyle = useAnimatedStyle(() => {
-    const { x, y, scale } = viewportTransform(live.value, drawn.value);
+    const { x, y, scale } = viewportTransform(live.value, anchor.value);
     return { transform: [{ translateX: x }, { translateY: y }, { scale }] };
   });
 
@@ -138,10 +271,11 @@ export function useNetworkMapCamera(size: MapSize, bounds: Bounds, fit: Bounds |
       'worklet';
       const limits = cameraLimits.value;
       if (!limits) return;
+      stopFling();
       live.value = constrainViewport(startingView(limits, fit), limits);
       redraw();
     });
-  }, [cameraLimits, live, fit, redraw]);
+  }, [cameraLimits, live, fit, stopFling, redraw]);
 
-  return { view, live, layerStyle, move, settle: redraw, doubleTap, focus, reset };
+  return { frame, live, layerStyle, touch, start, move, release, settle, doubleTap, focus, reset };
 }

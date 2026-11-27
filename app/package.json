@@ -1,6 +1,6 @@
 {
   "name": "delhi-metro-app",
-  "version": "1.10.1",
+  "version": "1.10.2",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -50,5 +50,13 @@
     "typescript": "~5.9.2",
     "wrangler": "^4.127.1"
   },
-  "private": true
+  "private": true,
+  "reanimated": {
+    "staticFeatureFlags": {
+      "ANDROID_SYNCHRONOUSLY_UPDATE_UI_PROPS": true
+    }
+  },
+  "patchedDependencies": {
+    "react-native-svg@15.12.1": "patches/react-native-svg@15.12.1.patch"
+  }
 }
